@@ -4,6 +4,41 @@ AI와 게이미피케이션을 활용하여 사용자의 지속적인 독서와 
 
 ---
 
+## Development Environment
+
+### Backend
+
+| 항목 | 버전 |
+|---|---|
+| Java | JDK 21 |
+| Spring Boot | 4.1.1 |
+| Gradle | 9.7.1 |
+| Database | MySQL |
+
+> Gradle은 프로젝트에 포함된 Gradle Wrapper(`gradlew`)를 사용합니다.
+> 별도의 Gradle 설치 없이 프로젝트의 Wrapper를 사용하는 것을 권장합니다.
+
+### Frontend
+
+| 항목 | 버전 |
+|---|---|
+| Node.js | TBD |
+| React Native | TBD |
+| Expo | SDK 57 |
+
+---
+
+## Getting Started
+
+### 1. Repository Clone
+
+```bash
+git clone git@github.com:soo123123/chaekdami.git
+cd chaekdami
+```
+
+---
+
 ## 1. Domain Analysis
 
 ### 1.1 도메인 영역
