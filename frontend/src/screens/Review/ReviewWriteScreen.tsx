@@ -8,18 +8,67 @@ import {
   Alert,
 } from 'react-native';
 
-const ReviewWriteScreen = () => {
+import { createReview } from '../../api/reviewApi';
+
+const ReviewWriteScreen = ({ route, navigation }: any) => {
+  // 이전 화면에서 전달받는 독서 기록 ID
+  const readingRecordId = route?.params?.readingRecordId ?? 1;
+
   const [rating, setRating] = useState('');
   const [oneLine, setOneLine] = useState('');
   const [content, setContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 독후감 입력 확인
     if (!content.trim()) {
       Alert.alert('알림', '독후감을 작성해주세요.');
       return;
     }
 
-    Alert.alert('저장 완료', '독후감이 저장되었습니다.');
+    // 평점 숫자 변환
+    const ratingNumber = Number(rating);
+
+    // 평점 범위 확인
+    if (
+      !Number.isInteger(ratingNumber) ||
+      ratingNumber < 1 ||
+      ratingNumber > 5
+    ) {
+      Alert.alert('알림', '평점은 1~5 사이의 숫자로 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      await createReview(
+        readingRecordId,
+        content,
+        ratingNumber,
+        oneLine
+      );
+
+      Alert.alert(
+        '저장 완료',
+        '독후감이 저장되었습니다.',
+        [
+          {
+            text: '확인',
+            onPress: () => navigation?.goBack(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('독후감 저장 실패:', error);
+
+      Alert.alert(
+        '저장 실패',
+        '독후감을 저장하지 못했습니다.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -58,9 +107,10 @@ const ReviewWriteScreen = () => {
       <TouchableOpacity
         style={styles.button}
         onPress={handleSave}
+        disabled={isSaving}
       >
         <Text style={styles.buttonText}>
-          저장
+          {isSaving ? '저장 중...' : '독후감 저장'}
         </Text>
       </TouchableOpacity>
     </View>
