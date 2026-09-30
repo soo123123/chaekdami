@@ -1,73 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
-  Alert,
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { getRewardStatus } from '../../api/rewardApi';
 
-interface RewardStatus {
-  level?: number;
-  xp?: number;
-  requiredXp?: number;
-  currency?: number;
-}
+type Period = 'week' | 'month';
 
-const RewardScreen = () => {
-  const [reward, setReward] = useState<RewardStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const ReadingStatsScreen = () => {
+  const [period, setPeriod] = useState<Period>('week');
 
-  const loadReward = async () => {
-    try {
-      setIsLoading(true);
+  // 임시 통계 데이터
+  // 나중에 백엔드 API 데이터로 변경
+  const weeklyData = [
+    { day: '월', minutes: 20 },
+    { day: '화', minutes: 35 },
+    { day: '수', minutes: 15 },
+    { day: '목', minutes: 50 },
+    { day: '금', minutes: 30 },
+    { day: '토', minutes: 60 },
+    { day: '일', minutes: 40 },
+  ];
 
-      const data = await getRewardStatus();
+  const monthlyData = [
+    { day: '1주', minutes: 180 },
+    { day: '2주', minutes: 240 },
+    { day: '3주', minutes: 150 },
+    { day: '4주', minutes: 300 },
+  ];
 
-      setReward(data);
-    } catch (error) {
-      console.error('보상 정보 조회 실패:', error);
+  const data =
+    period === 'week'
+      ? weeklyData
+      : monthlyData;
 
-      // 백엔드 연결 전 화면 테스트용 데이터
-      setReward({
-        level: 5,
-        xp: 320,
-        requiredXp: 500,
-        currency: 1250,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const totalMinutes = data.reduce(
+    (sum, item) => sum + item.minutes,
+    0
+  );
 
-  useEffect(() => {
-    loadReward();
-  }, []);
+  const averageMinutes = Math.round(
+    totalMinutes / data.length
+  );
 
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>
-          레벨 정보를 불러오는 중...
-        </Text>
-      </View>
-    );
-  }
-
-  const level = reward?.level ?? 1;
-  const xp = reward?.xp ?? 0;
-  const requiredXp = reward?.requiredXp ?? 100;
-
-  const progress =
-    requiredXp > 0
-      ? Math.min(xp / requiredXp, 1)
-      : 0;
+  const maxMinutes = Math.max(
+    ...data.map(item => item.minutes),
+    1
+  );
 
   return (
     <ScrollView
@@ -79,48 +62,222 @@ const RewardScreen = () => {
         <TouchableOpacity
           onPress={() => router.back()}
         >
-          <Text style={styles.backButton}>‹</Text>
+          <Text style={styles.backButton}>
+            ‹
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>
-          레벨
+          독서 통계
         </Text>
 
         <View style={styles.headerSpace} />
       </View>
 
-      {/* 현재 레벨 */}
-      <View style={styles.levelCard}>
-        <Text style={styles.smallTitle}>
-          현재 레벨
-        </Text>
+      {/* 기간 선택 */}
+      <View style={styles.periodContainer}>
+        <TouchableOpacity
+          style={[
+            styles.periodButton,
+            period === 'week' &&
+              styles.selectedPeriodButton,
+          ]}
+          onPress={() => setPeriod('week')}
+        >
+          <Text
+            style={[
+              styles.periodText,
+              period === 'week' &&
+                styles.selectedPeriodText,
+            ]}
+          >
+            주간
+          </Text>
+        </TouchableOpacity>
 
-        <View style={styles.levelRow}>
-          <View style={styles.levelCircle}>
-            <Text style={styles.levelNumber}>
-              {level}
-            </Text>
-          </View>
+        <TouchableOpacity
+          style={[
+            styles.periodButton,
+            period === 'month' &&
+              styles.selectedPeriodButton,
+          ]}
+          onPress={() => setPeriod('month')}
+        >
+          <Text
+            style={[
+              styles.periodText,
+              period === 'month' &&
+                styles.selectedPeriodText,
+            ]}
+          >
+            월간
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-          <View style={styles.levelInfo}>
-            <Text style={styles.levelText}>
-              Lv. {level}
-            </Text>
+      {/* 요약 */}
+      <Text style={styles.sectionTitle}>
+        독서 요약
+      </Text>
 
-            <Text style={styles.levelDescription}>
-              꾸준히 독서하며 성장하고 있어요!
-            </Text>
-          </View>
-        </View>
-
-        {/* 경험치 */}
-        <View style={styles.xpHeader}>
-          <Text style={styles.xpLabel}>
-            다음 레벨까지
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryEmoji}>
+            ⏱️
           </Text>
 
-          <Text style={styles.xpValue}>
-            {xp} / {requiredXp} XP
+          <Text style={styles.summaryValue}>
+            {totalMinutes}분
+          </Text>
+
+          <Text style={styles.summaryLabel}>
+            총 독서 시간
+          </Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryEmoji}>
+            📖
+          </Text>
+
+          <Text style={styles.summaryValue}>
+            {averageMinutes}분
+          </Text>
+
+          <Text style={styles.summaryLabel}>
+            평균 독서 시간
+          </Text>
+        </View>
+      </View>
+
+      {/* 독서 시간 그래프 */}
+      <Text style={styles.sectionTitle}>
+        독서 시간
+      </Text>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chart}>
+          {data.map((item, index) => {
+            const barHeight =
+              (item.minutes / maxMinutes) * 140;
+
+            return (
+              <View
+                key={index}
+                style={styles.barItem}
+              >
+                <Text style={styles.barValue}>
+                  {item.minutes}
+                </Text>
+
+                <View
+                  style={[
+                    styles.bar,
+                    {
+                      height: barHeight,
+                    },
+                  ]}
+                />
+
+                <Text style={styles.barLabel}>
+                  {item.day}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <Text style={styles.chartUnit}>
+          단위: 분
+        </Text>
+      </View>
+
+      {/* 이번 기간 기록 */}
+      <Text style={styles.sectionTitle}>
+        {period === 'week'
+          ? '이번 주 기록'
+          : '이번 달 기록'}
+      </Text>
+
+      <View style={styles.recordCard}>
+        <View style={styles.recordRow}>
+          <View>
+            <Text style={styles.recordLabel}>
+              📚 읽은 책
+            </Text>
+
+            <Text
+              style={styles.recordDescription}
+            >
+              독서한 도서 수
+            </Text>
+          </View>
+
+          <Text style={styles.recordValue}>
+            3권
+          </Text>
+        </View>
+
+        <View style={styles.line} />
+
+        <View style={styles.recordRow}>
+          <View>
+            <Text style={styles.recordLabel}>
+              📄 읽은 페이지
+            </Text>
+
+            <Text
+              style={styles.recordDescription}
+            >
+              읽은 페이지 합계
+            </Text>
+          </View>
+
+          <Text style={styles.recordValue}>
+            245쪽
+          </Text>
+        </View>
+
+        <View style={styles.line} />
+
+        <View style={styles.recordRow}>
+          <View>
+            <Text style={styles.recordLabel}>
+              🔥 연속 독서
+            </Text>
+
+            <Text
+              style={styles.recordDescription}
+            >
+              현재 연속 독서 일수
+            </Text>
+          </View>
+
+          <Text style={styles.recordValue}>
+            5일
+          </Text>
+        </View>
+      </View>
+
+      {/* 목표 */}
+      <Text style={styles.sectionTitle}>
+        독서 목표
+      </Text>
+
+      <View style={styles.goalCard}>
+        <View style={styles.goalHeader}>
+          <View>
+            <Text style={styles.goalTitle}>
+              이번 달 독서 목표
+            </Text>
+
+            <Text style={styles.goalDescription}>
+              목표까지 조금만 더 힘내세요!
+            </Text>
+          </View>
+
+          <Text style={styles.goalValue}>
+            3 / 5권
           </Text>
         </View>
 
@@ -129,136 +286,35 @@ const RewardScreen = () => {
             style={[
               styles.progressBar,
               {
-                width: `${progress * 100}%`,
+                width: '60%',
               },
             ]}
           />
         </View>
 
-        <Text style={styles.remainingText}>
-          앞으로 {Math.max(requiredXp - xp, 0)} XP 남았어요
+        <Text style={styles.progressText}>
+          60% 달성
         </Text>
       </View>
 
-      {/* 내 보유 재화 */}
-      <View style={styles.currencyCard}>
-        <View>
-          <Text style={styles.currencyLabel}>
-            보유 재화
-          </Text>
-
-          <Text style={styles.currencyValue}>
-            🪙 {reward?.currency ?? 0}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.shopButton}
-          onPress={() => router.push('/shop')}
-        >
-          <Text style={styles.shopButtonText}>
-            상점 가기
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 레벨 보상 */}
-      <Text style={styles.sectionTitle}>
-        레벨 보상
-      </Text>
-
-      <View style={styles.rewardList}>
-        <LevelReward
-          level={level}
-          title="현재 레벨"
-          description="현재 달성한 레벨이에요."
-          completed
-        />
-
-        <LevelReward
-          level={level + 1}
-          title="다음 레벨"
-          description="재화 100개를 받을 수 있어요."
-        />
-
-        <LevelReward
-          level={level + 2}
-          title="레벨 보상"
-          description="새로운 꾸미기 아이템이 열려요."
-        />
-
-        <LevelReward
-          level={level + 3}
-          title="레벨 보상"
-          description="추가 보상을 획득할 수 있어요."
-        />
-      </View>
-
-      {/* 퀘스트 */}
+      {/* 마이페이지 */}
       <TouchableOpacity
-        style={styles.questCard}
-        onPress={() => router.push('/quest')}
+        style={styles.myPageButton}
+        onPress={() => router.push('/mypage')}
       >
-        <View>
-          <Text style={styles.questTitle}>
-            XP가 더 필요하신가요?
-          </Text>
+        <Text style={styles.myPageButtonText}>
+          마이페이지로 이동
+        </Text>
 
-          <Text style={styles.questDescription}>
-            퀘스트를 완료하고 경험치를 획득해 보세요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>›</Text>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
-interface LevelRewardProps {
-  level: number;
-  title: string;
-  description: string;
-  completed?: boolean;
-}
-
-const LevelReward = ({
-  level,
-  title,
-  description,
-  completed = false,
-}: LevelRewardProps) => {
-  return (
-    <View style={styles.rewardItem}>
-      <View
-        style={[
-          styles.rewardLevelCircle,
-          completed && styles.rewardLevelCompleted,
-        ]}
-      >
-        <Text style={styles.rewardLevelText}>
-          {completed ? '✓' : level}
-        </Text>
-      </View>
-
-      <View style={styles.rewardContent}>
-        <Text style={styles.rewardTitle}>
-          Lv. {level} · {title}
-        </Text>
-
-        <Text style={styles.rewardDescription}>
-          {description}
-        </Text>
-      </View>
-
-      <Text style={styles.rewardIcon}>
-        {completed ? '✅' : '🎁'}
-      </Text>
-    </View>
-  );
-};
-
-export default RewardScreen;
+export default ReadingStatsScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -268,17 +324,7 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
-    paddingBottom: 40,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  loadingText: {
-    marginTop: 10,
+    paddingBottom: 50,
   },
 
   header: {
@@ -302,197 +348,218 @@ const styles = StyleSheet.create({
     width: 25,
   },
 
-  levelCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 15,
-  },
-
-  smallTitle: {
-    fontSize: 14,
-    marginBottom: 15,
-  },
-
-  levelRow: {
+  periodContainer: {
+    backgroundColor: '#ece9e2',
+    borderRadius: 22,
+    padding: 4,
     flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 25,
   },
 
-  levelCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#e9f1e7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  levelNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-
-  levelInfo: {
-    marginLeft: 16,
+  periodButton: {
     flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 18,
   },
 
-  levelText: {
-    fontSize: 24,
+  selectedPeriodButton: {
+    backgroundColor: '#ffffff',
+  },
+
+  periodText: {
+    fontSize: 13,
+    color: '#777777',
+  },
+
+  selectedPeriodText: {
+    color: '#3f6548',
     fontWeight: 'bold',
   },
 
-  levelDescription: {
-    marginTop: 5,
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
 
-  xpHeader: {
+  summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 25,
-    marginBottom: 8,
+    marginBottom: 28,
   },
 
-  xpLabel: {
-    fontSize: 13,
+  summaryCard: {
+    width: '48%',
+    backgroundColor: '#ffffff',
+    borderRadius: 17,
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 
-  xpValue: {
-    fontSize: 13,
+  summaryEmoji: {
+    fontSize: 25,
+  },
+
+  summaryValue: {
+    fontSize: 19,
     fontWeight: 'bold',
+    marginTop: 7,
+  },
+
+  summaryLabel: {
+    fontSize: 11,
+    color: '#777777',
+    marginTop: 4,
+  },
+
+  chartCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 28,
+  },
+
+  chart: {
+    height: 190,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+  },
+
+  barItem: {
+    flex: 1,
+    height: 180,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+
+  barValue: {
+    fontSize: 9,
+    marginBottom: 5,
+  },
+
+  bar: {
+    width: 20,
+    minHeight: 4,
+    backgroundColor: '#66866d',
+    borderRadius: 5,
+  },
+
+  barLabel: {
+    fontSize: 10,
+    marginTop: 7,
+  },
+
+  chartUnit: {
+    textAlign: 'right',
+    fontSize: 10,
+    color: '#999999',
+    marginTop: 8,
+  },
+
+  recordCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 28,
+  },
+
+  recordRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  recordLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+  recordDescription: {
+    fontSize: 10,
+    color: '#888888',
+    marginTop: 3,
+  },
+
+  recordValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4f7658',
+  },
+
+  line: {
+    height: 1,
+    backgroundColor: '#eeeeee',
+    marginVertical: 15,
+  },
+
+  goalCard: {
+    backgroundColor: '#e9eee5',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 20,
+  },
+
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  goalTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+
+  goalDescription: {
+    fontSize: 10,
+    color: '#777777',
+    marginTop: 4,
+  },
+
+  goalValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#3f6548',
   },
 
   progressBackground: {
-    height: 10,
-    backgroundColor: '#eeeeee',
-    borderRadius: 5,
+    height: 9,
+    backgroundColor: '#d8ded5',
+    borderRadius: 6,
     overflow: 'hidden',
+    marginTop: 18,
   },
 
   progressBar: {
     height: '100%',
     backgroundColor: '#4f7658',
-    borderRadius: 5,
+    borderRadius: 6,
   },
 
-  remainingText: {
-    fontSize: 12,
-    marginTop: 8,
+  progressText: {
+    fontSize: 10,
     textAlign: 'right',
+    marginTop: 6,
   },
 
-  currencyCard: {
+  myPageButton: {
     backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 25,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  currencyLabel: {
-    fontSize: 13,
-  },
-
-  currencyValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-
-  shopButton: {
-    backgroundColor: '#4f7658',
-    paddingHorizontal: 17,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-
-  shopButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-
-  rewardList: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-  },
-
-  rewardItem: {
+    borderRadius: 16,
+    padding: 17,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
   },
 
-  rewardLevelCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#eeeeee',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  rewardLevelCompleted: {
-    backgroundColor: '#dfeee1',
-  },
-
-  rewardLevelText: {
+  myPageButtonText: {
+    flex: 1,
     fontSize: 14,
     fontWeight: 'bold',
   },
 
-  rewardContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  rewardTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-
-  rewardDescription: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-
-  rewardIcon: {
-    fontSize: 22,
-  },
-
-  questCard: {
-    backgroundColor: '#f2eadc',
-    borderRadius: 18,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  questTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-
-  questDescription: {
-    fontSize: 12,
-    marginTop: 5,
-  },
-
   arrow: {
-    fontSize: 25,
-    marginLeft: 'auto',
+    fontSize: 24,
+    color: '#777777',
   },
 });
