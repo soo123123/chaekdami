@@ -92,7 +92,7 @@ const RewardScreen = () => {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Quest')}
+        onPress={() => router.push('/quest')}
       >
         <Text style={styles.buttonText}>
           퀘스트 보기
@@ -101,7 +101,7 @@ const RewardScreen = () => {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Shop')}
+       onPress={() => router.push('/shop')}
       >
         <Text style={styles.buttonText}>
           상점
