@@ -1,0 +1,60 @@
+import axios from 'axios';
+
+const API_URL = 'http://서버주소:8080/api';
+
+export const getSentences = async (readingRecordId: number) => {
+
+  const response = await axios.get(
+    `${API_URL}/reading-records/${readingRecordId}/sentences`
+  );
+
+  return response.data;
+};
+
+
+export const createSentence = async (
+  readingRecordId: number,
+  content: string,
+  pageNumber: number
+) => {
+
+  const response = await axios.post(
+    `${API_URL}/reading-records/${readingRecordId}/sentences`,
+    {
+      content,
+      pageNumber,
+    }
+  );
+
+  return response.data;
+};
+
+
+export const deleteSentence = async (
+  sentenceId: number
+) => {
+
+  await axios.delete(
+    `${API_URL}/sentences/${sentenceId}`
+  );
+};
+
+
+export const createReview = async (
+  readingRecordId: number,
+  content: string,
+  rating: number,
+  oneLine: string
+) => {
+
+  const response = await axios.post(
+    `${API_URL}/reading-records/${readingRecordId}/review`,
+    {
+      content,
+      rating,
+      oneLine,
+    }
+  );
+
+  return response.data;
+};
