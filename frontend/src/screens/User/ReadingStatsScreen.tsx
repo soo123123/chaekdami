@@ -1,66 +1,163 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 
 import { router } from 'expo-router';
 
+import {
+  getReadingStats,
+  ReadingStats,
+  ReadingStatItem,
+} from '../../api/readingStatsApi';
+
 type Period = 'week' | 'month';
 
 const ReadingStatsScreen = () => {
-  const [period, setPeriod] = useState<Period>('week');
+  const [period, setPeriod] =
+    useState<Period>('week');
 
-  // 임시 통계 데이터
-  // 나중에 백엔드 API 데이터로 변경
-  const weeklyData = [
-    { day: '월', minutes: 20 },
-    { day: '화', minutes: 35 },
-    { day: '수', minutes: 15 },
-    { day: '목', minutes: 50 },
-    { day: '금', minutes: 30 },
-    { day: '토', minutes: 60 },
-    { day: '일', minutes: 40 },
-  ];
+  const [stats, setStats] =
+    useState<ReadingStats | null>(null);
 
-  const monthlyData = [
-    { day: '1주', minutes: 180 },
-    { day: '2주', minutes: 240 },
-    { day: '3주', minutes: 150 },
-    { day: '4주', minutes: 300 },
-  ];
+  const [isLoading, setIsLoading] =
+    useState(true);
 
-  const data =
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data =
+          await getReadingStats();
+
+        setStats(data);
+      } catch (error) {
+        console.error(
+          '독서 통계 조회 실패:',
+          error
+        );
+
+        // 백엔드 연결 전 테스트용 데이터
+        setStats({
+          totalMinutes: 250,
+          averageMinutes: 36,
+
+          completedBooks: 3,
+          totalPages: 245,
+          readingDays: 5,
+
+          goalBooks: 3,
+          goalTarget: 5,
+
+          weekly: [
+            {
+              label: '월',
+              minutes: 20,
+            },
+            {
+              label: '화',
+              minutes: 35,
+            },
+            {
+              label: '수',
+              minutes: 15,
+            },
+            {
+              label: '목',
+              minutes: 50,
+            },
+            {
+              label: '금',
+              minutes: 30,
+            },
+            {
+              label: '토',
+              minutes: 60,
+            },
+            {
+              label: '일',
+              minutes: 40,
+            },
+          ],
+
+          monthly: [
+            {
+              label: '1주',
+              minutes: 180,
+            },
+            {
+              label: '2주',
+              minutes: 240,
+            },
+            {
+              label: '3주',
+              minutes: 150,
+            },
+            {
+              label: '4주',
+              minutes: 300,
+            },
+          ],
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  if (isLoading || !stats) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+
+        <Text style={styles.loadingText}>
+          독서 통계를 불러오는 중...
+        </Text>
+      </View>
+    );
+  }
+
+  const chartData =
     period === 'week'
-      ? weeklyData
-      : monthlyData;
-
-  const totalMinutes = data.reduce(
-    (sum, item) => sum + item.minutes,
-    0
-  );
-
-  const averageMinutes = Math.round(
-    totalMinutes / data.length
-  );
+      ? stats.weekly
+      : stats.monthly;
 
   const maxMinutes = Math.max(
-    ...data.map(item => item.minutes),
+    ...chartData.map(
+      item => item.minutes
+    ),
     1
   );
+
+  const goalProgress =
+    stats.goalTarget > 0
+      ? Math.min(
+          stats.goalBooks /
+            stats.goalTarget,
+          1
+        )
+      : 0;
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={
+        styles.content
+      }
     >
       {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
         >
           <Text style={styles.backButton}>
             ‹
@@ -71,24 +168,28 @@ const ReadingStatsScreen = () => {
           독서 통계
         </Text>
 
-        <View style={styles.headerSpace} />
+        <View
+          style={styles.headerSpace}
+        />
       </View>
 
-      {/* 기간 선택 */}
+      {/* 주간 / 월간 선택 */}
       <View style={styles.periodContainer}>
         <TouchableOpacity
           style={[
             styles.periodButton,
             period === 'week' &&
-              styles.selectedPeriodButton,
+              styles.periodButtonActive,
           ]}
-          onPress={() => setPeriod('week')}
+          onPress={() =>
+            setPeriod('week')
+          }
         >
           <Text
             style={[
               styles.periodText,
               period === 'week' &&
-                styles.selectedPeriodText,
+                styles.periodTextActive,
             ]}
           >
             주간
@@ -99,15 +200,17 @@ const ReadingStatsScreen = () => {
           style={[
             styles.periodButton,
             period === 'month' &&
-              styles.selectedPeriodButton,
+              styles.periodButtonActive,
           ]}
-          onPress={() => setPeriod('month')}
+          onPress={() =>
+            setPeriod('month')
+          }
         >
           <Text
             style={[
               styles.periodText,
               period === 'month' &&
-                styles.selectedPeriodText,
+                styles.periodTextActive,
             ]}
           >
             월간
@@ -116,154 +219,131 @@ const ReadingStatsScreen = () => {
       </View>
 
       {/* 요약 */}
-      <Text style={styles.sectionTitle}>
-        독서 요약
-      </Text>
-
-      <View style={styles.summaryContainer}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryEmoji}>
-            ⏱️
-          </Text>
-
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>
-            {totalMinutes}분
+            {stats.totalMinutes}
           </Text>
 
           <Text style={styles.summaryLabel}>
-            총 독서 시간
+            총 독서 시간(분)
           </Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryEmoji}>
-            📖
-          </Text>
+        <View style={styles.verticalLine} />
 
+        <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>
-            {averageMinutes}분
+            {stats.averageMinutes}
           </Text>
 
           <Text style={styles.summaryLabel}>
-            평균 독서 시간
+            평균 독서 시간(분)
           </Text>
         </View>
       </View>
 
       {/* 독서 시간 그래프 */}
-      <Text style={styles.sectionTitle}>
-        독서 시간
-      </Text>
-
       <View style={styles.chartCard}>
-        <View style={styles.chart}>
-          {data.map((item, index) => {
-            const barHeight =
-              (item.minutes / maxMinutes) * 140;
-
-            return (
-              <View
-                key={index}
-                style={styles.barItem}
-              >
-                <Text style={styles.barValue}>
-                  {item.minutes}
-                </Text>
-
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: barHeight,
-                    },
-                  ]}
-                />
-
-                <Text style={styles.barLabel}>
-                  {item.day}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-
-        <Text style={styles.chartUnit}>
-          단위: 분
+        <Text style={styles.sectionTitle}>
+          {period === 'week'
+            ? '이번 주 독서 시간'
+            : '이번 달 독서 시간'}
         </Text>
-      </View>
 
-      {/* 이번 기간 기록 */}
-      <Text style={styles.sectionTitle}>
-        {period === 'week'
-          ? '이번 주 기록'
-          : '이번 달 기록'}
-      </Text>
+        <View style={styles.chart}>
+          {chartData.map(
+            (
+              item: ReadingStatItem,
+              index
+            ) => {
+              const height =
+                (item.minutes /
+                  maxMinutes) *
+                130;
 
-      <View style={styles.recordCard}>
-        <View style={styles.recordRow}>
-          <View>
-            <Text style={styles.recordLabel}>
-              📚 읽은 책
-            </Text>
+              return (
+                <View
+                  key={`${item.label}-${index}`}
+                  style={styles.barItem}
+                >
+                  <Text
+                    style={styles.barValue}
+                  >
+                    {item.minutes}
+                  </Text>
 
-            <Text
-              style={styles.recordDescription}
-            >
-              독서한 도서 수
-            </Text>
-          </View>
+                  <View
+                    style={[
+                      styles.bar,
+                      {
+                        height,
+                      },
+                    ]}
+                  />
 
-          <Text style={styles.recordValue}>
-            3권
-          </Text>
-        </View>
-
-        <View style={styles.line} />
-
-        <View style={styles.recordRow}>
-          <View>
-            <Text style={styles.recordLabel}>
-              📄 읽은 페이지
-            </Text>
-
-            <Text
-              style={styles.recordDescription}
-            >
-              읽은 페이지 합계
-            </Text>
-          </View>
-
-          <Text style={styles.recordValue}>
-            245쪽
-          </Text>
-        </View>
-
-        <View style={styles.line} />
-
-        <View style={styles.recordRow}>
-          <View>
-            <Text style={styles.recordLabel}>
-              🔥 연속 독서
-            </Text>
-
-            <Text
-              style={styles.recordDescription}
-            >
-              현재 연속 독서 일수
-            </Text>
-          </View>
-
-          <Text style={styles.recordValue}>
-            5일
-          </Text>
+                  <Text
+                    style={styles.barLabel}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+              );
+            }
+          )}
         </View>
       </View>
 
-      {/* 목표 */}
+      {/* 독서 기록 */}
       <Text style={styles.sectionTitle}>
-        독서 목표
+        나의 독서 기록
       </Text>
 
+      <View style={styles.recordContainer}>
+        <View style={styles.recordCard}>
+          <Text style={styles.recordEmoji}>
+            📚
+          </Text>
+
+          <Text style={styles.recordValue}>
+            {stats.completedBooks}권
+          </Text>
+
+          <Text style={styles.recordLabel}>
+            완독한 책
+          </Text>
+        </View>
+
+        <View style={styles.recordCard}>
+          <Text style={styles.recordEmoji}>
+            📖
+          </Text>
+
+          <Text style={styles.recordValue}>
+            {stats.totalPages}쪽
+          </Text>
+
+          <Text style={styles.recordLabel}>
+            읽은 페이지
+          </Text>
+        </View>
+
+        <View style={styles.recordCard}>
+          <Text style={styles.recordEmoji}>
+            📅
+          </Text>
+
+          <Text style={styles.recordValue}>
+            {stats.readingDays}일
+          </Text>
+
+          <Text style={styles.recordLabel}>
+            독서한 날
+          </Text>
+        </View>
+      </View>
+
+      {/* 독서 목표 */}
       <View style={styles.goalCard}>
         <View style={styles.goalHeader}>
           <View>
@@ -271,43 +351,53 @@ const ReadingStatsScreen = () => {
               이번 달 독서 목표
             </Text>
 
-            <Text style={styles.goalDescription}>
+            <Text
+              style={styles.goalDescription}
+            >
               목표까지 조금만 더 힘내세요!
             </Text>
           </View>
 
           <Text style={styles.goalValue}>
-            3 / 5권
+            {stats.goalBooks} /{' '}
+            {stats.goalTarget}권
           </Text>
         </View>
 
-        <View style={styles.progressBackground}>
+        <View
+          style={styles.progressBackground}
+        >
           <View
             style={[
               styles.progressBar,
               {
-                width: '60%',
+                width: `${
+                  goalProgress * 100
+                }%`,
               },
             ]}
           />
         </View>
 
         <Text style={styles.progressText}>
-          60% 달성
+          {Math.round(
+            goalProgress * 100
+          )}
+          % 달성
         </Text>
       </View>
 
       {/* 마이페이지 */}
       <TouchableOpacity
         style={styles.myPageButton}
-        onPress={() => router.push('/mypage')}
+        onPress={() =>
+          router.push('/mypage')
+        }
       >
-        <Text style={styles.myPageButtonText}>
-          마이페이지로 이동
-        </Text>
-
-        <Text style={styles.arrow}>
-          ›
+        <Text
+          style={styles.myPageButtonText}
+        >
+          마이페이지로 돌아가기
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -325,6 +415,18 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 50,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#faf8f3',
+  },
+
+  loadingText: {
+    marginTop: 10,
+    color: '#777777',
   },
 
   header: {
@@ -349,162 +451,147 @@ const styles = StyleSheet.create({
   },
 
   periodContainer: {
-    backgroundColor: '#ece9e2',
-    borderRadius: 22,
+    backgroundColor: '#eeeeee',
+    borderRadius: 15,
     padding: 4,
     flexDirection: 'row',
-    marginBottom: 25,
+    marginBottom: 18,
   },
 
   periodButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: 12,
   },
 
-  selectedPeriodButton: {
-    backgroundColor: '#ffffff',
+  periodButtonActive: {
+    backgroundColor: '#4f7658',
   },
 
   periodText: {
-    fontSize: 13,
     color: '#777777',
+    fontSize: 13,
   },
 
-  selectedPeriodText: {
-    color: '#3f6548',
+  periodTextActive: {
+    color: '#ffffff',
     fontWeight: 'bold',
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 28,
   },
 
   summaryCard: {
-    width: '48%',
     backgroundColor: '#ffffff',
-    borderRadius: 17,
-    paddingVertical: 20,
+    borderRadius: 18,
+    padding: 20,
+    flexDirection: 'row',
+    marginBottom: 18,
+  },
+
+  summaryItem: {
+    flex: 1,
     alignItems: 'center',
   },
 
-  summaryEmoji: {
-    fontSize: 25,
-  },
-
   summaryValue: {
-    fontSize: 19,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginTop: 7,
+    color: '#3f6548',
   },
 
   summaryLabel: {
     fontSize: 11,
     color: '#777777',
-    marginTop: 4,
+    marginTop: 5,
+  },
+
+  verticalLine: {
+    width: 1,
+    backgroundColor: '#eeeeee',
   },
 
   chartCard: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: 18,
-    marginBottom: 28,
+    marginBottom: 25,
+  },
+
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    marginBottom: 15,
   },
 
   chart: {
     height: 190,
     flexDirection: 'row',
-    alignItems: 'flex-end',
     justifyContent: 'space-around',
+    alignItems: 'flex-end',
   },
 
   barItem: {
     flex: 1,
-    height: 180,
-    justifyContent: 'flex-end',
     alignItems: 'center',
   },
 
   barValue: {
-    fontSize: 9,
+    fontSize: 10,
     marginBottom: 5,
+    color: '#777777',
   },
 
   bar: {
     width: 20,
     minHeight: 4,
-    backgroundColor: '#66866d',
+    backgroundColor: '#4f7658',
     borderRadius: 5,
   },
 
   barLabel: {
     fontSize: 10,
+    color: '#777777',
     marginTop: 7,
   },
 
-  chartUnit: {
-    textAlign: 'right',
-    fontSize: 10,
-    color: '#999999',
-    marginTop: 8,
+  recordContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 25,
   },
 
   recordCard: {
+    width: '31%',
     backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 28,
-  },
-
-  recordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderRadius: 16,
+    paddingVertical: 17,
     alignItems: 'center',
   },
 
-  recordLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-
-  recordDescription: {
-    fontSize: 10,
-    color: '#888888',
-    marginTop: 3,
+  recordEmoji: {
+    fontSize: 23,
   },
 
   recordValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4f7658',
+    marginTop: 7,
   },
 
-  line: {
-    height: 1,
-    backgroundColor: '#eeeeee',
-    marginVertical: 15,
+  recordLabel: {
+    fontSize: 10,
+    color: '#777777',
+    marginTop: 4,
   },
 
   goalCard: {
     backgroundColor: '#e9eee5',
     borderRadius: 18,
     padding: 18,
-    marginBottom: 20,
   },
 
   goalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
 
   goalTitle: {
@@ -519,15 +606,14 @@ const styles = StyleSheet.create({
   },
 
   goalValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#3f6548',
   },
 
   progressBackground: {
-    height: 9,
-    backgroundColor: '#d8ded5',
-    borderRadius: 6,
+    height: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
     overflow: 'hidden',
     marginTop: 18,
   },
@@ -535,31 +621,28 @@ const styles = StyleSheet.create({
   progressBar: {
     height: '100%',
     backgroundColor: '#4f7658',
-    borderRadius: 6,
+    borderRadius: 5,
   },
 
   progressText: {
-    fontSize: 10,
     textAlign: 'right',
-    marginTop: 6,
-  },
-
-  myPageButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 17,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  myPageButtonText: {
-    flex: 1,
-    fontSize: 14,
+    fontSize: 11,
+    color: '#4f7658',
+    marginTop: 7,
     fontWeight: 'bold',
   },
 
-  arrow: {
-    fontSize: 24,
-    color: '#777777',
+  myPageButton: {
+    borderWidth: 1,
+    borderColor: '#4f7658',
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  myPageButtonText: {
+    color: '#4f7658',
+    fontWeight: 'bold',
   },
 });
