@@ -1,113 +1,290 @@
-import { getReward } from '../../api/rewardApi';
-import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 
-import { getReward } from '../../api/rewardApi';
+import { router } from 'expo-router';
+import { getRewardStatus } from '../../api/rewardApi';
 
-interface Reward {
-  level: number;
-  experience: number;
-  currency: number;
-  dday: number;
+interface RewardStatus {
+  level?: number;
+  xp?: number;
+  requiredXp?: number;
+  currency?: number;
 }
 
 const RewardScreen = () => {
-  const [reward, setReward] = useState<Reward | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [reward, setReward] =
+    useState<RewardStatus | null>(null);
 
-  const loadRewards = async () => {
-    try {
-      setIsLoading(true);
+  const [isLoading, setIsLoading] =
+    useState(true);
 
-      const data = await getRewards();
-
-      setReward(data);
-    } catch (error) {
-      console.error('보상 정보 조회 실패:', error);
-
-      Alert.alert(
-        '조회 실패',
-        '보상 정보를 불러오지 못했습니다.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // 보상 정보 불러오기
   useEffect(() => {
-    loadRewards();
+    const loadReward = async () => {
+      try {
+        const data = await getRewardStatus();
+
+        setReward(data);
+      } catch (error) {
+        console.error(
+          '보상 정보 조회 실패:',
+          error
+        );
+
+        // 백엔드 연결 전 테스트용 데이터
+        setReward({
+          level: 5,
+          xp: 320,
+          requiredXp: 500,
+          currency: 1250,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadReward();
   }, []);
 
+  // 로딩 화면
   if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" />
+
         <Text style={styles.loadingText}>
-          보상 정보를 불러오는 중...
+          레벨 정보를 불러오는 중...
         </Text>
       </View>
     );
   }
 
+  const level = reward?.level ?? 1;
+  const xp = reward?.xp ?? 0;
+  const requiredXp =
+    reward?.requiredXp ?? 100;
+
+  const currency =
+    reward?.currency ?? 0;
+
+  const progress =
+    requiredXp > 0
+      ? Math.min(xp / requiredXp, 1)
+      : 0;
+
+  const remainingXp =
+    Math.max(requiredXp - xp, 0);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>나의 보상</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+      {/* 상단 */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButton}>
+            ‹
+          </Text>
+        </TouchableOpacity>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>현재 레벨</Text>
-
-        <Text style={styles.value}>
-          Level {reward?.level ?? 0}
+        <Text style={styles.headerTitle}>
+          레벨
         </Text>
 
-        <Text style={styles.label}>경험치</Text>
+        <View style={styles.headerSpace} />
+      </View>
 
-        <Text>
-          {reward?.experience ?? 0} XP
+      {/* 현재 레벨 */}
+      <View style={styles.levelCard}>
+        <Text style={styles.smallTitle}>
+          현재 레벨
+        </Text>
+
+        <View style={styles.levelRow}>
+          <View style={styles.levelCircle}>
+            <Text style={styles.levelNumber}>
+              {level}
+            </Text>
+          </View>
+
+          <View style={styles.levelInfo}>
+            <Text style={styles.levelText}>
+              Lv. {level}
+            </Text>
+
+            <Text
+              style={styles.levelDescription}
+            >
+              꾸준히 독서하며 성장하고 있어요!
+            </Text>
+          </View>
+        </View>
+
+        {/* 경험치 */}
+        <View style={styles.xpHeader}>
+          <Text style={styles.xpLabel}>
+            다음 레벨까지
+          </Text>
+
+          <Text style={styles.xpValue}>
+            {xp} / {requiredXp} XP
+          </Text>
+        </View>
+
+        <View
+          style={styles.progressBackground}
+        >
+          <View
+            style={[
+              styles.progressBar,
+              {
+                width: `${progress * 100}%`,
+              },
+            ]}
+          />
+        </View>
+
+        <Text style={styles.remainingText}>
+          앞으로 {remainingXp} XP 남았어요
         </Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>보유 재화</Text>
+      {/* 보유 재화 */}
+      <View style={styles.currencyCard}>
+        <View>
+          <Text style={styles.currencyLabel}>
+            보유 재화
+          </Text>
 
-        <Text style={styles.value}>
-          {reward?.currency ?? 0} Coin
-        </Text>
+          <Text style={styles.currencyValue}>
+            🪙 {currency}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.shopButton}
+          onPress={() =>
+            router.push('/shop')
+          }
+        >
+          <Text style={styles.shopButtonText}>
+            상점 가기
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>D-day</Text>
+      {/* 레벨 보상 */}
+      <Text style={styles.sectionTitle}>
+        레벨 보상
+      </Text>
 
-        <Text style={styles.value}>
-          D-{reward?.dday ?? 0}
-        </Text>
+      <View style={styles.rewardList}>
+        <LevelReward
+          level={level}
+          title="현재 레벨"
+          description="현재 달성한 레벨이에요."
+          completed
+        />
+
+        <LevelReward
+          level={level + 1}
+          title="다음 레벨"
+          description="재화 100개를 받을 수 있어요."
+        />
+
+        <LevelReward
+          level={level + 2}
+          title="레벨 보상"
+          description="새로운 꾸미기 아이템이 열려요."
+        />
+
+        <LevelReward
+          level={level + 3}
+          title="레벨 보상"
+          description="추가 보상을 획득할 수 있어요."
+        />
       </View>
 
+      {/* 퀘스트 이동 */}
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push('/quest')}
+        style={styles.questCard}
+        onPress={() =>
+          router.push('/quest')
+        }
       >
-        <Text style={styles.buttonText}>
-          퀘스트 보기
+        <View style={styles.questContent}>
+          <Text style={styles.questTitle}>
+            XP가 더 필요하신가요?
+          </Text>
+
+          <Text
+            style={styles.questDescription}
+          >
+            퀘스트를 완료하고 경험치를
+            획득해 보세요.
+          </Text>
+        </View>
+
+        <Text style={styles.arrow}>
+          ›
         </Text>
       </TouchableOpacity>
+    </ScrollView>
+  );
+};
 
-      <TouchableOpacity
-        style={styles.button}
-       onPress={() => router.push('/shop')}
+interface LevelRewardProps {
+  level: number;
+  title: string;
+  description: string;
+  completed?: boolean;
+}
+
+const LevelReward = ({
+  level,
+  title,
+  description,
+  completed = false,
+}: LevelRewardProps) => {
+  return (
+    <View style={styles.rewardItem}>
+      <View
+        style={[
+          styles.rewardLevelCircle,
+          completed &&
+            styles.rewardLevelCompleted,
+        ]}
       >
-        <Text style={styles.buttonText}>
-          상점
+        <Text style={styles.rewardLevelText}>
+          {completed ? '✓' : level}
         </Text>
-      </TouchableOpacity>
+      </View>
+
+      <View style={styles.rewardContent}>
+        <Text style={styles.rewardTitle}>
+          Lv. {level} · {title}
+        </Text>
+
+        <Text
+          style={styles.rewardDescription}
+        >
+          {description}
+        </Text>
+      </View>
+
+      <Text style={styles.rewardIcon}>
+        {completed ? '✅' : '🎁'}
+      </Text>
     </View>
   );
 };
@@ -117,59 +294,248 @@ export default RewardScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#faf8f3',
+  },
+
+  content: {
     padding: 20,
+    paddingBottom: 50,
   },
 
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#faf8f3',
   },
 
   loadingText: {
     marginTop: 10,
+    color: '#777777',
   },
 
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
   },
 
-  card: {
-    borderWidth: 1,
-    borderColor: '#cccccc',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 15,
+  backButton: {
+    fontSize: 34,
   },
 
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-
-  value: {
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: 22,
     fontWeight: 'bold',
   },
 
-  label: {
-    marginTop: 10,
-    marginBottom: 5,
+  headerSpace: {
+    width: 25,
   },
 
-  button: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 15,
-    marginTop: 10,
+  levelCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 15,
+  },
+
+  smallTitle: {
+    fontSize: 14,
+    marginBottom: 15,
+  },
+
+  levelRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
 
-  buttonText: {
-    fontSize: 16,
+  levelCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#e9f1e7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  levelNumber: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#3f6548',
+  },
+
+  levelInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+
+  levelText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+
+  levelDescription: {
+    marginTop: 5,
+    fontSize: 13,
+    color: '#777777',
+  },
+
+  xpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 25,
+    marginBottom: 8,
+  },
+
+  xpLabel: {
+    fontSize: 13,
+  },
+
+  xpValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+
+  progressBackground: {
+    height: 10,
+    backgroundColor: '#eeeeee',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4f7658',
+    borderRadius: 5,
+  },
+
+  remainingText: {
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'right',
+    color: '#777777',
+  },
+
+  currencyCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 25,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  currencyLabel: {
+    fontSize: 13,
+  },
+
+  currencyValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+
+  shopButton: {
+    backgroundColor: '#4f7658',
+    paddingHorizontal: 17,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+
+  shopButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+
+  rewardList: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+
+  rewardLevelCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#eeeeee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  rewardLevelCompleted: {
+    backgroundColor: '#dfeee1',
+  },
+
+  rewardLevelText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+  rewardContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  rewardTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+
+  rewardDescription: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#777777',
+  },
+
+  rewardIcon: {
+    fontSize: 22,
+  },
+
+  questCard: {
+    backgroundColor: '#f2eadc',
+    borderRadius: 18,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  questContent: {
+    flex: 1,
+  },
+
+  questTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+
+  questDescription: {
+    fontSize: 12,
+    marginTop: 5,
+    color: '#777777',
+  },
+
+  arrow: {
+    fontSize: 25,
+    marginLeft: 10,
+    color: '#777777',
   },
 });
