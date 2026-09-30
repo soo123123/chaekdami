@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import {
   View,
   Text,
@@ -7,39 +8,66 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
-import { router, useLocalSearchParams } from 'expo-router';
-import { createReview } from '../../api/reviewApi';
+import {
+  router,
+  useLocalSearchParams,
+} from 'expo-router';
+
+import {
+  createReview,
+} from '../../api/reviewApi';
 
 const ReviewWriteScreen = () => {
   const params =
-    useLocalSearchParams<{ readingRecordId?: string }>();
+    useLocalSearchParams<{
+      readingRecordId?: string;
+    }>();
 
-  // FE1의 독서 기록 화면에서 전달받을 값
-  // 전달되지 않았을 때는 개발 테스트용으로 1 사용
+  // FE1에서 readingRecordId를 전달받게 됨
+  // 현재는 테스트를 위해 1 사용
   const readingRecordId =
     Number(params.readingRecordId) || 1;
 
-  const [rating, setRating] = useState(0);
-  const [oneLine, setOneLine] = useState('');
-  const [content, setContent] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [rating, setRating] =
+    useState(0);
+
+  const [oneLine, setOneLine] =
+    useState('');
+
+  const [content, setContent] =
+    useState('');
+
+  const [isSaving, setIsSaving] =
+    useState(false);
 
   const handleSave = async () => {
     if (rating === 0) {
       Alert.alert(
-        '알림',
+        '별점 확인',
         '별점을 선택해주세요.'
       );
+
+      return;
+    }
+
+    if (!oneLine.trim()) {
+      Alert.alert(
+        '한줄평 확인',
+        '한줄평을 입력해주세요.'
+      );
+
       return;
     }
 
     if (!content.trim()) {
       Alert.alert(
-        '알림',
-        '독후감을 작성해주세요.'
+        '독후감 확인',
+        '독후감 내용을 입력해주세요.'
       );
+
       return;
     }
 
@@ -59,7 +87,19 @@ const ReviewWriteScreen = () => {
         [
           {
             text: '확인',
-            onPress: () => router.back(),
+
+            onPress: () => {
+              router.replace({
+                pathname: '/review-detail',
+
+                params: {
+                  readingRecordId:
+                    String(
+                      readingRecordId
+                    ),
+                },
+              });
+            },
           },
         ]
       );
@@ -71,7 +111,7 @@ const ReviewWriteScreen = () => {
 
       Alert.alert(
         '저장 실패',
-        '백엔드 연결 상태를 확인해주세요.'
+        '독후감을 저장하지 못했습니다.\n백엔드 연결 상태를 확인해주세요.'
       );
     } finally {
       setIsSaving(false);
@@ -81,11 +121,17 @@ const ReviewWriteScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={
+        styles.content
+      }
+      keyboardShouldPersistTaps="handled"
     >
+      {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
         >
           <Text style={styles.backButton}>
             ‹
@@ -96,83 +142,134 @@ const ReviewWriteScreen = () => {
           독후감 작성
         </Text>
 
-        <View style={styles.headerSpace} />
+        <View
+          style={styles.headerSpace}
+        />
       </View>
 
-      <View style={styles.bookCard}>
-        <View style={styles.bookCover}>
-          <Text style={styles.bookEmoji}>
-            📖
+      {/* 안내 */}
+      <View style={styles.guideCard}>
+        <Text style={styles.guideEmoji}>
+          ✍️
+        </Text>
+
+        <View style={styles.guideContent}>
+          <Text style={styles.guideTitle}>
+            독서 후 생각을 기록해보세요
           </Text>
-        </View>
 
-        <View style={styles.bookInfo}>
-          <Text style={styles.bookTitle}>
-            읽은 책
-          </Text>
-
-          <Text style={styles.bookDescription}>
-            독서 기록과 연결될 예정입니다.
-          </Text>
-        </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>
-        이 책은 어땠나요?
-      </Text>
-
-      <View style={styles.starContainer}>
-        {[1, 2, 3, 4, 5].map(star => (
-          <TouchableOpacity
-            key={star}
-            onPress={() => setRating(star)}
+          <Text
+            style={styles.guideDescription}
           >
-            <Text style={styles.star}>
-              {star <= rating ? '★' : '☆'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+            책을 읽으며 느낀 점과
+            기억하고 싶은 생각을
+            자유롭게 작성해보세요.
+          </Text>
+        </View>
       </View>
 
+      {/* 별점 */}
       <Text style={styles.sectionTitle}>
-        한 줄 감상
+        별점
       </Text>
 
-      <TextInput
-        style={styles.oneLineInput}
-        value={oneLine}
-        onChangeText={setOneLine}
-        placeholder="책을 한 문장으로 표현해보세요."
-        maxLength={100}
-      />
+      <View style={styles.ratingCard}>
+        <View style={styles.starContainer}>
+          {[1, 2, 3, 4, 5].map(
+            star => (
+              <TouchableOpacity
+                key={star}
+                onPress={() =>
+                  setRating(star)
+                }
+              >
+                <Text style={styles.star}>
+                  {star <= rating
+                    ? '★'
+                    : '☆'}
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
 
+        <Text style={styles.ratingText}>
+          {rating === 0
+            ? '별점을 선택해주세요.'
+            : `${rating}점`}
+        </Text>
+      </View>
+
+      {/* 한줄평 */}
+      <Text style={styles.sectionTitle}>
+        한줄평
+      </Text>
+
+      <View style={styles.inputCard}>
+        <TextInput
+          style={styles.oneLineInput}
+          value={oneLine}
+          onChangeText={setOneLine}
+          placeholder="이 책을 한 문장으로 표현해보세요."
+          placeholderTextColor="#aaaaaa"
+          maxLength={100}
+        />
+
+        <Text style={styles.countText}>
+          {oneLine.length} / 100
+        </Text>
+      </View>
+
+      {/* 독후감 */}
       <Text style={styles.sectionTitle}>
         독후감
       </Text>
 
-      <TextInput
-        style={styles.contentInput}
-        value={content}
-        onChangeText={setContent}
-        placeholder="책을 읽고 느낀 점을 자유롭게 작성해주세요."
-        multiline
-        textAlignVertical="top"
-      />
+      <View style={styles.inputCard}>
+        <TextInput
+          style={styles.contentInput}
+          value={content}
+          onChangeText={setContent}
+          placeholder="책을 읽고 느낀 점을 자유롭게 작성해주세요."
+          placeholderTextColor="#aaaaaa"
+          multiline
+          textAlignVertical="top"
+          maxLength={2000}
+        />
 
+        <Text style={styles.countText}>
+          {content.length} / 2000
+        </Text>
+      </View>
+
+      {/* 저장 */}
       <TouchableOpacity
         style={[
           styles.saveButton,
-          isSaving && styles.disabledButton,
+          isSaving &&
+            styles.disabledButton,
         ]}
         onPress={handleSave}
         disabled={isSaving}
       >
-        <Text style={styles.saveButtonText}>
-          {isSaving
-            ? '저장 중...'
-            : '독후감 저장'}
-        </Text>
+        {isSaving ? (
+          <ActivityIndicator
+            color="#ffffff"
+          />
+        ) : (
+          <Text
+            style={styles.saveButtonText}
+          >
+            독후감 저장하기
+          </Text>
+        )}
       </TouchableOpacity>
+
+      <Text style={styles.testNotice}>
+        현재 테스트용 readingRecordId:
+        {' '}
+        {readingRecordId}
+      </Text>
     </ScrollView>
   );
 };
@@ -193,7 +290,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   backButton: {
@@ -211,92 +308,113 @@ const styles = StyleSheet.create({
     width: 25,
   },
 
-  bookCard: {
-    backgroundColor: '#ffffff',
+  guideCard: {
+    backgroundColor: '#e9eee5',
     borderRadius: 18,
-    padding: 17,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 25,
   },
 
-  bookCover: {
-    width: 65,
-    height: 85,
-    backgroundColor: '#eee9df',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  guideEmoji: {
+    fontSize: 32,
   },
 
-  bookEmoji: {
-    fontSize: 30,
-  },
-
-  bookInfo: {
+  guideContent: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 14,
   },
 
-  bookTitle: {
-    fontSize: 17,
+  guideTitle: {
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
-  bookDescription: {
+  guideDescription: {
     fontSize: 11,
     color: '#777777',
+    lineHeight: 17,
     marginTop: 5,
   },
 
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 10,
+    marginTop: 5,
+  },
+
+  ratingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 25,
   },
 
   starContainer: {
     flexDirection: 'row',
-    marginBottom: 28,
   },
 
   star: {
-    fontSize: 35,
-    marginRight: 7,
-    color: '#d5a94e',
+    fontSize: 38,
+    color: '#d7a940',
+    marginHorizontal: 4,
+  },
+
+  ratingText: {
+    fontSize: 12,
+    color: '#777777',
+    marginTop: 8,
+  },
+
+  inputCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 25,
   },
 
   oneLineInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 28,
     fontSize: 14,
+    minHeight: 45,
   },
 
   contentInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 15,
-    minHeight: 180,
     fontSize: 14,
-    marginBottom: 25,
+    minHeight: 200,
+    lineHeight: 22,
+  },
+
+  countText: {
+    textAlign: 'right',
+    fontSize: 10,
+    color: '#999999',
+    marginTop: 8,
   },
 
   saveButton: {
     backgroundColor: '#4f7658',
     borderRadius: 18,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
-  },
-
-  disabledButton: {
-    opacity: 0.6,
   },
 
   saveButtonText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: 'bold',
+  },
+
+  disabledButton: {
+    opacity: 0.6,
+  },
+
+  testNotice: {
+    textAlign: 'center',
+    color: '#999999',
+    fontSize: 10,
+    marginTop: 12,
   },
 });
