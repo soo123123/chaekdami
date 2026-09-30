@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -20,10 +21,13 @@ interface Sentence {
   pageNumber: number;
 }
 
-const SentenceScreen = ({ route }: any) => {
-  // 실제로는 이전 화면에서 readingRecordId를 전달받음
-  const readingRecordId = route?.params?.readingRecordId ?? 1;
+const SentenceScreen = () => {
+  const params = useLocalSearchParams<{
+    readingRecordId?: string;
+  }>();
 
+  const readingRecordId =
+    Number(params.readingRecordId) || 1;
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
