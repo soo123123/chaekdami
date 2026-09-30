@@ -1,1 +1,1 @@
-export { default } from '../screens/Reward/ShopScreen';
+xport { default } from '../screens/Reward/ShopScreen';
