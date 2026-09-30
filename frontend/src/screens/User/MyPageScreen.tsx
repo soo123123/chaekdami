@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,65 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import { router } from 'expo-router';
+import { getMyProfile } from '../../api/userApi';
+
+interface UserProfile {
+  id?: number;
+  nickname?: string;
+  email?: string;
+}
 
 const MyPageScreen = () => {
+  const [profile, setProfile] =
+    useState<UserProfile | null>(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  // 사용자 정보 불러오기
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await getMyProfile();
+
+        setProfile(data);
+      } catch (error) {
+        console.error(
+          '사용자 정보 조회 실패:',
+          error
+        );
+
+        // 백엔드 연결 전 테스트용 데이터
+        setProfile({
+          id: 1,
+          nickname: '책다듬이',
+          email: 'user@example.com',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  // 로딩 화면
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+
+        <Text style={styles.loadingText}>
+          사용자 정보를 불러오는 중...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -18,8 +72,12 @@ const MyPageScreen = () => {
     >
       {/* 상단 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>‹</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButton}>
+            ‹
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>
@@ -39,11 +97,11 @@ const MyPageScreen = () => {
 
         <View style={styles.profileInfo}>
           <Text style={styles.nickname}>
-            책다듬이
+            {profile?.nickname ?? '사용자'}
           </Text>
 
           <Text style={styles.email}>
-            user@example.com
+            {profile?.email ?? ''}
           </Text>
         </View>
 
@@ -62,11 +120,12 @@ const MyPageScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 독서 활동 */}
+      {/* 나의 독서 활동 */}
       <Text style={styles.sectionTitle}>
         나의 독서 활동
       </Text>
 
+      {/* 독서 통계 */}
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
@@ -93,110 +152,118 @@ const MyPageScreen = () => {
           ›
         </Text>
       </TouchableOpacity>
-      
+
       {/* D-day */}
-<TouchableOpacity
-  style={styles.menuCard}
-  onPress={() => router.push('/dday')}
->
-  <View style={styles.menuIcon}>
-    <Text style={styles.menuEmoji}>
-      📅
-    </Text>
-  </View>
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() =>
+          router.push('/dday')
+        }
+      >
+        <View style={styles.menuIcon}>
+          <Text style={styles.menuEmoji}>
+            📅
+          </Text>
+        </View>
 
-  <View style={styles.menuContent}>
-    <Text style={styles.menuTitle}>
-      D-day
-    </Text>
+        <View style={styles.menuContent}>
+          <Text style={styles.menuTitle}>
+            D-day
+          </Text>
 
-    <Text style={styles.menuDescription}>
-      독서 목표 날짜를 확인해요.
-    </Text>
-  </View>
+          <Text style={styles.menuDescription}>
+            독서 목표 날짜를 확인해요.
+          </Text>
+        </View>
 
-  <Text style={styles.arrow}>
-    ›
-  </Text>
-</TouchableOpacity>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
 
       {/* 레벨 */}
-<TouchableOpacity
-  style={styles.menuCard}
-  onPress={() => router.push('/reward')}
->
-  <View style={styles.menuIcon}>
-    <Text style={styles.menuEmoji}>
-      ⭐
-    </Text>
-  </View>
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() =>
+          router.push('/reward')
+        }
+      >
+        <View style={styles.menuIcon}>
+          <Text style={styles.menuEmoji}>
+            ⭐
+          </Text>
+        </View>
 
-  <View style={styles.menuContent}>
-    <Text style={styles.menuTitle}>
-      레벨
-    </Text>
+        <View style={styles.menuContent}>
+          <Text style={styles.menuTitle}>
+            레벨
+          </Text>
 
-    <Text style={styles.menuDescription}>
-      나의 레벨과 경험치를 확인해요.
-    </Text>
-  </View>
+          <Text style={styles.menuDescription}>
+            나의 레벨과 경험치를 확인해요.
+          </Text>
+        </View>
 
-  <Text style={styles.arrow}>
-    ›
-  </Text>
-</TouchableOpacity>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
 
-{/* 퀘스트 */}
-<TouchableOpacity
-  style={styles.menuCard}
-  onPress={() => router.push('/quest')}
->
-  <View style={styles.menuIcon}>
-    <Text style={styles.menuEmoji}>
-      🎯
-    </Text>
-  </View>
+      {/* 퀘스트 */}
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() =>
+          router.push('/quest')
+        }
+      >
+        <View style={styles.menuIcon}>
+          <Text style={styles.menuEmoji}>
+            🎯
+          </Text>
+        </View>
 
-  <View style={styles.menuContent}>
-    <Text style={styles.menuTitle}>
-      퀘스트
-    </Text>
+        <View style={styles.menuContent}>
+          <Text style={styles.menuTitle}>
+            퀘스트
+          </Text>
 
-    <Text style={styles.menuDescription}>
-      독서 퀘스트와 진행 상황을 확인해요.
-    </Text>
-  </View>
+          <Text style={styles.menuDescription}>
+            독서 퀘스트와 진행 상황을 확인해요.
+          </Text>
+        </View>
 
-  <Text style={styles.arrow}>
-    ›
-  </Text>
-</TouchableOpacity>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
 
-{/* 상점 */}
-<TouchableOpacity
-  style={styles.menuCard}
-  onPress={() => router.push('/shop')}
->
-  <View style={styles.menuIcon}>
-    <Text style={styles.menuEmoji}>
-      🛒
-    </Text>
-  </View>
+      {/* 상점 */}
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() =>
+          router.push('/shop')
+        }
+      >
+        <View style={styles.menuIcon}>
+          <Text style={styles.menuEmoji}>
+            🛒
+          </Text>
+        </View>
 
-  <View style={styles.menuContent}>
-    <Text style={styles.menuTitle}>
-      상점
-    </Text>
+        <View style={styles.menuContent}>
+          <Text style={styles.menuTitle}>
+            상점
+          </Text>
 
-    <Text style={styles.menuDescription}>
-      모은 재화로 아이템을 구매해요.
-    </Text>
-  </View>
+          <Text style={styles.menuDescription}>
+            모은 재화로 아이템을 구매해요.
+          </Text>
+        </View>
 
-  <Text style={styles.arrow}>
-    ›
-  </Text>
-</TouchableOpacity>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
 
       {/* 계정 */}
       <Text style={styles.sectionTitle}>
@@ -204,6 +271,7 @@ const MyPageScreen = () => {
       </Text>
 
       <View style={styles.menuGroup}>
+        {/* 계정 정보 */}
         <TouchableOpacity
           style={styles.menuRow}
           onPress={() =>
@@ -228,6 +296,7 @@ const MyPageScreen = () => {
 
         <View style={styles.divider} />
 
+        {/* 알림 설정 */}
         <TouchableOpacity
           style={styles.menuRow}
           onPress={() =>
@@ -257,6 +326,7 @@ const MyPageScreen = () => {
       </Text>
 
       <View style={styles.menuGroup}>
+        {/* 앱 정보 */}
         <TouchableOpacity
           style={styles.menuRow}
           onPress={() =>
@@ -281,6 +351,7 @@ const MyPageScreen = () => {
 
         <View style={styles.divider} />
 
+        {/* 로그아웃 */}
         <TouchableOpacity
           style={styles.menuRow}
           onPress={() =>
@@ -304,15 +375,15 @@ const MyPageScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 임시 안내 */}
+      {/* 개발 안내 */}
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>
           개발 중인 화면입니다.
         </Text>
 
         <Text style={styles.noticeText}>
-          현재 프로필 정보는 화면 테스트용 데이터이며,
-          백엔드 연결 후 실제 사용자 정보로 변경됩니다.
+          백엔드 연결 전에는 테스트용 사용자 정보가
+          표시될 수 있습니다.
         </Text>
       </View>
     </ScrollView>
@@ -330,6 +401,18 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 50,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#faf8f3',
+  },
+
+  loadingText: {
+    marginTop: 10,
+    color: '#777777',
   },
 
   header: {
@@ -409,6 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: 'bold',
     marginBottom: 11,
+    marginTop: 5,
   },
 
   menuCard: {
@@ -417,7 +501,7 @@ const styles = StyleSheet.create({
     padding: 17,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 10,
   },
 
   menuIcon: {
@@ -486,6 +570,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0ede5',
     borderRadius: 15,
     padding: 16,
+    marginTop: 5,
   },
 
   noticeTitle: {
