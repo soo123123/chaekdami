@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'http://서버주소:8080/api';
-
+import apiClient from './apiClient';
 export const getSentences = async (readingRecordId: number) => {
 
   const response = await axios.get(
