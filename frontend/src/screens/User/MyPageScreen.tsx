@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -17,7 +18,7 @@ interface UserProfile {
   role: string;
 }
 
-const MyPageScreen = ({ navigation }: any) => {
+const MyPageScreen = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -74,7 +75,14 @@ const MyPageScreen = ({ navigation }: any) => {
 
       <TouchableOpacity
         style={styles.menu}
-        onPress={() => navigation?.navigate('Sentence')}
+       onPress={() =>
+  router.push({
+    pathname: '/sentences',
+    params: {
+      readingRecordId: '1',
+    },
+  })
+}
       >
         <Text style={styles.menuText}>
           문장 모음
@@ -83,7 +91,7 @@ const MyPageScreen = ({ navigation }: any) => {
 
       <TouchableOpacity
         style={styles.menu}
-        onPress={() => navigation?.navigate('Reward')}
+       onPress={() => router.push('/reward')}
       >
         <Text style={styles.menuText}>
           나의 보상
