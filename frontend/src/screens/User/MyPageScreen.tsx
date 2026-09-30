@@ -93,6 +93,7 @@ const MyPageScreen = () => {
           ›
         </Text>
       </TouchableOpacity>
+      
       {/* D-day */}
 <TouchableOpacity
   style={styles.menuCard}
@@ -111,6 +112,84 @@ const MyPageScreen = () => {
 
     <Text style={styles.menuDescription}>
       독서 목표 날짜를 확인해요.
+    </Text>
+  </View>
+
+  <Text style={styles.arrow}>
+    ›
+  </Text>
+</TouchableOpacity>
+
+      {/* 레벨 */}
+<TouchableOpacity
+  style={styles.menuCard}
+  onPress={() => router.push('/reward')}
+>
+  <View style={styles.menuIcon}>
+    <Text style={styles.menuEmoji}>
+      ⭐
+    </Text>
+  </View>
+
+  <View style={styles.menuContent}>
+    <Text style={styles.menuTitle}>
+      레벨
+    </Text>
+
+    <Text style={styles.menuDescription}>
+      나의 레벨과 경험치를 확인해요.
+    </Text>
+  </View>
+
+  <Text style={styles.arrow}>
+    ›
+  </Text>
+</TouchableOpacity>
+
+{/* 퀘스트 */}
+<TouchableOpacity
+  style={styles.menuCard}
+  onPress={() => router.push('/quest')}
+>
+  <View style={styles.menuIcon}>
+    <Text style={styles.menuEmoji}>
+      🎯
+    </Text>
+  </View>
+
+  <View style={styles.menuContent}>
+    <Text style={styles.menuTitle}>
+      퀘스트
+    </Text>
+
+    <Text style={styles.menuDescription}>
+      독서 퀘스트와 진행 상황을 확인해요.
+    </Text>
+  </View>
+
+  <Text style={styles.arrow}>
+    ›
+  </Text>
+</TouchableOpacity>
+
+{/* 상점 */}
+<TouchableOpacity
+  style={styles.menuCard}
+  onPress={() => router.push('/shop')}
+>
+  <View style={styles.menuIcon}>
+    <Text style={styles.menuEmoji}>
+      🛒
+    </Text>
+  </View>
+
+  <View style={styles.menuContent}>
+    <Text style={styles.menuTitle}>
+      상점
+    </Text>
+
+    <Text style={styles.menuDescription}>
+      모은 재화로 아이템을 구매해요.
     </Text>
   </View>
 
