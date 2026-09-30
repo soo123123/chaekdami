@@ -58,3 +58,13 @@ export const createReview = async (
 
   return response.data;
 };
+// 리뷰 상세 조회
+export const getReview = async (
+  readingRecordId: number
+) => {
+  const response = await axios.get(
+    `${API_URL}/reading-records/${readingRecordId}/review`
+  );
+
+  return response.data;
+};
