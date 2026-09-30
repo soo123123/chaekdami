@@ -93,6 +93,31 @@ const MyPageScreen = () => {
           ›
         </Text>
       </TouchableOpacity>
+      {/* D-day */}
+<TouchableOpacity
+  style={styles.menuCard}
+  onPress={() => router.push('/dday')}
+>
+  <View style={styles.menuIcon}>
+    <Text style={styles.menuEmoji}>
+      📅
+    </Text>
+  </View>
+
+  <View style={styles.menuContent}>
+    <Text style={styles.menuTitle}>
+      D-day
+    </Text>
+
+    <Text style={styles.menuDescription}>
+      독서 목표 날짜를 확인해요.
+    </Text>
+  </View>
+
+  <Text style={styles.arrow}>
+    ›
+  </Text>
+</TouchableOpacity>
 
       {/* 계정 */}
       <Text style={styles.sectionTitle}>
