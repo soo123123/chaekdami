@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
-import { getRewards } from '../../api/rewardApi';
+import { getReward } from '../../api/rewardApi';
 
 interface Reward {
   level: number;
