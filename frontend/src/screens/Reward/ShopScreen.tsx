@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
+
 import {
-  getReward,
+  getRewardStatus,
   purchaseItem,
 } from '../../api/rewardApi';
 
@@ -27,93 +28,97 @@ interface ShopItem {
 
 const ShopScreen = () => {
   const [currency, setCurrency] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
   const [purchasingId, setPurchasingId] =
     useState<number | null>(null);
 
+  // 상점 아이템 목록
+  // 백엔드의 상점 목록 API가 확정되면
+  // 실제 API 데이터로 교체
   const [items, setItems] = useState<ShopItem[]>([
     {
       id: 1,
       name: '작은 화분',
-      description: '서재에 놓을 수 있는 작은 화분이에요.',
-      price: 200,
-      emoji: '🌱',
+      description: '서재를 꾸밀 수 있는 작은 화분',
+      price: 100,
+      emoji: '🪴',
       category: 'PLANT',
+      owned: false,
     },
     {
       id: 2,
-      name: '초록 화분',
-      description: '서재를 싱그럽게 꾸며주는 화분이에요.',
-      price: 300,
-      emoji: '🪴',
-      category: 'PLANT',
+      name: '책 더미',
+      description: '책이 쌓여 있는 장식 아이템',
+      price: 150,
+      emoji: '📚',
+      category: 'DECORATION',
+      owned: false,
     },
     {
       id: 3,
-      name: '책 더미',
-      description: '독서 공간에 어울리는 책 장식이에요.',
+      name: '독서 스탠드',
+      description: '따뜻한 분위기의 독서 스탠드',
       price: 250,
-      emoji: '📚',
-      category: 'DECORATION',
+      emoji: '💡',
+      category: 'FURNITURE',
+      owned: false,
     },
     {
       id: 4,
-      name: '독서 스탠드',
-      description: '따뜻한 분위기를 만들어주는 스탠드예요.',
-      price: 500,
-      emoji: '💡',
+      name: '독서 의자',
+      description: '편안한 독서용 의자',
+      price: 400,
+      emoji: '🪑',
       category: 'FURNITURE',
+      owned: false,
     },
     {
       id: 5,
-      name: '편안한 의자',
-      description: '서재에 놓을 수 있는 편안한 의자예요.',
-      price: 700,
-      emoji: '🪑',
-      category: 'FURNITURE',
-    },
-    {
-      id: 6,
       name: '고양이 장식',
-      description: '책다듬이 서재를 꾸며주는 장식이에요.',
-      price: 450,
+      description: '서재에 놓을 수 있는 고양이 장식',
+      price: 500,
       emoji: '🐱',
       category: 'DECORATION',
+      owned: false,
     },
   ]);
 
-  const loadShop = async () => {
-    try {
-      setIsLoading(true);
-
-      const rewardData = await getReward();
-
-      setCurrency(
-        rewardData?.currency ?? 0
-      );
-    } catch (error) {
-      console.error(
-        '보유 재화 조회 실패:',
-        error
-      );
-
-      // 백엔드 연결 전 화면 테스트용
-      setCurrency(1250);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // 보유 재화 조회
   useEffect(() => {
-    loadShop();
+    const loadReward = async () => {
+      try {
+        const data =
+          await getRewardStatus();
+
+        setCurrency(
+          data?.currency ?? 0
+        );
+      } catch (error) {
+        console.error(
+          '재화 정보 조회 실패:',
+          error
+        );
+
+        // 백엔드 연결 전 테스트용
+        setCurrency(1250);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadReward();
   }, []);
 
-  const handlePurchase = async (
+  // 아이템 구매
+  const handlePurchase = (
     item: ShopItem
   ) => {
     if (item.owned) {
       Alert.alert(
-        '구매 완료',
+        '알림',
         '이미 보유하고 있는 아이템입니다.'
       );
 
@@ -129,43 +134,64 @@ const ShopScreen = () => {
       return;
     }
 
-    try {
-      setPurchasingId(item.id);
+    Alert.alert(
+      '아이템 구매',
+      `${item.name}을(를) ${item.price} 재화로 구매하시겠습니까?`,
+      [
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+        {
+          text: '구매',
+          onPress: async () => {
+            try {
+              setPurchasingId(item.id);
 
-      await purchaseItem(item.id);
+              await purchaseItem(
+                item.id
+              );
 
-      setCurrency(
-        current => current - item.price
-      );
+              // 구매 성공 시 화면 상태 변경
+              setCurrency(
+                current =>
+                  current - item.price
+              );
 
-      setItems(currentItems =>
-        currentItems.map(currentItem =>
-          currentItem.id === item.id
-            ? {
-                ...currentItem,
-                owned: true,
-              }
-            : currentItem
-        )
-      );
+              setItems(currentItems =>
+                currentItems.map(
+                  currentItem =>
+                    currentItem.id ===
+                    item.id
+                      ? {
+                          ...currentItem,
+                          owned: true,
+                        }
+                      : currentItem
+                )
+              );
 
-      Alert.alert(
-        '구매 완료',
-        `${item.name}을(를) 구매했습니다.`
-      );
-    } catch (error) {
-      console.error(
-        '아이템 구매 실패:',
-        error
-      );
+              Alert.alert(
+                '구매 완료',
+                `${item.name}을(를) 구매했습니다.`
+              );
+            } catch (error) {
+              console.error(
+                '아이템 구매 실패:',
+                error
+              );
 
-      Alert.alert(
-        '구매 실패',
-        '아이템을 구매하지 못했습니다.'
-      );
-    } finally {
-      setPurchasingId(null);
-    }
+              Alert.alert(
+                '구매 실패',
+                '백엔드 연결 상태를 확인해주세요.'
+              );
+            } finally {
+              setPurchasingId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (isLoading) {
@@ -174,7 +200,7 @@ const ShopScreen = () => {
         <ActivityIndicator size="large" />
 
         <Text style={styles.loadingText}>
-          상점을 불러오는 중...
+          상점 정보를 불러오는 중...
         </Text>
       </View>
     );
@@ -188,7 +214,9 @@ const ShopScreen = () => {
       {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
         >
           <Text style={styles.backButton}>
             ‹
@@ -196,17 +224,19 @@ const ShopScreen = () => {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>
-          재화 / 상점
+          상점
         </Text>
 
-        <View style={styles.headerSpace} />
+        <View
+          style={styles.headerSpace}
+        />
       </View>
 
       {/* 보유 재화 */}
       <View style={styles.currencyCard}>
         <View>
           <Text style={styles.currencyLabel}>
-            내가 보유한 재화
+            나의 보유 재화
           </Text>
 
           <Text style={styles.currencyValue}>
@@ -215,42 +245,41 @@ const ShopScreen = () => {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push('/quest')}
+          onPress={() =>
+            router.push('/quest')
+          }
         >
           <Text style={styles.questLink}>
-            재화 모으기 ›
+            재화 얻기 ›
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 안내 영역 */}
-      <View style={styles.heroCard}>
-        <Text style={styles.heroEmoji}>
-          🐱
+      {/* 상점 안내 */}
+      <View style={styles.guideCard}>
+        <Text style={styles.guideEmoji}>
+          🛍️
         </Text>
 
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>
+        <View style={styles.guideContent}>
+          <Text style={styles.guideTitle}>
             나만의 서재를 꾸며보세요
           </Text>
 
-          <Text style={styles.heroDescription}>
-            독서로 모은 재화를 사용해
-            다양한 아이템을 구매할 수 있어요.
+          <Text
+            style={styles.guideDescription}
+          >
+            독서 활동으로 모은 재화를
+            사용해 다양한 아이템을
+            구매할 수 있어요.
           </Text>
         </View>
       </View>
 
-      {/* 상점 */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          상점 아이템
-        </Text>
-
-        <Text style={styles.sectionDescription}>
-          원하는 아이템을 선택해 보세요
-        </Text>
-      </View>
+      {/* 상품 목록 */}
+      <Text style={styles.sectionTitle}>
+        아이템
+      </Text>
 
       <View style={styles.itemGrid}>
         {items.map(item => (
@@ -270,72 +299,70 @@ const ShopScreen = () => {
 
             <Text
               style={styles.itemDescription}
-              numberOfLines={2}
             >
               {item.description}
             </Text>
 
-            <Text style={styles.price}>
+            <Text style={styles.itemPrice}>
               🪙 {item.price}
             </Text>
 
             <TouchableOpacity
               style={[
                 styles.purchaseButton,
+
                 item.owned &&
                   styles.ownedButton,
+
                 currency < item.price &&
                   !item.owned &&
                   styles.disabledButton,
               ]}
+              onPress={() =>
+                handlePurchase(item)
+              }
               disabled={
                 item.owned ||
                 purchasingId === item.id
               }
-              onPress={() =>
-                handlePurchase(item)
-              }
             >
-              {purchasingId === item.id ? (
-                <ActivityIndicator
-                  size="small"
-                />
-              ) : (
-                <Text
-                  style={styles.purchaseButtonText}
-                >
-                  {item.owned
+              <Text
+                style={[
+                  styles.purchaseButtonText,
+
+                  item.owned &&
+                    styles.ownedButtonText,
+                ]}
+              >
+                {purchasingId ===
+                item.id
+                  ? '구매 중...'
+                  : item.owned
                     ? '보유 중'
-                    : currency < item.price
-                      ? '재화 부족'
-                      : '구매'}
-                </Text>
-              )}
+                    : '구매하기'}
+              </Text>
             </TouchableOpacity>
           </View>
         ))}
       </View>
 
-      {/* 레벨/퀘스트 이동 */}
-      <View style={styles.bottomCard}>
-        <Text style={styles.bottomTitle}>
-          재화가 부족한가요?
-        </Text>
-
-        <Text style={styles.bottomDescription}>
-          독서 퀘스트를 달성하면
-          더 많은 재화를 얻을 수 있어요.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.questButton}
-          onPress={() => router.push('/quest')}
+      {/* 레벨 화면 */}
+      <TouchableOpacity
+        style={styles.rewardButton}
+        onPress={() =>
+          router.push('/reward')
+        }
+      >
+        <Text
+          style={styles.rewardButtonText}
         >
-          <Text style={styles.questButtonText}>
-            퀘스트 확인하기
-          </Text>
-        </TouchableOpacity>
-      </View>
+          나의 레벨 확인하기
+        </Text>
+
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -350,17 +377,19 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
 
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#faf8f3',
   },
 
   loadingText: {
     marginTop: 10,
+    color: '#777777',
   },
 
   header: {
@@ -395,61 +424,56 @@ const styles = StyleSheet.create({
   },
 
   currencyLabel: {
-    fontSize: 13,
+    fontSize: 12,
+    color: '#777777',
   },
 
   currencyValue: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: 'bold',
     marginTop: 5,
   },
 
   questLink: {
+    color: '#4f7658',
     fontSize: 13,
     fontWeight: 'bold',
   },
 
-  heroCard: {
-    backgroundColor: '#f2eadc',
+  guideCard: {
+    backgroundColor: '#e9eee5',
     borderRadius: 18,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 28,
   },
 
-  heroEmoji: {
-    fontSize: 42,
+  guideEmoji: {
+    fontSize: 34,
   },
 
-  heroContent: {
+  guideContent: {
     flex: 1,
     marginLeft: 14,
   },
 
-  heroTitle: {
-    fontSize: 16,
+  guideTitle: {
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
-  heroDescription: {
-    fontSize: 12,
+  guideDescription: {
+    fontSize: 11,
+    color: '#777777',
+    lineHeight: 17,
     marginTop: 5,
-    lineHeight: 18,
-  },
-
-  sectionHeader: {
-    marginBottom: 12,
   },
 
   sectionTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: 'bold',
-  },
-
-  sectionDescription: {
-    fontSize: 12,
-    marginTop: 3,
+    marginBottom: 12,
   },
 
   itemGrid: {
@@ -461,18 +485,17 @@ const styles = StyleSheet.create({
   itemCard: {
     width: '48%',
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 13,
+    borderRadius: 18,
+    padding: 14,
     marginBottom: 14,
   },
 
   itemImage: {
     height: 90,
-    backgroundColor: '#f4f0e8',
-    borderRadius: 12,
+    borderRadius: 14,
+    backgroundColor: '#f2eee6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
   },
 
   itemEmoji: {
@@ -480,73 +503,68 @@ const styles = StyleSheet.create({
   },
 
   itemName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
+    marginTop: 12,
   },
 
   itemDescription: {
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 4,
-    minHeight: 32,
+    fontSize: 10,
+    color: '#777777',
+    lineHeight: 15,
+    marginTop: 5,
+    minHeight: 30,
   },
 
-  price: {
-    fontSize: 14,
+  itemPrice: {
+    fontSize: 13,
     fontWeight: 'bold',
     marginTop: 10,
   },
 
   purchaseButton: {
     backgroundColor: '#4f7658',
-    borderRadius: 18,
+    borderRadius: 15,
     paddingVertical: 9,
-    marginTop: 10,
     alignItems: 'center',
-  },
-
-  ownedButton: {
-    backgroundColor: '#a9b9aa',
-  },
-
-  disabledButton: {
-    backgroundColor: '#cccccc',
+    marginTop: 10,
   },
 
   purchaseButtonText: {
     color: '#ffffff',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-
-  bottomCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginTop: 12,
-  },
-
-  bottomTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  bottomDescription: {
     fontSize: 12,
-    lineHeight: 18,
-    marginTop: 5,
+    fontWeight: 'bold',
   },
 
-  questButton: {
-    backgroundColor: '#4f7658',
-    borderRadius: 20,
-    paddingVertical: 11,
+  disabledButton: {
+    opacity: 0.5,
+  },
+
+  ownedButton: {
+    backgroundColor: '#eeeeee',
+  },
+
+  ownedButtonText: {
+    color: '#777777',
+  },
+
+  rewardButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 17,
+    padding: 17,
+    flexDirection: 'row',
     alignItems: 'center',
     marginTop: 15,
   },
 
-  questButtonText: {
-    color: '#ffffff',
+  rewardButtonText: {
+    flex: 1,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+
+  arrow: {
+    fontSize: 24,
+    color: '#777777',
   },
 });
