@@ -1,1 +1,1 @@
-export { default } from '../screens/Reward/QuestScreen';
+export { default } from '../screens/Reward/RewardScreen';
