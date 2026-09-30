@@ -1,37 +1,97 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 
+import { getRewards } from '../../api/rewardApi';
+
+interface Reward {
+  level: number;
+  experience: number;
+  currency: number;
+  dday: number;
+}
+
 const RewardScreen = ({ navigation }: any) => {
+  const [reward, setReward] = useState<Reward | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadRewards = async () => {
+    try {
+      setIsLoading(true);
+
+      const data = await getRewards();
+
+      setReward(data);
+    } catch (error) {
+      console.error('보상 정보 조회 실패:', error);
+
+      Alert.alert(
+        '조회 실패',
+        '보상 정보를 불러오지 못했습니다.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRewards();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingText}>
+          보상 정보를 불러오는 중...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>나의 보상</Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>현재 레벨</Text>
-        <Text style={styles.value}>Level 1</Text>
+
+        <Text style={styles.value}>
+          Level {reward?.level ?? 0}
+        </Text>
 
         <Text style={styles.label}>경험치</Text>
-        <Text style={styles.text}>0 XP</Text>
+
+        <Text>
+          {reward?.experience ?? 0} XP
+        </Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>보유 재화</Text>
-        <Text style={styles.value}>0 Coin</Text>
+
+        <Text style={styles.value}>
+          {reward?.currency ?? 0} Coin
+        </Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>D-day</Text>
-        <Text style={styles.value}>D-0</Text>
+
+        <Text style={styles.value}>
+          D-{reward?.dday ?? 0}
+        </Text>
       </View>
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation?.navigate('Quest')}
+        onPress={() => navigation.navigate('Quest')}
       >
         <Text style={styles.buttonText}>
           퀘스트 보기
@@ -40,7 +100,7 @@ const RewardScreen = ({ navigation }: any) => {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation?.navigate('Shop')}
+        onPress={() => navigation.navigate('Shop')}
       >
         <Text style={styles.buttonText}>
           상점
@@ -56,6 +116,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  loadingText: {
+    marginTop: 10,
   },
 
   title: {
@@ -85,10 +155,7 @@ const styles = StyleSheet.create({
 
   label: {
     marginTop: 10,
-  },
-
-  text: {
-    marginTop: 5,
+    marginBottom: 5,
   },
 
   button: {
