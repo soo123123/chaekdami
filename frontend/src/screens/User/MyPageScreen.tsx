@@ -1,79 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { getMyProfile } from '../../api/userApi';
-
-interface UserProfile {
-  id: number;
-  email: string;
-  nickname: string;
-  role: string;
-
-  // 백엔드 응답 확정 전 임시 선택 필드
-  level?: number;
-  experience?: number;
-  currency?: number;
-}
 
 const MyPageScreen = () => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadProfile = async () => {
-    try {
-      setIsLoading(true);
-
-      const data = await getMyProfile();
-
-      setUser(data);
-    } catch (error) {
-      console.error('사용자 정보 조회 실패:', error);
-
-      Alert.alert(
-        '조회 실패',
-        '사용자 정보를 불러오지 못했습니다.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-
-        <Text style={styles.loadingText}>
-          마이페이지를 불러오는 중...
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {/* 상단 제목 */}
-      <Text style={styles.title}>
-        마이페이지
-      </Text>
+      {/* 상단 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backButton}>‹</Text>
+        </TouchableOpacity>
 
-      {/* 프로필 영역 */}
+        <Text style={styles.headerTitle}>
+          마이페이지
+        </Text>
+
+        <View style={styles.headerSpace} />
+      </View>
+
+      {/* 프로필 */}
       <View style={styles.profileCard}>
         <View style={styles.profileImage}>
           <Text style={styles.profileEmoji}>
@@ -83,15 +39,11 @@ const MyPageScreen = () => {
 
         <View style={styles.profileInfo}>
           <Text style={styles.nickname}>
-            {user?.nickname ?? '책다듬이'}
+            책다듬이
           </Text>
 
           <Text style={styles.email}>
-            {user?.email ?? ''}
-          </Text>
-
-          <Text style={styles.level}>
-            Lv. {user?.level ?? 1}
+            user@example.com
           </Text>
         </View>
 
@@ -110,143 +62,70 @@ const MyPageScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 보상 정보 */}
-      <View style={styles.rewardCard}>
-        <TouchableOpacity
-          style={styles.rewardItem}
-          onPress={() => router.push('/reward')}
-        >
-          <Text style={styles.rewardIcon}>
-            ⭐
-          </Text>
-
-          <Text style={styles.rewardValue}>
-            Lv. {user?.level ?? 1}
-          </Text>
-
-          <Text style={styles.rewardLabel}>
-            레벨
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          style={styles.rewardItem}
-          onPress={() => router.push('/reward')}
-        >
-          <Text style={styles.rewardIcon}>
-            🔥
-          </Text>
-
-          <Text style={styles.rewardValue}>
-            {user?.experience ?? 0}
-          </Text>
-
-          <Text style={styles.rewardLabel}>
-            경험치
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          style={styles.rewardItem}
-          onPress={() => router.push('/shop')}
-        >
-          <Text style={styles.rewardIcon}>
-            🪙
-          </Text>
-
-          <Text style={styles.rewardValue}>
-            {user?.currency ?? 0}
-          </Text>
-
-          <Text style={styles.rewardLabel}>
-            보유 재화
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* 독서 활동 */}
       <Text style={styles.sectionTitle}>
         나의 독서 활동
       </Text>
 
-      <View style={styles.menuCard}>
-        <TouchableOpacity
-          style={styles.menu}
-          onPress={() =>
-            router.push({
-              pathname: '/sentences',
-              params: {
-                readingRecordId: '1',
-              },
-            })
-          }
-        >
-          <Text style={styles.menuIcon}>📝</Text>
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() =>
+          router.push('/reading-stats')
+        }
+      >
+        <View style={styles.menuIcon}>
+          <Text style={styles.menuEmoji}>
+            📊
+          </Text>
+        </View>
 
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>
-              문장 모음
-            </Text>
+        <View style={styles.menuContent}>
+          <Text style={styles.menuTitle}>
+            독서 통계
+          </Text>
 
-            <Text style={styles.menuDescription}>
-              저장한 문장을 확인해요
-            </Text>
-          </View>
+          <Text style={styles.menuDescription}>
+            나의 독서 시간과 기록을 확인해요.
+          </Text>
+        </View>
 
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
+        <Text style={styles.arrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.menu}
-          onPress={() => router.push('/quest')}
-        >
-          <Text style={styles.menuIcon}>🏅</Text>
-
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>
-              퀘스트
-            </Text>
-
-            <Text style={styles.menuDescription}>
-              독서 퀘스트와 진행 상황을 확인해요
-            </Text>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menu}
-          onPress={() => router.push('/shop')}
-        >
-          <Text style={styles.menuIcon}>🛍️</Text>
-
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>
-              상점
-            </Text>
-
-            <Text style={styles.menuDescription}>
-              모은 재화로 아이템을 구매해요
-            </Text>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 기타 메뉴 */}
+      {/* 계정 */}
       <Text style={styles.sectionTitle}>
-        설정
+        계정
       </Text>
 
-      <View style={styles.menuCard}>
+      <View style={styles.menuGroup}>
         <TouchableOpacity
-          style={styles.simpleMenu}
+          style={styles.menuRow}
+          onPress={() =>
+            Alert.alert(
+              '계정 정보',
+              '계정 정보 화면은 추후 연결할 예정입니다.'
+            )
+          }
+        >
+          <Text style={styles.rowIcon}>
+            👤
+          </Text>
+
+          <Text style={styles.rowTitle}>
+            계정 정보
+          </Text>
+
+          <Text style={styles.arrow}>
+            ›
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.menuRow}
           onPress={() =>
             Alert.alert(
               '알림 설정',
@@ -254,28 +133,83 @@ const MyPageScreen = () => {
             )
           }
         >
-          <Text style={styles.simpleMenuText}>
+          <Text style={styles.rowIcon}>
+            🔔
+          </Text>
+
+          <Text style={styles.rowTitle}>
             알림 설정
           </Text>
 
-          <Text style={styles.arrow}>›</Text>
+          <Text style={styles.arrow}>
+            ›
+          </Text>
         </TouchableOpacity>
+      </View>
 
+      {/* 기타 */}
+      <Text style={styles.sectionTitle}>
+        기타
+      </Text>
+
+      <View style={styles.menuGroup}>
         <TouchableOpacity
-          style={styles.simpleMenu}
+          style={styles.menuRow}
           onPress={() =>
             Alert.alert(
-              '로그아웃',
-              '로그아웃 기능은 인증 기능과 연결할 예정입니다.'
+              '앱 정보',
+              '책다듬이 앱입니다.'
             )
           }
         >
-          <Text style={styles.simpleMenuText}>
+          <Text style={styles.rowIcon}>
+            ℹ️
+          </Text>
+
+          <Text style={styles.rowTitle}>
+            앱 정보
+          </Text>
+
+          <Text style={styles.arrow}>
+            ›
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() =>
+            Alert.alert(
+              '로그아웃',
+              '로그아웃 기능은 백엔드 인증 연결 후 구현합니다.'
+            )
+          }
+        >
+          <Text style={styles.rowIcon}>
+            🚪
+          </Text>
+
+          <Text style={styles.rowTitle}>
             로그아웃
           </Text>
 
-          <Text style={styles.arrow}>›</Text>
+          <Text style={styles.arrow}>
+            ›
+          </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* 임시 안내 */}
+      <View style={styles.notice}>
+        <Text style={styles.noticeTitle}>
+          개발 중인 화면입니다.
+        </Text>
+
+        <Text style={styles.noticeText}>
+          현재 프로필 정보는 화면 테스트용 데이터이며,
+          백엔드 연결 후 실제 사용자 정보로 변경됩니다.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -291,166 +225,174 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
 
-  center: {
-    flex: 1,
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-
-  loadingText: {
-    marginTop: 10,
-  },
-
-  title: {
-    fontSize: 25,
-    fontWeight: 'bold',
     marginBottom: 20,
   },
 
+  backButton: {
+    fontSize: 34,
+  },
+
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+
+  headerSpace: {
+    width: 25,
+  },
+
   profileCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 15,
+    marginBottom: 30,
   },
 
   profileImage: {
-    width: 65,
-    height: 65,
-    borderRadius: 33,
-    backgroundColor: '#f3eadb',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#e9eee5',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   profileEmoji: {
-    fontSize: 34,
+    fontSize: 30,
   },
 
   profileInfo: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 14,
   },
 
   nickname: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 
   email: {
-    fontSize: 13,
+    fontSize: 11,
+    color: '#888888',
     marginTop: 4,
-  },
-
-  level: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 6,
   },
 
   editButton: {
     borderWidth: 1,
-    borderColor: '#dddddd',
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderColor: '#4f7658',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
 
   editButtonText: {
-    fontSize: 13,
-  },
-
-  rewardCard: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingVertical: 18,
-    marginBottom: 25,
-  },
-
-  rewardItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  rewardIcon: {
-    fontSize: 22,
-  },
-
-  rewardValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-
-  rewardLabel: {
+    color: '#4f7658',
     fontSize: 12,
-    marginTop: 3,
-  },
-
-  divider: {
-    width: 1,
-    backgroundColor: '#eeeeee',
+    fontWeight: 'bold',
   },
 
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 11,
   },
 
   menuCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginBottom: 25,
-    overflow: 'hidden',
-  },
-
-  menu: {
+    borderRadius: 18,
+    padding: 17,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    marginBottom: 28,
   },
 
   menuIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#e9eee5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  menuEmoji: {
     fontSize: 23,
-    marginRight: 14,
   },
 
   menuContent: {
     flex: 1,
+    marginLeft: 13,
   },
 
   menuTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 
   menuDescription: {
-    fontSize: 12,
+    fontSize: 11,
+    color: '#777777',
     marginTop: 4,
+  },
+
+  menuGroup: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    paddingHorizontal: 17,
+    marginBottom: 28,
+  },
+
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 17,
+  },
+
+  rowIcon: {
+    fontSize: 19,
+    width: 32,
+  },
+
+  rowTitle: {
+    flex: 1,
+    fontSize: 14,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: '#eeeeee',
   },
 
   arrow: {
     fontSize: 24,
+    color: '#888888',
   },
 
-  simpleMenu: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 17,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+  notice: {
+    backgroundColor: '#f0ede5',
+    borderRadius: 15,
+    padding: 16,
   },
 
-  simpleMenuText: {
-    fontSize: 15,
+  noticeTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+
+  noticeText: {
+    fontSize: 11,
+    lineHeight: 17,
+    color: '#777777',
+    marginTop: 5,
   },
 });
