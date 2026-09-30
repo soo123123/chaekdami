@@ -1,3 +1,7 @@
+import {
+  router,
+  useLocalSearchParams,
+} from 'expo-router';
 import React, { useState } from 'react';
 import {
   View,
@@ -10,8 +14,13 @@ import {
 
 import { createReview } from '../../api/reviewApi';
 
-const ReviewWriteScreen = ({ route, navigation }: any) => {
-  // 이전 화면에서 전달받는 독서 기록 ID
+const ReviewWriteScreen = () => {
+  const params = useLocalSearchParams<{
+    readingRecordId?: string;
+  }>();
+
+  const readingRecordId =
+    Number(params.readingRecordId) || 1;
   const readingRecordId = route?.params?.readingRecordId ?? 1;
 
   const [rating, setRating] = useState('');
@@ -55,7 +64,7 @@ const ReviewWriteScreen = ({ route, navigation }: any) => {
         [
           {
             text: '확인',
-            onPress: () => navigation?.goBack(),
+            onPress: () =>router.back()
           },
         ]
       );
