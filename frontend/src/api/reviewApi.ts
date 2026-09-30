@@ -44,14 +44,14 @@ export const createReview = async (
   oneLine: string
 ) => {
 
-  const response = await axios.post(
-    `${API_URL}/reading-records/${readingRecordId}/review`,
-    {
-      content,
-      rating,
-      oneLine,
-    }
-  );
+const response = await apiClient.post(
+  `/reading-records/${readingRecordId}/review`,
+  {
+    content,
+    rating,
+    oneLine,
+  }
+);
 
   return response.data;
 };
