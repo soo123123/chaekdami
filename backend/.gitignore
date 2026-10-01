@@ -14,3 +14,6 @@ out/
 # Secrets (DB 접속 정보 등)
 application-dev.properties
 application-local.properties
+
+# HTTP Client files
+*.http
