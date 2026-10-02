@@ -1,6 +1,7 @@
 package com.chaekdami.user.presentation;
 
 import com.chaekdami.user.application.UserService;
+import com.chaekdami.user.application.exception.UnauthorizedException;
 import com.chaekdami.user.presentation.dto.LoginResponse;
 import com.chaekdami.user.presentation.dto.SignUpRequest;
 import com.chaekdami.user.presentation.dto.UserResponse;
@@ -34,7 +35,7 @@ public class UserController {
     @GetMapping({"/api/auth/me", "/api/me"})
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal String email) {
         if (!StringUtils.hasText(email)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException();
         }
         return ResponseEntity.ok(userService.getMe(email));
     }

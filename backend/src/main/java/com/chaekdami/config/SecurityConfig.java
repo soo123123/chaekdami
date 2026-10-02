@@ -43,9 +43,9 @@ public class SecurityConfig {
                 .headers(headers -> headers.cacheControl(Customizer.withDefaults()))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다."))
+                                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다."))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeJson(response, HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다."))
+                                writeJson(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -72,13 +72,13 @@ public class SecurityConfig {
         return source;
     }
 
-    private static void writeJson(HttpServletResponse response, int status, String message) throws java.io.IOException {
+    private static void writeJson(HttpServletResponse response, int status, String code, String message) throws java.io.IOException {
         response.setStatus(status);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Expires", "0");
-        response.getWriter().write("{\"message\":\"" + message + "\"}");
+        response.getWriter().write("{\"code\":\"" + code + "\",\"message\":\"" + message + "\"}");
     }
 }

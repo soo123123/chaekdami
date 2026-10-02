@@ -1,6 +1,10 @@
 package com.chaekdami.user.application;
 
 import com.chaekdami.config.JwtTokenProvider;
+import com.chaekdami.user.application.exception.DuplicateEmailException;
+import com.chaekdami.user.application.exception.DuplicateNicknameException;
+import com.chaekdami.user.application.exception.InvalidCredentialsException;
+import com.chaekdami.user.application.exception.UnauthorizedException;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
 import com.chaekdami.user.infrastructure.UserRepository;
@@ -9,14 +13,19 @@ import com.chaekdami.user.presentation.dto.SignUpRequest;
 import com.chaekdami.user.presentation.dto.UserResponse;
 import com.chaekdami.user.presentation.dto.LoginRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
+
+    private static final String DUMMY_PASSWORD_HASH = new BCryptPasswordEncoder().encode("timing-safe-dummy");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -24,16 +33,19 @@ public class UserService {
 
     @Transactional
     public UserResponse signup(SignUpRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+        String email = normalizeEmail(request.getEmail());
+        String nickname = request.getNickname().trim();
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException();
+        }
+        if (userRepository.existsByNicknameIgnoreCase(nickname)) {
+            throw new DuplicateNicknameException();
         }
 
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-
         User user = User.builder()
-                .email(request.getEmail())
-                .passwordHash(encodedPassword)
-                .nickname(request.getNickname())
+                .email(email)
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .nickname(nickname)
                 .role(Role.USER)
                 .build();
 
@@ -42,21 +54,27 @@ public class UserService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
-
+        String email = normalizeEmail(request.getEmail());
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            passwordEncoder.matches(request.getPassword(), DUMMY_PASSWORD_HASH);
+            throw new InvalidCredentialsException();
+        }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtTokenProvider.createToken(user.getEmail(), user.getRole().name());
-
         return new LoginResponse(token);
     }
 
     public UserResponse getMe(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(UnauthorizedException::new);
         return new UserResponse(user);
+    }
+
+    private static String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

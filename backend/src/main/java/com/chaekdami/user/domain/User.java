@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "users")
@@ -27,6 +28,9 @@ public class User {
     @Column(nullable = false, length = 50)
     private String nickname;
 
+    @Column(name = "nickname_lower", unique = true, length = 16)
+    private String nicknameLower;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -37,6 +41,18 @@ public class User {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        syncNicknameKey();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        syncNicknameKey();
+    }
+
+    private void syncNicknameKey() {
+        if (this.nickname != null) {
+            this.nicknameLower = this.nickname.toLowerCase(Locale.ROOT);
+        }
     }
 
     @Builder
