@@ -129,7 +129,7 @@ const MyPageScreen = () => {
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
-          router.push('/reading-stats')
+          router.push('/user/reading-stats')
         }
       >
         <View style={styles.menuIcon}>
@@ -157,7 +157,7 @@ const MyPageScreen = () => {
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
-          router.push('/dday')
+          router.push('/reward/dday')
         }
       >
         <View style={styles.menuIcon}>
@@ -185,7 +185,7 @@ const MyPageScreen = () => {
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
-          router.push('/reward')
+          router.push('/reward/reward')
         }
       >
         <View style={styles.menuIcon}>
@@ -213,7 +213,7 @@ const MyPageScreen = () => {
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
-          router.push('/quest')
+          router.push('/reward/quest')
         }
       >
         <View style={styles.menuIcon}>
@@ -241,7 +241,7 @@ const MyPageScreen = () => {
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() =>
-          router.push('/shop')
+          router.push('/reward/shop')
         }
       >
         <View style={styles.menuIcon}>

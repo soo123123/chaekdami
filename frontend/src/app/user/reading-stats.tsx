@@ -1,1 +1,1 @@
-export { default } from '../screens/User/ReadingStatsScreen';
+export { default } from '../../screens/User/ReadingStatsScreen';

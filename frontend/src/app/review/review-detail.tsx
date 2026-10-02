@@ -1,1 +1,1 @@
-export { default } from '../screens/Review/ReviewDetailScreen';
+export { default } from '../../screens/Review/ReviewDetailScreen';

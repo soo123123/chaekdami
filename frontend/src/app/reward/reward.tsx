@@ -1,1 +1,1 @@
-export { default } from '../screens/Reward/RewardScreen';
+export { default } from '../../screens/Reward/RewardScreen';

@@ -1,1 +1,1 @@
-export { default } from '../screens/User/MyPageScreen';
+export { default } from '../../screens/User/MyPageScreen';
