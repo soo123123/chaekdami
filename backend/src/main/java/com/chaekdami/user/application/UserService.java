@@ -53,4 +53,10 @@ public class UserService {
 
         return new LoginResponse(token);
     }
+
+    public UserResponse getMe(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        return new UserResponse(user);
+    }
 }

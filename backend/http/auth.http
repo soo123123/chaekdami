@@ -1,0 +1,40 @@
+@baseUrl = http://localhost:8080
+@email = tester@chaekdami.local
+@password = password123
+@nickname = tester
+
+### 1. 회원가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "nickname": "{{nickname}}"
+}
+
+### 2. 로그인 (accessToken 저장)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {% client.global.set("accessToken", response.body.accessToken); %}
+
+### 3. 내 정보 조회 — GET /api/auth/me
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 4. 내 정보 조회 — GET /api/me
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+
+### 5. 토큰 없이 조회
+GET {{baseUrl}}/api/auth/me
+
+### 6. 잘못된 토큰으로 조회
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer invalid.token.value
