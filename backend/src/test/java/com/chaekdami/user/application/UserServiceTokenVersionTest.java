@@ -52,7 +52,9 @@ class UserServiceTokenVersionTest {
                 mock(PasswordResetNotifier.class),
                 mock(LoginAttemptLimiter.class),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                mock(com.chaekdami.user.infrastructure.EmailVerificationTokenRepository.class),
+                mock(EmailVerificationNotifier.class));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 1L, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         user = User.builder()

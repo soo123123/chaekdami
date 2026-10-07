@@ -332,7 +332,7 @@ Content-Type: application/json
 }
 
 ### 37. 비밀번호 재설정 요청 — 가입 여부와 상관없이 204
-# 가입된 이메일이면 서버 로그에 재설정 토큰이 출력된다.
+# 가입된 이메일이면 재설정 링크가 메일로 간다.
 POST {{baseUrl}}/api/auth/password/reset-request
 Content-Type: application/json
 
@@ -349,7 +349,7 @@ Content-Type: application/json
 }
 
 ### 39. 비밀번호 재설정 — 204, 토큰은 한 번만 사용
-# 37번 로그의 token 값을 넣는다.
+# 메일의 링크를 열어도 된다. API로 확인할 때는 링크의 token 값을 넣는다.
 POST {{baseUrl}}/api/auth/password/reset
 Content-Type: application/json
 
@@ -377,3 +377,21 @@ Content-Type: application/json
   "email": "password-change@chaekdami.local",
   "password": "wrong-password"
 }
+
+### 42. 이메일 인증 메일 다시 보내기 — 가입 여부와 상관없이 204
+POST {{baseUrl}}/api/auth/email/verification-request
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local"
+}
+
+### 43. 이메일 인증 — 204, 토큰은 한 번만 사용
+# 메일의 링크를 열어도 된다. API로 확인할 때는 링크의 token 값을 넣는다.
+POST {{baseUrl}}/api/auth/email/verify
+Content-Type: application/json
+
+{
+  "token": "메일의-토큰"
+}
+

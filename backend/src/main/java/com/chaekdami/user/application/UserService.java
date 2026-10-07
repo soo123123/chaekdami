@@ -6,6 +6,8 @@ import com.chaekdami.user.application.command.LoginCommand;
 import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
 import com.chaekdami.user.application.command.SignupCommand;
+import com.chaekdami.user.application.command.EmailVerificationRequestCommand;
+import com.chaekdami.user.application.exception.EmailNotVerifiedException;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
@@ -13,10 +15,12 @@ import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.application.exception.UnauthorizedException;
 import com.chaekdami.user.application.result.IssuedTokens;
 import com.chaekdami.user.application.result.UserAccount;
+import com.chaekdami.user.domain.EmailVerificationToken;
 import com.chaekdami.user.domain.PasswordResetToken;
 import com.chaekdami.user.domain.RefreshToken;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
+import com.chaekdami.user.infrastructure.EmailVerificationTokenRepository;
 import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
@@ -44,6 +48,7 @@ public class UserService {
     private static final String DUMMY_PASSWORD_HASH = new BCryptPasswordEncoder().encode("timing-safe-dummy");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final long PASSWORD_RESET_TOKEN_MINUTES = 15;
+    private static final long EMAIL_VERIFICATION_TOKEN_HOURS = 24;
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -54,6 +59,8 @@ public class UserService {
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final CurrentUser currentUser;
     private final AccessGuard accessGuard;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final EmailVerificationNotifier emailVerificationNotifier;
 
     @Value("${jwt.refresh-token-validity-in-seconds:7776000}")
     private long refreshTokenValidityInSeconds;
@@ -76,7 +83,9 @@ public class UserService {
                 .role(Role.USER)
                 .build();
 
-        return UserAccount.from(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        sendEmailVerification(savedUser);
+        return UserAccount.from(savedUser);
     }
 
     @Transactional
@@ -95,6 +104,9 @@ public class UserService {
         }
 
         loginAttemptLimiter.clearLoginFailures(email, clientIp);
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
         return issueTokens(user);
     }
 
@@ -189,6 +201,40 @@ public class UserService {
         user.bumpTokenVersion();
         revokeAll(user.getId());
         stored.use(LocalDateTime.now());
+    }
+
+    @Transactional
+    public void requestEmailVerification(EmailVerificationRequestCommand command) {
+        String email = normalizeEmail(command.email());
+        loginAttemptLimiter.consumeEmailVerificationRequest(email, command.clientIp());
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || user.isEmailVerified()) {
+            return;
+        }
+        sendEmailVerification(user);
+    }
+
+    @Transactional
+    public void verifyEmail(String rawToken) {
+        EmailVerificationToken stored = emailVerificationTokenRepository.findByTokenHash(sha256(rawToken))
+                .orElseThrow(() -> new InvalidRequestException("token", "인증 링크가 유효하지 않습니다."));
+        if (stored.isUsed() || stored.isExpired(LocalDateTime.now())) {
+            throw new InvalidRequestException("token", "인증 링크가 유효하지 않습니다.");
+        }
+        stored.getUser().verifyEmail();
+        stored.use(LocalDateTime.now());
+    }
+
+    private void sendEmailVerification(User user) {
+        LocalDateTime now = LocalDateTime.now();
+        for (EmailVerificationToken previous : emailVerificationTokenRepository.findAllByUser_IdAndUsedAtIsNull(user.getId())) {
+            previous.use(now);
+        }
+        String rawToken = newRawToken();
+        emailVerificationTokenRepository.save(new EmailVerificationToken(
+                user, sha256(rawToken), now.plusHours(EMAIL_VERIFICATION_TOKEN_HOURS)));
+        emailVerificationNotifier.send(user.getEmail(), rawToken);
     }
 
     private User loadCurrentUser() {

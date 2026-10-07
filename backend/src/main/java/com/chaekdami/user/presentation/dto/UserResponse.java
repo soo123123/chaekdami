@@ -11,8 +11,10 @@ public class UserResponse {
     private String email;
     private String nickname;
     private String role;
+    private boolean emailVerified;
 
     public static UserResponse from(UserAccount account) {
-        return new UserResponse(account.id(), account.email(), account.nickname(), account.role());
+        return new UserResponse(
+                account.id(), account.email(), account.nickname(), account.role(), account.emailVerified());
     }
 }

@@ -66,7 +66,9 @@ class UserServiceLoginAttemptTest {
                 mock(PasswordResetNotifier.class),
                 new LoginAttemptLimiter(authAttemptRepository),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                mock(com.chaekdami.user.infrastructure.EmailVerificationTokenRepository.class),
+                mock(EmailVerificationNotifier.class));
     }
 
     @Test

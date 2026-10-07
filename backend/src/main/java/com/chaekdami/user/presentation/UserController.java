@@ -2,6 +2,7 @@ package com.chaekdami.user.presentation;
 
 import com.chaekdami.user.application.UserService;
 import com.chaekdami.user.application.command.ChangePasswordCommand;
+import com.chaekdami.user.application.command.EmailVerificationRequestCommand;
 import com.chaekdami.user.application.command.LoginCommand;
 import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
@@ -14,6 +15,7 @@ import com.chaekdami.user.presentation.dto.RefreshTokenRequest;
 import com.chaekdami.user.presentation.dto.ResetPasswordRequest;
 import com.chaekdami.user.presentation.dto.SignUpRequest;
 import com.chaekdami.user.presentation.dto.UserResponse;
+import com.chaekdami.user.presentation.dto.VerifyEmailRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +82,20 @@ public class UserController {
     @PostMapping("/api/auth/password/reset")
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
         userService.resetPassword(new PasswordResetCommand(request.getToken(), request.getNewPassword()));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/auth/email/verification-request")
+    public ResponseEntity<Void> requestEmailVerification(@RequestBody @Valid PasswordResetEmailRequest request,
+                                                         HttpServletRequest httpRequest) {
+        userService.requestEmailVerification(new EmailVerificationRequestCommand(
+                request.getEmail(), ClientAddress.from(httpRequest)));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/auth/email/verify")
+    public ResponseEntity<Void> verifyEmail(@RequestBody @Valid VerifyEmailRequest request) {
+        userService.verifyEmail(request.getToken());
         return ResponseEntity.noContent().build();
     }
 

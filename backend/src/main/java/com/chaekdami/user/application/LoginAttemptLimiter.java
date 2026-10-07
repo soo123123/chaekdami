@@ -44,6 +44,13 @@ public class LoginAttemptLimiter {
         increase(key);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void consumeEmailVerificationRequest(String email, String clientIp) {
+        String key = verificationKey(email, clientIp);
+        ensureAllowed(key);
+        increase(key);
+    }
+
     private void ensureAllowed(String key) {
         authAttemptRepository.findByAttemptKey(key)
                 .filter(attempt -> attempt.isLocked(LocalDateTime.now()))
@@ -65,5 +72,9 @@ public class LoginAttemptLimiter {
 
     private static String resetKey(String email, String clientIp) {
         return "reset|" + email + "|" + clientIp;
+    }
+
+    private static String verificationKey(String email, String clientIp) {
+        return "verify|" + email + "|" + clientIp;
     }
 }

@@ -75,13 +75,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/email/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/signup",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
                                 "/api/auth/password/reset-request",
-                                "/api/auth/password/reset").permitAll()
+                                "/api/auth/password/reset",
+                                "/api/auth/email/verification-request",
+                                "/api/auth/email/verify").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

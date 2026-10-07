@@ -2,6 +2,7 @@ package com.chaekdami.user.presentation;
 
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
+import com.chaekdami.user.application.exception.EmailNotVerifiedException;
 import com.chaekdami.user.application.exception.ForbiddenException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
 import com.chaekdami.user.application.exception.InvalidRequestException;
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiErrorResponse.of("UNAUTHORIZED", exception.getMessage()));
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailNotVerified(EmailNotVerifiedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of("EMAIL_NOT_VERIFIED", exception.getMessage()));
     }
 
     @ExceptionHandler(ForbiddenException.class)

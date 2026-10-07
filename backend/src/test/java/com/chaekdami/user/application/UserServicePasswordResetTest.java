@@ -43,6 +43,7 @@ class UserServicePasswordResetTest {
     private final PasswordResetTokenRepository passwordResetTokenRepository = mock(PasswordResetTokenRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final PasswordResetNotifier passwordResetNotifier = mock(PasswordResetNotifier.class);
+    private final EmailVerificationNotifier emailVerificationNotifier = mock(EmailVerificationNotifier.class);
     private UserService userService;
     private User user;
 
@@ -58,7 +59,9 @@ class UserServicePasswordResetTest {
                 passwordResetNotifier,
                 mock(LoginAttemptLimiter.class),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                mock(com.chaekdami.user.infrastructure.EmailVerificationTokenRepository.class),
+                emailVerificationNotifier);
         user = User.builder()
                 .email("reader@chaekdami.local")
                 .passwordHash("stored-hash")
@@ -87,6 +90,8 @@ class UserServicePasswordResetTest {
         assertEquals("reader@chaekdami.local", account.email());
         assertEquals("reader", account.nickname());
         assertEquals("USER", account.role());
+        assertEquals(false, account.emailVerified());
+        verify(emailVerificationNotifier).send(org.mockito.ArgumentMatchers.eq("reader@chaekdami.local"), org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
