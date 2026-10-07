@@ -1,5 +1,6 @@
 package com.chaekdami.user.presentation.dto;
 
+import com.chaekdami.user.application.result.IssuedTokens;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,7 +11,7 @@ public class LoginResponse {
     private String refreshToken;
     private String tokenType;
 
-    public static LoginResponse bearer(String accessToken, String refreshToken) {
-        return new LoginResponse(accessToken, refreshToken, "Bearer");
+    public static LoginResponse from(IssuedTokens tokens) {
+        return new LoginResponse(tokens.accessToken(), tokens.refreshToken(), tokens.tokenType());
     }
 }

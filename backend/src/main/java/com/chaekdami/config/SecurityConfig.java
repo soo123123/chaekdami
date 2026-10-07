@@ -1,5 +1,6 @@
 package com.chaekdami.config;
 
+import com.chaekdami.user.application.TokenVersionChecker;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,14 +29,17 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenVersionChecker tokenVersionChecker;
     private final List<String> allowedOriginPatterns;
     private final boolean requireHttps;
 
     public SecurityConfig(
             JwtTokenProvider jwtTokenProvider,
+            TokenVersionChecker tokenVersionChecker,
             @Value("${cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}") String allowedOriginPatterns,
             @Value("${app.security.require-https:false}") boolean requireHttps) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.tokenVersionChecker = tokenVersionChecker;
         this.allowedOriginPatterns = Arrays.stream(allowedOriginPatterns.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
@@ -71,10 +75,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/signup",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/logout",
+                                "/api/auth/password/reset-request",
+                                "/api/auth/password/reset").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider, tokenVersionChecker),
+                        UsernamePasswordAuthenticationFilter.class);
 
         if (requireHttps) {
             http.redirectToHttps(Customizer.withDefaults());

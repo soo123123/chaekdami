@@ -1,21 +1,25 @@
 package com.chaekdami.user.application;
 
 import com.chaekdami.config.JwtTokenProvider;
+import com.chaekdami.user.application.command.ChangePasswordCommand;
+import com.chaekdami.user.application.command.LoginCommand;
+import com.chaekdami.user.application.command.PasswordResetCommand;
+import com.chaekdami.user.application.command.PasswordResetRequestCommand;
+import com.chaekdami.user.application.command.SignupCommand;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
 import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.application.exception.UnauthorizedException;
+import com.chaekdami.user.application.result.IssuedTokens;
+import com.chaekdami.user.application.result.UserAccount;
+import com.chaekdami.user.domain.PasswordResetToken;
 import com.chaekdami.user.domain.RefreshToken;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
+import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
-import com.chaekdami.user.presentation.dto.ChangePasswordRequest;
-import com.chaekdami.user.presentation.dto.LoginResponse;
-import com.chaekdami.user.presentation.dto.SignUpRequest;
-import com.chaekdami.user.presentation.dto.UserResponse;
-import com.chaekdami.user.presentation.dto.LoginRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,19 +43,25 @@ public class UserService {
 
     private static final String DUMMY_PASSWORD_HASH = new BCryptPasswordEncoder().encode("timing-safe-dummy");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final long PASSWORD_RESET_TOKEN_MINUTES = 15;
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordResetNotifier passwordResetNotifier;
+    private final LoginAttemptLimiter loginAttemptLimiter;
+    private final CurrentUser currentUser;
+    private final AccessGuard accessGuard;
 
     @Value("${jwt.refresh-token-validity-in-seconds:7776000}")
     private long refreshTokenValidityInSeconds;
 
     @Transactional
-    public UserResponse signup(SignUpRequest request) {
-        String email = normalizeEmail(request.getEmail());
-        String nickname = request.getNickname().trim();
+    public UserAccount signup(SignupCommand command) {
+        String email = normalizeEmail(command.email());
+        String nickname = command.nickname().trim();
         if (userRepository.findByEmail(email).isPresent()) {
             throw new DuplicateEmailException();
         }
@@ -61,36 +71,42 @@ public class UserService {
 
         User user = User.builder()
                 .email(email)
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .passwordHash(passwordEncoder.encode(command.password()))
                 .nickname(nickname)
                 .role(Role.USER)
                 .build();
 
-        User savedUser = userRepository.save(user);
-        return new UserResponse(savedUser);
+        return UserAccount.from(userRepository.save(user));
     }
 
     @Transactional
-    public LoginResponse login(LoginRequest request) {
-        String email = normalizeEmail(request.getEmail());
+    public IssuedTokens login(LoginCommand command) {
+        String email = normalizeEmail(command.email());
+        String clientIp = command.clientIp();
+        loginAttemptLimiter.checkLoginAllowed(email, clientIp);
+
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
-            passwordEncoder.matches(request.getPassword(), DUMMY_PASSWORD_HASH);
-            throw new InvalidCredentialsException();
+            passwordEncoder.matches(command.password(), DUMMY_PASSWORD_HASH);
+            throw rejectLogin(email, clientIp);
         }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new InvalidCredentialsException();
+        if (!passwordEncoder.matches(command.password(), user.getPasswordHash())) {
+            throw rejectLogin(email, clientIp);
         }
 
+        loginAttemptLimiter.clearLoginFailures(email, clientIp);
         return issueTokens(user);
     }
 
     @Transactional(noRollbackFor = UnauthorizedException.class)
-    public LoginResponse refresh(String rawRefreshToken) {
+    public IssuedTokens refresh(String rawRefreshToken) {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken))
                 .orElseThrow(UnauthorizedException::new);
         if (stored.isRevoked()) {
-            revokeAll(stored.getUser().getId());
+            // 예외를 던져도 버전 증가와 Refresh 폐기는 커밋된다.
+            User user = stored.getUser();
+            user.bumpTokenVersion();
+            revokeAll(user.getId());
             throw new UnauthorizedException();
         }
         if (stored.isExpired(LocalDateTime.now())) {
@@ -108,39 +124,104 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(Long userId, ChangePasswordRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(UnauthorizedException::new);
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+    public void changePassword(ChangePasswordCommand command) {
+        User user = loadCurrentUser();
+        if (!passwordEncoder.matches(command.currentPassword(), user.getPasswordHash())) {
             throw new InvalidRequestException("currentPassword", "현재 비밀번호가 올바르지 않습니다.");
         }
-        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+        if (passwordEncoder.matches(command.newPassword(), user.getPasswordHash())) {
             throw new InvalidRequestException("newPassword", "새 비밀번호는 현재 비밀번호와 달라야 합니다.");
         }
-        rejectIdentityPassword(user, request.getNewPassword());
+        rejectIdentityPassword(user, command.newPassword(), "newPassword");
 
-        user.changePassword(passwordEncoder.encode(request.getNewPassword()));
+        user.changePassword(passwordEncoder.encode(command.newPassword()));
+        user.bumpTokenVersion();
         revokeAll(user.getId());
     }
 
-    public UserResponse getMe(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(UnauthorizedException::new);
-        return new UserResponse(user);
+    @Transactional
+    public void logoutAll() {
+        User user = loadCurrentUser();
+        user.bumpTokenVersion();
+        revokeAll(user.getId());
     }
 
-    private LoginResponse issueTokens(User user) {
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
+    public UserAccount getMe() {
+        return UserAccount.from(loadCurrentUser());
+    }
+
+    @Transactional
+    public void requestPasswordReset(PasswordResetRequestCommand command) {
+        String email = normalizeEmail(command.email());
+        loginAttemptLimiter.consumePasswordResetRequest(email, command.clientIp());
+
+        String rawToken = newRawToken();
+        String tokenHash = sha256(rawToken);
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (PasswordResetToken previous : passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(user.getId())) {
+            previous.use(now);
+        }
+        passwordResetTokenRepository.save(
+                new PasswordResetToken(user, tokenHash, now.plusMinutes(PASSWORD_RESET_TOKEN_MINUTES)));
+        passwordResetNotifier.send(user.getEmail(), rawToken);
+    }
+
+    @Transactional
+    public void resetPassword(PasswordResetCommand command) {
+        PasswordResetToken stored = passwordResetTokenRepository.findByTokenHash(sha256(command.token()))
+                .orElseThrow(() -> new InvalidRequestException("token", "재설정 링크가 유효하지 않습니다."));
+        if (stored.isUsed() || stored.isExpired(LocalDateTime.now())) {
+            throw new InvalidRequestException("token", "재설정 링크가 유효하지 않습니다.");
+        }
+
+        User user = stored.getUser();
+        if (passwordEncoder.matches(command.newPassword(), user.getPasswordHash())) {
+            throw new InvalidRequestException("newPassword", "새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+        rejectIdentityPassword(user, command.newPassword(), "newPassword");
+
+        user.changePassword(passwordEncoder.encode(command.newPassword()));
+        user.bumpTokenVersion();
+        revokeAll(user.getId());
+        stored.use(LocalDateTime.now());
+    }
+
+    private User loadCurrentUser() {
+        Long userId = currentUser.requireId();
+        User user = userRepository.findById(userId).orElseThrow(UnauthorizedException::new);
+        accessGuard.requireSelf(user.getId());
+        return user;
+    }
+
+    private RuntimeException rejectLogin(String email, String clientIp) {
+        loginAttemptLimiter.recordLoginFailure(email, clientIp);
+        loginAttemptLimiter.checkLoginAllowed(email, clientIp);
+        return new InvalidCredentialsException();
+    }
+
+    private IssuedTokens issueTokens(User user) {
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getId(), user.getRole().name(), user.getTokenVersion());
         String refreshToken = newRefreshToken(user);
-        return LoginResponse.bearer(accessToken, refreshToken);
+        return IssuedTokens.bearer(accessToken, refreshToken);
     }
 
     private String newRefreshToken(User user) {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        String rawToken = newRawToken();
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(refreshTokenValidityInSeconds);
         refreshTokenRepository.save(new RefreshToken(user, sha256(rawToken), expiresAt));
         return rawToken;
+    }
+
+    private static String newRawToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void revokeAll(Long userId) {
@@ -150,13 +231,13 @@ public class UserService {
         }
     }
 
-    private static void rejectIdentityPassword(User user, String password) {
+    private static void rejectIdentityPassword(User user, String password, String field) {
         int at = user.getEmail().indexOf('@');
         if (at > 0 && password.equalsIgnoreCase(user.getEmail().substring(0, at))) {
-            throw new InvalidRequestException("newPassword", "비밀번호는 이메일 아이디와 같을 수 없습니다.");
+            throw new InvalidRequestException(field, "비밀번호는 이메일 아이디와 같을 수 없습니다.");
         }
         if (password.equalsIgnoreCase(user.getNickname())) {
-            throw new InvalidRequestException("newPassword", "비밀번호는 닉네임과 같을 수 없습니다.");
+            throw new InvalidRequestException(field, "비밀번호는 닉네임과 같을 수 없습니다.");
         }
     }
 

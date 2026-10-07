@@ -1,5 +1,6 @@
 package com.chaekdami.config;
 
+import com.chaekdami.user.application.TokenVersionChecker;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     );
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenVersionChecker tokenVersionChecker;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -48,12 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             try {
                 Long userId = jwtTokenProvider.getUserId(token);
-                String role = jwtTokenProvider.getRole(token);
-                List<SimpleGrantedAuthority> authorities =
-                        Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(role)));
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                long tokenVersion = jwtTokenProvider.getTokenVersion(token);
+                if (!tokenVersionChecker.matches(userId, tokenVersion)) {
+                    log.warn(">>> [JWT] Access token version rejected");
+                } else {
+                    String role = jwtTokenProvider.getRole(token);
+                    List<SimpleGrantedAuthority> authorities =
+                            Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(role)));
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (RuntimeException exception) {
                 log.warn(">>> [JWT] Access token rejected");
             }

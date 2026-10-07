@@ -261,7 +261,7 @@ Content-Type: application/json
   client.global.set("refreshToken", response.body.refreshToken);
 %}
 
-### 29. 비밀번호 변경 — 204, Refresh Token 전부 폐기
+### 29. 비밀번호 변경 — 204, Access·Refresh Token 전부 무효
 POST {{baseUrl}}/api/auth/password
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
@@ -270,6 +270,10 @@ Content-Type: application/json
   "currentPassword": "password123",
   "newPassword": "Password123"
 }
+
+### 29-1. 비밀번호 변경 후 기존 Access Token으로 내 정보 — 401
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
 
 ### 30. 비밀번호 변경 후 기존 Refresh Token — 401
 POST {{baseUrl}}/api/auth/refresh
@@ -295,4 +299,81 @@ Content-Type: application/json
 {
   "email": "password-change@chaekdami.local",
   "password": "Password123"
+}
+
+### 33. 전체 로그아웃용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "Password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 34. 전체 로그아웃 — 204
+POST {{baseUrl}}/api/auth/logout-all
+Authorization: Bearer {{accessToken}}
+
+### 35. 전체 로그아웃 후 기존 Access Token — 401
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 36. 전체 로그아웃 후 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 37. 비밀번호 재설정 요청 — 가입 여부와 상관없이 204
+# 가입된 이메일이면 서버 로그에 재설정 토큰이 출력된다.
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local"
+}
+
+### 38. 없는 이메일로 재설정 요청 — 같은 204
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: application/json
+
+{
+  "email": "nobody@chaekdami.local"
+}
+
+### 39. 비밀번호 재설정 — 204, 토큰은 한 번만 사용
+# 37번 로그의 token 값을 넣는다.
+POST {{baseUrl}}/api/auth/password/reset
+Content-Type: application/json
+
+{
+  "token": "로그에-출력된-토큰",
+  "newPassword": "Resetpass123"
+}
+
+### 40. 같은 재설정 토큰 재사용 — 400
+POST {{baseUrl}}/api/auth/password/reset
+Content-Type: application/json
+
+{
+  "token": "로그에-출력된-토큰",
+  "newPassword": "Resetpass456"
+}
+
+### 41. 로그인 5회 연속 실패 후 — 429
+# 같은 이메일과 주소로 틀린 비밀번호를 5번째 보내면 TOO_MANY_ATTEMPTS.
+# 1~4번째는 401 INVALID_CREDENTIALS, 15분이 지나면 다시 시도할 수 있다.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "wrong-password"
 }

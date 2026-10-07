@@ -2,8 +2,10 @@ package com.chaekdami.user.presentation;
 
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
+import com.chaekdami.user.application.exception.ForbiddenException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
 import com.chaekdami.user.application.exception.InvalidRequestException;
+import com.chaekdami.user.application.exception.TooManyAttemptsException;
 import com.chaekdami.user.application.exception.UnauthorizedException;
 import com.chaekdami.user.presentation.dto.ApiErrorResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +58,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiErrorResponse.of("UNAUTHORIZED", exception.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of("FORBIDDEN", exception.getMessage()));
+    }
+
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<ApiErrorResponse> handleTooManyAttempts(TooManyAttemptsException exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiErrorResponse.of("TOO_MANY_ATTEMPTS", exception.getMessage()));
     }
 
     @ExceptionHandler(DuplicateEmailException.class)

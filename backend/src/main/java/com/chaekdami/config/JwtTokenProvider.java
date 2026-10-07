@@ -16,24 +16,22 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    private final SecretKey key;
-    private final long validityInMilliseconds;
+    static final long ACCESS_TOKEN_VALIDITY_SECONDS = 15 * 60;
 
-    public JwtTokenProvider(
-            @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.access-token-validity-in-seconds}") long validityInSeconds) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.validityInMilliseconds = validityInSeconds * 1000;
+    private final SecretKey key;
+
+    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
+        this.key = Keys.hmacShaKeyFor(decodeSecret(secretKey));
     }
 
-    public String createAccessToken(Long userId, String role) {
+    public String createAccessToken(Long userId, String role, long tokenVersion) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
+        Date validity = new Date(now.getTime() + ACCESS_TOKEN_VALIDITY_SECONDS * 1000);
 
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("role", role)
+                .claim("tokenVersion", tokenVersion)
                 .issuedAt(now)
                 .expiration(validity)
                 .signWith(key)
@@ -53,6 +51,14 @@ public class JwtTokenProvider {
         return role != null ? role.toString() : "USER";
     }
 
+    public long getTokenVersion(String token) {
+        Object value = parseClaims(token).get("tokenVersion");
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        return -1L;
+    }
+
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
@@ -61,6 +67,22 @@ public class JwtTokenProvider {
             log.warn(">>> [JWT] Token validation failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    private static byte[] decodeSecret(String secretKey) {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET 환경변수가 필요합니다.");
+        }
+        final byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey.trim());
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("JWT_SECRET은 Base64 문자열이어야 합니다.", exception);
+        }
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT_SECRET은 32바이트 이상의 키를 Base64로 인코딩한 값이어야 합니다.");
+        }
+        return keyBytes;
     }
 
     private Claims parseClaims(String token) {
