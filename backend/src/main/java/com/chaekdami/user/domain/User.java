@@ -62,4 +62,8 @@ public class User {
         this.nickname = nickname;
         this.role = role != null ? role : Role.USER;
     }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }

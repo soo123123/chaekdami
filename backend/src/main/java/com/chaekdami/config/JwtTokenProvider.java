@@ -27,12 +27,12 @@ public class JwtTokenProvider {
         this.validityInMilliseconds = validityInSeconds * 1000;
     }
 
-    public String createToken(String email, String role) {
+    public String createAccessToken(Long userId, String role) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
         return Jwts.builder()
-                .subject(email)
+                .subject(userId.toString())
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(validity)
@@ -40,8 +40,12 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String getEmail(String token) {
-        return parseClaims(token).getSubject();
+    public Long getUserId(String token) {
+        try {
+            return Long.valueOf(parseClaims(token).getSubject());
+        } catch (NumberFormatException exception) {
+            throw new JwtException("subject is not a user id");
+        }
     }
 
     public String getRole(String token) {

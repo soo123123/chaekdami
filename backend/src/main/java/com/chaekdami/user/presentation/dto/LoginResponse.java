@@ -7,10 +7,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public class LoginResponse {
     private String accessToken;
+    private String refreshToken;
     private String tokenType;
 
-    public LoginResponse(String accessToken) {
-        this.accessToken = accessToken;
-        this.tokenType = "Bearer";
+    public static LoginResponse bearer(String accessToken, String refreshToken) {
+        return new LoginResponse(accessToken, refreshToken, "Bearer");
     }
 }

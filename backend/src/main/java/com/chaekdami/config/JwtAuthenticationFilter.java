@@ -40,42 +40,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         HttpServletRequest effectiveRequest = wrapWithoutCacheValidators(request);
 
         String token = resolveToken(effectiveRequest);
-        log.info(">>> [JWT Filter] {} {} (dispatcher={})",
+        log.debug(">>> [JWT Filter] {} {} (dispatcher={})",
                 effectiveRequest.getMethod(),
                 effectiveRequest.getRequestURI(),
                 effectiveRequest.getDispatcherType());
-        log.info(">>> [JWT Filter] Authorization present={}, tokenLength={}",
-                StringUtils.hasText(effectiveRequest.getHeader(HttpHeaders.AUTHORIZATION)),
-                token != null ? token.length() : 0);
 
-        if (StringUtils.hasText(token)) {
-            boolean isValid = jwtTokenProvider.validateToken(token);
-            log.info(">>> [JWT Filter] Is Token Valid?: {}", isValid);
-
-            if (isValid) {
-                String email = jwtTokenProvider.getEmail(token);
+        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
+            try {
+                Long userId = jwtTokenProvider.getUserId(token);
                 String role = jwtTokenProvider.getRole(token);
                 List<SimpleGrantedAuthority> authorities =
                         Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(role)));
-
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, authorities);
-
+                        new UsernamePasswordAuthenticationToken(userId, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info(">>> [JWT Filter] Authentication Set for User: {}, authority={}", email, toSpringRole(role));
+            } catch (RuntimeException exception) {
+                log.warn(">>> [JWT] Access token rejected");
             }
-        } else {
-            log.warn(">>> [JWT Filter] No JWT Token found in Header");
         }
 
         applyNoStoreHeaders(response);
         filterChain.doFilter(effectiveRequest, response);
-        log.info(">>> [JWT Filter] Completed {} {} -> status={}, authenticated={}",
+        log.debug(">>> [JWT Filter] Completed {} {} -> status={}",
                 effectiveRequest.getMethod(),
                 effectiveRequest.getRequestURI(),
-                response.getStatus(),
-                SecurityContextHolder.getContext().getAuthentication() != null
-                        && SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
+                response.getStatus());
     }
 
     private String resolveToken(HttpServletRequest request) {

@@ -3,6 +3,7 @@ package com.chaekdami.user.presentation;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
+import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.application.exception.UnauthorizedException;
 import com.chaekdami.user.presentation.dto.ApiErrorResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.List;
 import java.util.Locale;
 
 @Slf4j
@@ -39,6 +41,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(InvalidCredentialsException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiErrorResponse.of("INVALID_CREDENTIALS", exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRequest(InvalidRequestException exception) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                "VALIDATION_ERROR",
+                "요청 값이 올바르지 않습니다.",
+                List.of(new ApiErrorResponse.FieldError(exception.getField(), exception.getMessage()))
+        ));
     }
 
     @ExceptionHandler(UnauthorizedException.class)

@@ -22,7 +22,10 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-> {% client.global.set("accessToken", response.body.accessToken); %}
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
 
 ### 3. 내 정보 조회 — GET /api/auth/me
 GET {{baseUrl}}/api/auth/me
@@ -167,4 +170,129 @@ Content-Type: application/json
   "email": "other@chaekdami.local",
   "password": "password123",
   "nickname": "Tester"
+}
+
+### 20. 만료되었거나 서명이 틀린 Access Token — 401
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxfQ.invalid
+
+### 21. Access Token 재발급
+# 2번 로그인 이후 실행. 이전 Refresh Token은 폐기된다.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+  client.global.set("previousRefreshToken", client.global.get("refreshToken"));
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 22. 이미 쓴 Refresh Token 재사용 — 401, 해당 사용자 토큰 전부 폐기
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{previousRefreshToken}}"
+}
+
+### 23. 재사용 감지로 폐기된 새 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 24. 다시 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 25. 로그아웃 — 204
+POST {{baseUrl}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 26. 로그아웃한 Refresh Token으로 재발급 — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 27. 비밀번호 변경용 가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123",
+  "nickname": "pwchange"
+}
+
+### 28. 비밀번호 변경용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 29. 비밀번호 변경 — 204, Refresh Token 전부 폐기
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "Password123"
+}
+
+### 30. 비밀번호 변경 후 기존 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 31. 이전 비밀번호로 로그인 — 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123"
+}
+
+### 32. 새 비밀번호로 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "Password123"
 }
