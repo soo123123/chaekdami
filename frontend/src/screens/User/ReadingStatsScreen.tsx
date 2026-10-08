@@ -391,7 +391,7 @@ const ReadingStatsScreen = () => {
       <TouchableOpacity
         style={styles.myPageButton}
         onPress={() =>
-          router.push('/mypage')
+          router.push('/user/mypage')
         }
       >
         <Text

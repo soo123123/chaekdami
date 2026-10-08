@@ -1,432 +1,526 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
 
+import React, { useMemo, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 
-import {
-  getDdayGoals,
-  DdayGoal,
-} from '../../api/ddayApi';
+interface DdayGoal {
+  id: number;
+  title: string;
+  targetDate: string;
+}
 
-const DdayScreen = () => {
-  const [goals, setGoals] =
-    useState<DdayGoal[]>([]);
+const initialGoals: DdayGoal[] = [
+  {
+    id: 1,
+    title: '현재 읽는 책 완독하기',
+    targetDate: '2026-10-20',
+  },
+  {
+    id: 2,
+    title: '이번 달 독서 목표 달성',
+    targetDate: '2026-10-31',
+  },
+];
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+const formatDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
-  // D-day 목록 불러오기
-  useEffect(() => {
-    const loadDdayGoals = async () => {
-      try {
-        const data =
-          await getDdayGoals();
+const parseDate = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
 
-        setGoals(data);
-      } catch (error) {
-        console.error(
-          'D-day 조회 실패:',
-          error
-        );
+const getRemainingDays = (targetDate: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-        // 백엔드 연결 전 테스트용 데이터
-        setGoals([
-          {
-            id: 1,
-            title: '현재 읽는 책 완독하기',
-            targetDate: '2026.10.10',
-            remainingDays: 10,
-          },
-          {
-            id: 2,
-            title: '이번 달 독서 목표 달성',
-            targetDate: '2026.10.31',
-            remainingDays: 31,
-          },
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const target = parseDate(targetDate);
+  const difference = target.getTime() - today.getTime();
 
-    loadDdayGoals();
-  }, []);
+  return Math.round(difference / 86400000);
+};
 
-  const handleAddGoal = () => {
-    Alert.alert(
-      'D-day 추가',
-      '목표 등록 화면은 다음 단계에서 연결할 예정입니다.'
-    );
+const getDdayText = (days: number) => {
+  if (days === 0) return 'D-DAY';
+  if (days > 0) return `D-${days}`;
+  return `D+${Math.abs(days)}`;
+};
+
+export default function DdayScreen() {
+  const [goals] = useState<DdayGoal[]>(initialGoals);
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
+  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    const cells: (number | null)[] = [];
+
+    for (let i = 0; i < firstDay; i++) {
+      cells.push(null);
+    }
+
+    for (let day = 1; day <= lastDate; day++) {
+      cells.push(day);
+    }
+
+    while (cells.length % 7 !== 0) {
+      cells.push(null);
+    }
+
+    return cells;
+  }, [year, month]);
+
+  const closestGoal = [...goals]
+    .filter(goal => getRemainingDays(goal.targetDate) >= 0)
+    .sort(
+      (a, b) =>
+        getRemainingDays(a.targetDate) -
+        getRemainingDays(b.targetDate)
+    )[0];
+
+  const selectedGoals = goals.filter(
+    goal => goal.targetDate === selectedDate
+  );
+
+  const moveMonth = (amount: number) => {
+    setCurrentMonth(new Date(year, month + amount, 1));
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-
-        <Text style={styles.loadingText}>
-          D-day 정보를 불러오는 중...
-        </Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      {/* 상단 */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButton}>
-            ‹
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backText}>‹</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.headerTitle}>D-day</Text>
+
+          <View style={styles.headerSpace} />
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>가장 가까운 독서 목표</Text>
+
+          <Text style={styles.summaryDday}>
+            {closestGoal
+              ? getDdayText(getRemainingDays(closestGoal.targetDate))
+              : '목표 없음'}
           </Text>
-        </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
-          D-day
-        </Text>
+          <Text style={styles.summaryTitle}>
+            {closestGoal?.title ?? '새 독서 목표를 만들어보세요'}
+          </Text>
 
-        <View style={styles.headerSpace} />
-      </View>
+          {closestGoal && (
+            <Text style={styles.summaryDate}>
+              목표일 {closestGoal.targetDate}
+            </Text>
+          )}
+        </View>
 
-      {/* D-day가 있을 때 */}
-      {goals.length > 0 ? (
-        <>
-          {/* 가장 가까운 D-day */}
-          <View style={styles.mainCard}>
-            <Text style={styles.mainLabel}>
-              가장 가까운 독서 목표
+        <View style={styles.calendarCard}>
+          <View style={styles.monthHeader}>
+            <TouchableOpacity onPress={() => moveMonth(-1)}>
+              <Text style={styles.monthArrow}>‹</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.monthTitle}>
+              {year}년 {month + 1}월
             </Text>
 
-            <Text style={styles.mainDday}>
-              D-{goals[0].remainingDays}
-            </Text>
-
-            <Text style={styles.mainTitle}>
-              {goals[0].title}
-            </Text>
-
-            <Text style={styles.mainDate}>
-              목표일 {goals[0].targetDate}
-            </Text>
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              나의 독서 목표
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleAddGoal}
-            >
-              <Text style={styles.addText}>
-                + 추가
-              </Text>
+            <TouchableOpacity onPress={() => moveMonth(1)}>
+              <Text style={styles.monthArrow}>›</Text>
             </TouchableOpacity>
           </View>
 
-          {goals.map(goal => (
-            <View
-              key={goal.id}
-              style={styles.goalCard}
-            >
-              <View style={styles.ddayCircle}>
-                <Text style={styles.ddayText}>
-                  D-{goal.remainingDays}
+          <View style={styles.weekRow}>
+            {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+              <Text key={day} style={styles.weekText}>
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {calendarDays.map((day, index) => {
+              const date = day
+                ? formatDate(new Date(year, month, day))
+                : '';
+
+              const isSelected = date === selectedDate;
+              const isToday = date === formatDate(new Date());
+              const hasGoal = goals.some(
+                goal => goal.targetDate === date
+              );
+
+              return (
+                <TouchableOpacity
+                  key={`${index}-${date}`}
+                  style={styles.dayCell}
+                  disabled={!day}
+                  onPress={() => setSelectedDate(date)}
+                >
+                  {day && (
+                    <View
+                      style={[
+                        styles.dayCircle,
+                        isToday && styles.todayCircle,
+                        isSelected && styles.selectedCircle,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dayText,
+                          isSelected && styles.selectedDayText,
+                        ]}
+                      >
+                        {day}
+                      </Text>
+
+                      {hasGoal && (
+                        <View
+                          style={[
+                            styles.goalDot,
+                            isSelected && styles.selectedGoalDot,
+                          ]}
+                        />
+                      )}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>선택한 날짜의 목표</Text>
+          <Text style={styles.selectedDate}>{selectedDate}</Text>
+        </View>
+
+        {selectedGoals.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              이 날짜에 등록된 독서 목표가 없어요.
+            </Text>
+          </View>
+        ) : (
+          selectedGoals.map(goal => (
+            <View key={goal.id} style={styles.goalCard}>
+              <View style={styles.goalBadge}>
+                <Text style={styles.goalBadgeText}>
+                  {getDdayText(getRemainingDays(goal.targetDate))}
                 </Text>
               </View>
 
               <View style={styles.goalInfo}>
-                <Text style={styles.goalTitle}>
-                  {goal.title}
-                </Text>
-
+                <Text style={styles.goalTitle}>{goal.title}</Text>
                 <Text style={styles.goalDate}>
                   목표일 {goal.targetDate}
                 </Text>
               </View>
-
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    goal.title,
-                    '수정 및 삭제 기능은 백엔드 API 연결 후 추가할 예정입니다.'
-                  )
-                }
-              >
-                <Text style={styles.moreButton}>
-                  ⋮
-                </Text>
-              </TouchableOpacity>
             </View>
-          ))}
-        </>
-      ) : (
-        /* D-day가 없을 때 */
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyEmoji}>
-            📅
-          </Text>
+          ))
+        )}
 
-          <Text style={styles.emptyTitle}>
-            아직 등록된 D-day가 없어요
-          </Text>
-
-          <Text style={styles.emptyDescription}>
-            독서 목표 날짜를 설정해보세요.
-          </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>나의 독서 목표</Text>
         </View>
-      )}
 
-      {/* 안내 */}
-      <View style={styles.guideCard}>
-        <Text style={styles.guideEmoji}>
-          📚
-        </Text>
+        {goals.map(goal => (
+          <TouchableOpacity
+            key={goal.id}
+            style={styles.goalCard}
+            onPress={() => {
+              setSelectedDate(goal.targetDate);
+              const target = parseDate(goal.targetDate);
+              setCurrentMonth(
+                new Date(target.getFullYear(), target.getMonth(), 1)
+              );
+            }}
+          >
+            <View style={styles.goalBadge}>
+              <Text style={styles.goalBadgeText}>
+                {getDdayText(getRemainingDays(goal.targetDate))}
+              </Text>
+            </View>
 
-        <View style={styles.guideContent}>
-          <Text style={styles.guideTitle}>
-            독서 목표를 만들어보세요
-          </Text>
+            <View style={styles.goalInfo}>
+              <Text style={styles.goalTitle}>{goal.title}</Text>
+              <Text style={styles.goalDate}>
+                목표일 {goal.targetDate}
+              </Text>
+            </View>
 
-          <Text style={styles.guideDescription}>
-            완독 목표 날짜를 설정하고
-            꾸준히 독서해보세요.
-          </Text>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+        ))}
+
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeEmoji}>📚</Text>
+          <View style={styles.noticeInfo}>
+            <Text style={styles.noticeTitle}>독서 목표를 만들어보세요</Text>
+            <Text style={styles.noticeDescription}>
+              목표 날짜를 정하고 꾸준히 독서해보세요.
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* 추가 버튼 */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAddGoal}
-      >
-        <Text style={styles.addButtonText}>
-          + 새로운 D-day 만들기
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() =>
+            alert('독서 목표 등록 기능은 추후 연결할 예정입니다.')
+          }
+        >
+          <Text style={styles.addButtonText}>+ 새로운 D-day 만들기</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
-};
-
-export default DdayScreen;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf8f3',
+    backgroundColor: '#F8F6F0',
   },
-
   content: {
     padding: 20,
     paddingBottom: 50,
   },
-
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#faf8f3',
-  },
-
-  loadingText: {
-    marginTop: 10,
-    color: '#777777',
-  },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    marginBottom: 25,
   },
-
-  backButton: {
-    fontSize: 34,
+  backText: {
+    fontSize: 32,
+    color: '#333',
   },
-
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 23,
+    fontWeight: '800',
   },
-
   headerSpace: {
-    width: 25,
+    width: 20,
   },
-
-  mainCard: {
-    backgroundColor: '#e9eee5',
+  summaryCard: {
+    backgroundColor: '#E8EEE4',
     borderRadius: 22,
     padding: 25,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
   },
-
-  mainLabel: {
-    fontSize: 12,
-    color: '#647268',
+  summaryLabel: {
+    color: '#777',
+    fontSize: 13,
   },
-
-  mainDday: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#3f6548',
-    marginTop: 10,
+  summaryDday: {
+    fontSize: 43,
+    fontWeight: '800',
+    color: '#49684D',
+    marginTop: 15,
   },
-
-  mainTitle: {
+  summaryTitle: {
     fontSize: 17,
-    fontWeight: 'bold',
-    marginTop: 10,
+    fontWeight: '800',
+    marginTop: 8,
   },
-
-  mainDate: {
-    fontSize: 11,
-    color: '#777777',
-    marginTop: 6,
+  summaryDate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
   },
-
+  calendarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 25,
+  },
+  monthHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  monthArrow: {
+    fontSize: 30,
+    color: '#55705A',
+    paddingHorizontal: 12,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  weekText: {
+    width: '14.2857%',
+    textAlign: 'center',
+    fontWeight: '600',
+    color: '#777',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.2857%',
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCircle: {
+    width: 39,
+    height: 39,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todayCircle: {
+    borderWidth: 1,
+    borderColor: '#5E7D61',
+  },
+  selectedCircle: {
+    backgroundColor: '#5E7D61',
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedDayText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  goalDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#5E7D61',
+    position: 'absolute',
+    bottom: 3,
+  },
+  selectedGoalDot: {
+    backgroundColor: '#FFFFFF',
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
-
-  addText: {
-    color: '#4f7658',
+  selectedDate: {
+    fontSize: 12,
+    color: '#777',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 22,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  emptyText: {
     fontSize: 13,
-    fontWeight: 'bold',
+    color: '#999',
   },
-
   goalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 17,
-    padding: 15,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-
-  ddayCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#edf2e9',
-    justifyContent: 'center',
+  goalBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E8EEE4',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  ddayText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#3f6548',
+  goalBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#49684D',
   },
-
   goalInfo: {
     flex: 1,
     marginLeft: 14,
   },
-
   goalTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-
   goalDate: {
-    fontSize: 11,
-    color: '#888888',
+    fontSize: 12,
+    color: '#888',
     marginTop: 5,
   },
-
-  moreButton: {
-    fontSize: 24,
-    paddingHorizontal: 8,
+  arrow: {
+    fontSize: 25,
+    color: '#999',
   },
-
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 30,
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-
-  emptyEmoji: {
-    fontSize: 40,
-  },
-
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-
-  emptyDescription: {
-    fontSize: 12,
-    color: '#777777',
-    marginTop: 6,
-  },
-
-  guideCard: {
-    backgroundColor: '#f2eee6',
+  noticeCard: {
+    backgroundColor: '#F0EDE6',
     borderRadius: 18,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-  },
-
-  guideEmoji: {
-    fontSize: 30,
-  },
-
-  guideContent: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  guideTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-
-  guideDescription: {
-    fontSize: 11,
-    color: '#777777',
-    marginTop: 5,
-    lineHeight: 17,
-  },
-
-  addButton: {
-    backgroundColor: '#4f7658',
-    borderRadius: 18,
-    paddingVertical: 15,
-    alignItems: 'center',
     marginTop: 20,
+    marginBottom: 15,
   },
-
-  addButtonText: {
-    color: '#ffffff',
+  noticeEmoji: {
+    fontSize: 26,
+    marginRight: 14,
+  },
+  noticeInfo: {
+    flex: 1,
+  },
+  noticeTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '800',
+  },
+  noticeDescription: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 5,
+  },
+  addButton: {
+    backgroundColor: '#5E7D61',
+    borderRadius: 16,
+    paddingVertical: 17,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

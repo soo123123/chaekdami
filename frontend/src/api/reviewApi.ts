@@ -1,6 +1,5 @@
 import apiClient from './apiClient';
 
-
 // ========================================
 // 문장 저장 관련 기능
 // 현재 FE1 담당
@@ -10,8 +9,8 @@ import apiClient from './apiClient';
 export const getSentences = async (
   readingRecordId: number
 ) => {
-  const response = await axios.get(
-    `${API_URL}/reading-records/${readingRecordId}/sentences`
+  const response = await apiClient.get(
+    `/reading-records/${readingRecordId}/sentences`
   );
 
   return response.data;
@@ -23,8 +22,8 @@ export const createSentence = async (
   content: string,
   pageNumber: number
 ) => {
-  const response = await axios.post(
-    `${API_URL}/reading-records/${readingRecordId}/sentences`,
+  const response = await apiClient.post(
+    `/reading-records/${readingRecordId}/sentences`,
     {
       content,
       pageNumber,
@@ -38,8 +37,8 @@ export const createSentence = async (
 export const deleteSentence = async (
   sentenceId: number
 ) => {
-  await axios.delete(
-    `${API_URL}/sentences/${sentenceId}`
+  await apiClient.delete(
+    `/sentences/${sentenceId}`
   );
 };
 

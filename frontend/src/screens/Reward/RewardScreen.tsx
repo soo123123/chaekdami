@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-
 import { router } from 'expo-router';
 import { getRewardStatus } from '../../api/rewardApi';
 
@@ -18,524 +18,491 @@ interface RewardStatus {
   currency?: number;
 }
 
-const RewardScreen = () => {
-  const [reward, setReward] =
-    useState<RewardStatus | null>(null);
+const TEST_REWARD: RewardStatus = {
+  level: 5,
+  xp: 320,
+  requiredXp: 500,
+  currency: 1250,
+};
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+export default function RewardScreen() {
+  const [reward, setReward] = useState<RewardStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
-  // 보상 정보 불러오기
   useEffect(() => {
+    let active = true;
+
     const loadReward = async () => {
       try {
         const data = await getRewardStatus();
-
-        setReward(data);
+        if (active) {
+          setReward(data);
+          setIsDemo(false);
+        }
       } catch (error) {
-        console.error(
-          '보상 정보 조회 실패:',
-          error
-        );
-
-        // 백엔드 연결 전 테스트용 데이터
-        setReward({
-          level: 5,
-          xp: 320,
-          requiredXp: 500,
-          currency: 1250,
-        });
+        console.warn('보상 정보 조회 실패:', error);
+        if (active) {
+          setReward(TEST_REWARD);
+          setIsDemo(true);
+        }
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     loadReward();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // 로딩 화면
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
-
-        <Text style={styles.loadingText}>
-          레벨 정보를 불러오는 중...
-        </Text>
+        <ActivityIndicator size="large" color="#5E7D61" />
+        <Text style={styles.muted}>보상 정보를 불러오는 중...</Text>
       </View>
     );
   }
 
   const level = reward?.level ?? 1;
   const xp = reward?.xp ?? 0;
-  const requiredXp =
-    reward?.requiredXp ?? 100;
-
-  const currency =
-    reward?.currency ?? 0;
+  const requiredXp = reward?.requiredXp ?? 100;
+  const currency = reward?.currency ?? 0;
 
   const progress =
     requiredXp > 0
-      ? Math.min(xp / requiredXp, 1)
+      ? Math.max(0, Math.min(xp / requiredXp, 1))
       : 0;
 
-  const remainingXp =
-    Math.max(requiredXp - xp, 0);
+  const remainingXp = Math.max(requiredXp - xp, 0);
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {/* 상단 */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButton}>
-            ‹
-          </Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.back}>‹</Text>
         </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>
-          레벨
-        </Text>
-
-        <View style={styles.headerSpace} />
+        <Text style={styles.headerTitle}>레벨 및 보상</Text>
+        <View style={{ width: 28 }} />
       </View>
 
-      {/* 현재 레벨 */}
-      <View style={styles.levelCard}>
-        <Text style={styles.smallTitle}>
-          현재 레벨
+      {isDemo && (
+        <Text style={styles.demoNotice}>
+          현재 서버 연결 전 테스트 데이터를 표시하고 있어요.
         </Text>
+      )}
+
+      <View style={styles.levelCard}>
+        <Text style={styles.eyebrow}>나의 독서 성장</Text>
 
         <View style={styles.levelRow}>
-          <View style={styles.levelCircle}>
-            <Text style={styles.levelNumber}>
-              {level}
-            </Text>
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelBadgeText}>Lv.</Text>
+            <Text style={styles.levelNumber}>{level}</Text>
           </View>
 
           <View style={styles.levelInfo}>
-            <Text style={styles.levelText}>
-              Lv. {level}
+            <Text style={styles.levelTitle}>
+              레벨 {level}
             </Text>
-
-            <Text
-              style={styles.levelDescription}
-            >
-              꾸준히 독서하며 성장하고 있어요!
+            <Text style={styles.levelSubtitle}>
+              책과 함께 차곡차곡 성장하고 있어요.
             </Text>
           </View>
         </View>
 
-        {/* 경험치 */}
-        <View style={styles.xpHeader}>
-          <Text style={styles.xpLabel}>
-            다음 레벨까지
-          </Text>
-
-          <Text style={styles.xpValue}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>경험치</Text>
+          <Text style={styles.progressValue}>
             {xp} / {requiredXp} XP
           </Text>
         </View>
 
-        <View
-          style={styles.progressBackground}
-        >
+        <View style={styles.progressTrack}>
           <View
             style={[
-              styles.progressBar,
-              {
-                width: `${progress * 100}%`,
-              },
+              styles.progressFill,
+              { width: `${progress * 100}%` },
             ]}
           />
         </View>
 
-        <Text style={styles.remainingText}>
-          앞으로 {remainingXp} XP 남았어요
+        <Text style={styles.remaining}>
+          다음 레벨까지 {remainingXp} XP 남았어요
         </Text>
       </View>
 
-      {/* 보유 재화 */}
       <View style={styles.currencyCard}>
         <View>
-          <Text style={styles.currencyLabel}>
-            보유 재화
-          </Text>
-
+          <Text style={styles.muted}>나의 보유 재화</Text>
           <Text style={styles.currencyValue}>
-            🪙 {currency}
+            🪙 {currency.toLocaleString()}
           </Text>
         </View>
 
         <TouchableOpacity
-          style={styles.shopButton}
-          onPress={() =>
-            router.push('/shop')
-          }
+          style={styles.outlineButton}
+          onPress={() => router.push('/reward/shop')}
         >
-          <Text style={styles.shopButtonText}>
-            상점 가기
+          <Text style={styles.outlineButtonText}>
+            상점 가기 ›
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 레벨 보상 */}
-      <Text style={styles.sectionTitle}>
-        레벨 보상
-      </Text>
+      <Text style={styles.sectionTitle}>레벨 보상</Text>
 
-      <View style={styles.rewardList}>
-        <LevelReward
-          level={level}
-          title="현재 레벨"
+      <View style={styles.rewardCard}>
+        <RewardRow
+          icon="✓"
+          title={`Lv.${level} 현재 레벨`}
           description="현재 달성한 레벨이에요."
           completed
         />
-
-        <LevelReward
-          level={level + 1}
-          title="다음 레벨"
-          description="재화 100개를 받을 수 있어요."
+        <View style={styles.separator} />
+        <RewardRow
+          icon="🎁"
+          title={`Lv.${level + 1} 다음 레벨`}
+          description="다음 레벨에서 받을 보상을 확인해 보세요."
         />
-
-        <LevelReward
-          level={level + 2}
-          title="레벨 보상"
-          description="새로운 꾸미기 아이템이 열려요."
-        />
-
-        <LevelReward
-          level={level + 3}
-          title="레벨 보상"
-          description="추가 보상을 획득할 수 있어요."
+        <View style={styles.separator} />
+        <RewardRow
+          icon="🔒"
+          title={`Lv.${level + 2} 이후 보상`}
+          description="레벨을 올리며 새로운 보상을 만나보세요."
         />
       </View>
 
-      {/* 퀘스트 이동 */}
+      <Text style={styles.sectionTitle}>경험치 모으기</Text>
+
       <TouchableOpacity
         style={styles.questCard}
-        onPress={() =>
-          router.push('/quest')
-        }
+        onPress={() => router.push('/reward/quest')}
       >
-        <View style={styles.questContent}>
+        <View style={styles.questIcon}>
+          <Text style={styles.questEmoji}>🎯</Text>
+        </View>
+        <View style={styles.questInfo}>
           <Text style={styles.questTitle}>
-            XP가 더 필요하신가요?
+            오늘의 독서 퀘스트
           </Text>
-
-          <Text
-            style={styles.questDescription}
-          >
-            퀘스트를 완료하고 경험치를
-            획득해 보세요.
+          <Text style={styles.questDescription}>
+            독서 목표를 달성하고 XP와 재화를 모아보세요.
           </Text>
         </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
+        <Text style={styles.arrow}>›</Text>
       </TouchableOpacity>
+
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>🌱 독서 성장 안내</Text>
+        <Text style={styles.tipDescription}>
+          꾸준한 독서 활동으로 경험치를 쌓고
+          나만의 서재를 꾸며보세요.
+        </Text>
+      </View>
     </ScrollView>
   );
-};
+}
 
-interface LevelRewardProps {
-  level: number;
+interface RewardRowProps {
+  icon: string;
   title: string;
   description: string;
   completed?: boolean;
 }
 
-const LevelReward = ({
-  level,
+function RewardRow({
+  icon,
   title,
   description,
   completed = false,
-}: LevelRewardProps) => {
+}: RewardRowProps) {
   return (
-    <View style={styles.rewardItem}>
+    <View style={styles.rewardRow}>
       <View
         style={[
-          styles.rewardLevelCircle,
-          completed &&
-            styles.rewardLevelCompleted,
+          styles.rewardIcon,
+          completed && styles.completedIcon,
         ]}
       >
-        <Text style={styles.rewardLevelText}>
-          {completed ? '✓' : level}
-        </Text>
+        <Text style={styles.rewardEmoji}>{icon}</Text>
       </View>
 
-      <View style={styles.rewardContent}>
-        <Text style={styles.rewardTitle}>
-          Lv. {level} · {title}
-        </Text>
-
-        <Text
-          style={styles.rewardDescription}
-        >
+      <View style={styles.rewardInfo}>
+        <Text style={styles.rewardTitle}>{title}</Text>
+        <Text style={styles.rewardDescription}>
           {description}
         </Text>
       </View>
 
-      <Text style={styles.rewardIcon}>
-        {completed ? '✅' : '🎁'}
-      </Text>
+      {completed && (
+        <Text style={styles.completedText}>달성</Text>
+      )}
     </View>
   );
-};
-
-export default RewardScreen;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf8f3',
+    backgroundColor: '#FAF8F3',
   },
-
   content: {
-    padding: 20,
-    paddingBottom: 50,
+    padding: 22,
+    paddingBottom: 60,
   },
-
   center: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#faf8f3',
+    justifyContent: 'center',
+    backgroundColor: '#FAF8F3',
   },
-
-  loadingText: {
-    marginTop: 10,
-    color: '#777777',
-  },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  back: {
+    fontSize: 32,
+    color: '#263D2C',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#202820',
+  },
+  demoNotice: {
+    fontSize: 12,
+    color: '#8A7351',
+    marginBottom: 12,
+  },
+  levelCard: {
+    backgroundColor: '#E9EEE5',
+    borderRadius: 22,
+    padding: 24,
+    marginBottom: 16,
+  },
+  eyebrow: {
+    fontSize: 13,
+    color: '#617462',
     marginBottom: 20,
   },
-
-  backButton: {
-    fontSize: 34,
-  },
-
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-
-  headerSpace: {
-    width: 25,
-  },
-
-  levelCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 15,
-  },
-
-  smallTitle: {
-    fontSize: 14,
-    marginBottom: 15,
-  },
-
   levelRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
   },
-
-  levelCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#e9f1e7',
-    justifyContent: 'center',
+  levelBadge: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#5E7D61',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  levelNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#3f6548',
-  },
-
-  levelInfo: {
-    marginLeft: 16,
-    flex: 1,
-  },
-
-  levelText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-
-  levelDescription: {
-    marginTop: 5,
+  levelBadgeText: {
     fontSize: 13,
-    color: '#777777',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
-
-  xpHeader: {
+  levelNumber: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  levelInfo: {
+    flex: 1,
+    marginLeft: 18,
+  },
+  levelTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#334F38',
+  },
+  levelSubtitle: {
+    fontSize: 13,
+    color: '#6E7A6C',
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 25,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-
-  xpLabel: {
+  progressLabel: {
     fontSize: 13,
+    color: '#536753',
   },
-
-  xpValue: {
+  progressValue: {
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#405B45',
   },
-
-  progressBackground: {
+  progressTrack: {
     height: 10,
-    backgroundColor: '#eeeeee',
-    borderRadius: 5,
+    borderRadius: 6,
+    backgroundColor: '#D2D9CF',
     overflow: 'hidden',
   },
-
-  progressBar: {
+  progressFill: {
     height: '100%',
-    backgroundColor: '#4f7658',
-    borderRadius: 5,
+    borderRadius: 6,
+    backgroundColor: '#5E7D61',
   },
-
-  remainingText: {
+  remaining: {
+    marginTop: 12,
     fontSize: 12,
-    marginTop: 8,
     textAlign: 'right',
-    color: '#777777',
+    color: '#617462',
   },
-
   currencyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 25,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 30,
   },
-
-  currencyLabel: {
+  muted: {
     fontSize: 13,
+    color: '#888888',
+    marginTop: 8,
   },
-
   currencyValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 5,
+    fontSize: 25,
+    fontWeight: '800',
+    marginTop: 8,
+    color: '#263D2C',
   },
-
-  shopButton: {
-    backgroundColor: '#4f7658',
-    paddingHorizontal: 17,
+  outlineButton: {
+    borderWidth: 1,
+    borderColor: '#CFD8CB',
+    borderRadius: 18,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 20,
   },
-
-  shopButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+  outlineButtonText: {
+    color: '#456849',
+    fontSize: 13,
+    fontWeight: '700',
   },
-
   sectionTitle: {
     fontSize: 19,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    fontWeight: '800',
+    color: '#222222',
+    marginBottom: 14,
   },
-
-  rewardList: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    paddingHorizontal: 15,
-    marginBottom: 20,
+  rewardCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    marginBottom: 30,
   },
-
-  rewardItem: {
+  rewardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    paddingVertical: 19,
   },
-
-  rewardLevelCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#eeeeee',
+  rewardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F1F0EA',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  rewardLevelCompleted: {
-    backgroundColor: '#dfeee1',
+  completedIcon: {
+    backgroundColor: '#E3EDE1',
   },
-
-  rewardLevelText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+  rewardEmoji: {
+    fontSize: 21,
+    color: '#4F7658',
   },
-
-  rewardContent: {
+  rewardInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
   },
-
   rewardTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#333333',
   },
-
   rewardDescription: {
     fontSize: 12,
-    marginTop: 4,
-    color: '#777777',
+    color: '#888888',
+    marginTop: 5,
+    lineHeight: 18,
   },
-
-  rewardIcon: {
-    fontSize: 22,
+  completedText: {
+    fontSize: 12,
+    color: '#5E7D61',
+    fontWeight: '800',
   },
-
+  separator: {
+    height: 1,
+    backgroundColor: '#F1F1ED',
+  },
   questCard: {
-    backgroundColor: '#f2eadc',
-    borderRadius: 18,
-    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    borderRadius: 20,
+    marginBottom: 18,
   },
-
-  questContent: {
+  questIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: '#E9EEE5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  questEmoji: {
+    fontSize: 26,
+  },
+  questInfo: {
     flex: 1,
+    marginLeft: 14,
   },
-
   questTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    color: '#303A30',
   },
-
   questDescription: {
     fontSize: 12,
+    color: '#888888',
+    lineHeight: 18,
     marginTop: 5,
-    color: '#777777',
   },
-
   arrow: {
-    fontSize: 25,
-    marginLeft: 10,
+    fontSize: 27,
+    color: '#5E7D61',
+    marginLeft: 8,
+  },
+  tipCard: {
+    backgroundColor: '#F0EBDD',
+    borderRadius: 18,
+    padding: 20,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#5A684F',
+  },
+  tipDescription: {
+    fontSize: 12,
     color: '#777777',
+    marginTop: 8,
+    lineHeight: 20,
   },
 });

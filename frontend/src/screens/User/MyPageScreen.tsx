@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
 import { router } from 'expo-router';
+
 import { getMyProfile } from '../../api/userApi';
 
 interface UserProfile {
@@ -19,341 +19,327 @@ interface UserProfile {
 }
 
 const MyPageScreen = () => {
-  const [profile, setProfile] =
-    useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  // 임시 데이터
+  const level = 5;
+  const xp = 320;
+  const maxXp = 500;
+  const currency = 1250;
 
-  // 사용자 정보 불러오기
+  const xpPercent = Math.min((xp / maxXp) * 100, 100);
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const data = await getMyProfile();
-
         setProfile(data);
       } catch (error) {
-        console.error(
-          '사용자 정보 조회 실패:',
-          error
-        );
+        console.log('사용자 정보 조회 실패:', error);
 
-        // 백엔드 연결 전 테스트용 데이터
+        // 백엔드 연결 전 임시 데이터
         setProfile({
           id: 1,
           nickname: '책다듬이',
           email: 'user@example.com',
         });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     loadProfile();
   }, []);
 
-  // 로딩 화면
-  if (isLoading) {
+  if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
-
-        <Text style={styles.loadingText}>
-          사용자 정보를 불러오는 중...
-        </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      {/* 상단 */}
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* 상단 */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>마이페이지</Text>
+
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={() =>
+              Alert.alert(
+                '설정',
+                '설정 기능은 추후 연결할 예정입니다.'
+              )
+            }
+          >
+            <Text style={styles.settingIcon}>⚙</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 프로필 */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileTop}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarEmoji}>🌱</Text>
+            </View>
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.nickname}>
+                {profile?.nickname ?? '사용자'}
+              </Text>
+
+              <Text style={styles.email}>
+                {profile?.email ?? ''}
+              </Text>
+
+              <Text style={styles.profileMessage}>
+                오늘도 책과 함께 성장해요.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() =>
+                Alert.alert(
+                  '프로필 수정',
+                  '프로필 수정 기능은 추후 연결할 예정입니다.'
+                )
+              }
+            >
+              <Text style={styles.editButtonText}>수정</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 레벨 */}
+          <TouchableOpacity
+            style={styles.levelArea}
+            onPress={() => router.push('/reward/reward')}
+          >
+            <View style={styles.levelHeader}>
+              <Text style={styles.levelText}>
+                Lv. {level}
+              </Text>
+
+              <Text style={styles.xpText}>
+                {xp} / {maxXp} XP
+              </Text>
+            </View>
+
+            <View style={styles.progressBackground}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { width: `${xpPercent}%` },
+                ]}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 활동 정보 */}
+        <View style={styles.statCard}>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={() => router.push('/reward/reward')}
+          >
+            <Text style={styles.statEmoji}>⭐</Text>
+            <Text style={styles.statValue}>Lv.{level}</Text>
+            <Text style={styles.statLabel}>레벨</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <View style={styles.statItem}>
+            <Text style={styles.statEmoji}>🪙</Text>
+            <Text style={styles.statValue}>{currency}</Text>
+            <Text style={styles.statLabel}>보유 재화</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={() => router.push('/user/reading-stats')}
+          >
+            <Text style={styles.statEmoji}>📚</Text>
+            <Text style={styles.statValue}>3권</Text>
+            <Text style={styles.statLabel}>완독</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 독서 목표 */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>나의 독서 활동</Text>
+        </View>
+
         <TouchableOpacity
-          onPress={() => router.back()}
+          style={styles.ddayCard}
+          onPress={() => router.push('/reward/dday')}
         >
-          <Text style={styles.backButton}>
-            ‹
-          </Text>
+          <View style={styles.ddayLeft}>
+            <View style={styles.ddayBadge}>
+              <Text style={styles.ddayBadgeText}>D-10</Text>
+            </View>
+
+            <View>
+              <Text style={styles.cardTitle}>
+                현재 읽는 책 완독하기
+              </Text>
+
+              <Text style={styles.cardDescription}>
+                목표일까지 꾸준히 읽어보세요.
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
-          마이페이지
-        </Text>
+        {/* 퀘스트 */}
+        <TouchableOpacity
+          style={styles.questCard}
+          onPress={() => router.push('/reward/quest')}
+        >
+          <View style={styles.questHeader}>
+            <View>
+              <Text style={styles.cardTitle}>
+                오늘의 독서 퀘스트
+              </Text>
 
-        <View style={styles.headerSpace} />
-      </View>
+              <Text style={styles.cardDescription}>
+                오늘 30분 독서하기
+              </Text>
+            </View>
 
-      {/* 프로필 */}
-      <View style={styles.profileCard}>
-        <View style={styles.profileImage}>
-          <Text style={styles.profileEmoji}>
-            🐱
-          </Text>
+            <Text style={styles.questProgress}>20 / 30분</Text>
+          </View>
+
+          <View style={styles.questProgressBackground}>
+            <View
+              style={[
+                styles.questProgressBar,
+                { width: '67%' },
+              ]}
+            />
+          </View>
+
+          <View style={styles.questReward}>
+            <Text style={styles.rewardText}>
+              ⭐ 50 XP
+            </Text>
+
+            <Text style={styles.rewardText}>
+              🪙 20
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 나의 서재 */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>나의 서재</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/reward/shop')}
+          >
+            <Text style={styles.moreText}>꾸미기 ›</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.profileInfo}>
-          <Text style={styles.nickname}>
-            {profile?.nickname ?? '사용자'}
+        <View style={styles.libraryCard}>
+          <View style={styles.libraryPreview}>
+            <Text style={styles.libraryEmoji}>🪴</Text>
+            <Text style={styles.libraryEmoji}>📚</Text>
+            <Text style={styles.libraryEmoji}>🪑</Text>
+            <Text style={styles.libraryEmoji}>💡</Text>
+          </View>
+
+          <Text style={styles.libraryTitle}>
+            나만의 독서 공간
           </Text>
 
-          <Text style={styles.email}>
-            {profile?.email ?? ''}
+          <Text style={styles.libraryDescription}>
+            독서 활동으로 모은 재화로 서재를 꾸며보세요.
           </Text>
+
+          <TouchableOpacity
+            style={styles.shopButton}
+            onPress={() => router.push('/reward/shop')}
+          >
+            <Text style={styles.shopButtonText}>
+              상점 보러가기
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 메뉴 */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>독서 기록</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.editButton}
-          onPress={() =>
-            Alert.alert(
-              '프로필 수정',
-              '프로필 수정 기능은 추후 연결할 예정입니다.'
-            )
-          }
+          style={styles.menuCard}
+          onPress={() => router.push('/user/reading-stats')}
         >
-          <Text style={styles.editButtonText}>
-            수정
-          </Text>
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuEmoji}>📊</Text>
+
+            <View>
+              <Text style={styles.menuTitle}>독서 통계</Text>
+              <Text style={styles.menuDescription}>
+                나의 독서 활동을 확인해요.
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
-      </View>
 
-      {/* 나의 독서 활동 */}
-      <Text style={styles.sectionTitle}>
-        나의 독서 활동
-      </Text>
-
-      {/* 독서 통계 */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() =>
-          router.push('/user/reading-stats')
-        }
-      >
-        <View style={styles.menuIcon}>
-          <Text style={styles.menuEmoji}>
-            📊
-          </Text>
-        </View>
-
-        <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>
-            독서 통계
-          </Text>
-
-          <Text style={styles.menuDescription}>
-            나의 독서 시간과 기록을 확인해요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      {/* D-day */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() =>
-          router.push('/reward/dday')
-        }
-      >
-        <View style={styles.menuIcon}>
-          <Text style={styles.menuEmoji}>
-            📅
-          </Text>
-        </View>
-
-        <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>
-            D-day
-          </Text>
-
-          <Text style={styles.menuDescription}>
-            독서 목표 날짜를 확인해요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      {/* 레벨 */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() =>
-          router.push('/reward/reward')
-        }
-      >
-        <View style={styles.menuIcon}>
-          <Text style={styles.menuEmoji}>
-            ⭐
-          </Text>
-        </View>
-
-        <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>
-            레벨
-          </Text>
-
-          <Text style={styles.menuDescription}>
-            나의 레벨과 경험치를 확인해요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      {/* 퀘스트 */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() =>
-          router.push('/reward/quest')
-        }
-      >
-        <View style={styles.menuIcon}>
-          <Text style={styles.menuEmoji}>
-            🎯
-          </Text>
-        </View>
-
-        <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>
-            퀘스트
-          </Text>
-
-          <Text style={styles.menuDescription}>
-            독서 퀘스트와 진행 상황을 확인해요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      {/* 상점 */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() =>
-          router.push('/reward/shop')
-        }
-      >
-        <View style={styles.menuIcon}>
-          <Text style={styles.menuEmoji}>
-            🛒
-          </Text>
-        </View>
-
-        <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>
-            상점
-          </Text>
-
-          <Text style={styles.menuDescription}>
-            모은 재화로 아이템을 구매해요.
-          </Text>
-        </View>
-
-        <Text style={styles.arrow}>
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      {/* 계정 */}
-      <Text style={styles.sectionTitle}>
-        계정
-      </Text>
-
-      <View style={styles.menuGroup}>
-        {/* 계정 정보 */}
         <TouchableOpacity
-          style={styles.menuRow}
-          onPress={() =>
-            Alert.alert(
-              '계정 정보',
-              '계정 정보 화면은 추후 연결할 예정입니다.'
-            )
-          }
+          style={styles.menuCard}
+          onPress={() => router.push('/reward/quest')}
         >
-          <Text style={styles.rowIcon}>
-            👤
-          </Text>
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuEmoji}>🎯</Text>
 
-          <Text style={styles.rowTitle}>
-            계정 정보
-          </Text>
+            <View>
+              <Text style={styles.menuTitle}>퀘스트</Text>
+              <Text style={styles.menuDescription}>
+                독서 목표와 진행 상황을 확인해요.
+              </Text>
+            </View>
+          </View>
 
-          <Text style={styles.arrow}>
-            ›
-          </Text>
+          <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
 
-        <View style={styles.divider} />
-
-        {/* 알림 설정 */}
         <TouchableOpacity
-          style={styles.menuRow}
-          onPress={() =>
-            Alert.alert(
-              '알림 설정',
-              '알림 설정 기능은 추후 연결할 예정입니다.'
-            )
-          }
+          style={styles.menuCard}
+          onPress={() => router.push('/reward/shop')}
         >
-          <Text style={styles.rowIcon}>
-            🔔
-          </Text>
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuEmoji}>🛍️</Text>
 
-          <Text style={styles.rowTitle}>
-            알림 설정
-          </Text>
+            <View>
+              <Text style={styles.menuTitle}>상점</Text>
+              <Text style={styles.menuDescription}>
+                재화로 서재 아이템을 구매해요.
+              </Text>
+            </View>
+          </View>
 
-          <Text style={styles.arrow}>
-            ›
-          </Text>
+          <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* 기타 */}
-      <Text style={styles.sectionTitle}>
-        기타
-      </Text>
-
-      <View style={styles.menuGroup}>
-        {/* 앱 정보 */}
-        <TouchableOpacity
-          style={styles.menuRow}
-          onPress={() =>
-            Alert.alert(
-              '앱 정보',
-              '책다듬이 앱입니다.'
-            )
-          }
-        >
-          <Text style={styles.rowIcon}>
-            ℹ️
-          </Text>
-
-          <Text style={styles.rowTitle}>
-            앱 정보
-          </Text>
-
-          <Text style={styles.arrow}>
-            ›
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
 
         {/* 로그아웃 */}
         <TouchableOpacity
-          style={styles.menuRow}
+          style={styles.logoutButton}
           onPress={() =>
             Alert.alert(
               '로그아웃',
@@ -361,32 +347,10 @@ const MyPageScreen = () => {
             )
           }
         >
-          <Text style={styles.rowIcon}>
-            🚪
-          </Text>
-
-          <Text style={styles.rowTitle}>
-            로그아웃
-          </Text>
-
-          <Text style={styles.arrow}>
-            ›
-          </Text>
+          <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* 개발 안내 */}
-      <View style={styles.notice}>
-        <Text style={styles.noticeTitle}>
-          개발 중인 화면입니다.
-        </Text>
-
-        <Text style={styles.noticeText}>
-          백엔드 연결 전에는 테스트용 사용자 정보가
-          표시될 수 있습니다.
-        </Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -395,193 +359,364 @@ export default MyPageScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf8f3',
+    backgroundColor: '#F8F6F0',
   },
 
-  content: {
+  scrollContent: {
     padding: 20,
     paddingBottom: 50,
   },
 
-  center: {
+  loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#faf8f3',
-  },
-
-  loadingText: {
-    marginTop: 10,
-    color: '#777777',
+    justifyContent: 'center',
+    backgroundColor: '#F8F6F0',
   },
 
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
   },
 
-  backButton: {
-    fontSize: 34,
-  },
-
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '800',
   },
 
-  headerSpace: {
-    width: 25,
+  settingButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  settingIcon: {
+    fontSize: 20,
   },
 
   profileCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 14,
+  },
+
+  profileTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
   },
 
-  profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#e9eee5',
-    justifyContent: 'center',
+  avatar: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#E8EEE4',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  profileEmoji: {
-    fontSize: 30,
+  avatarEmoji: {
+    fontSize: 34,
   },
 
   profileInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 15,
   },
 
   nickname: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
   },
 
   email: {
-    fontSize: 11,
-    color: '#888888',
-    marginTop: 4,
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 3,
+  },
+
+  profileMessage: {
+    fontSize: 13,
+    color: '#777777',
+    marginTop: 6,
   },
 
   editButton: {
     borderWidth: 1,
-    borderColor: '#4f7658',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderColor: '#D7DDD3',
+    borderRadius: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
 
   editButtonText: {
-    color: '#4f7658',
     fontSize: 12,
-    fontWeight: 'bold',
+    color: '#55705A',
   },
 
-  sectionTitle: {
+  levelArea: {
+    marginTop: 20,
+  },
+
+  levelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  levelText: {
+    fontWeight: '700',
+    color: '#49634E',
+  },
+
+  xpText: {
+    fontSize: 12,
+    color: '#777777',
+  },
+
+  progressBackground: {
+    height: 9,
+    backgroundColor: '#E8E8E8',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#5E7D61',
+    borderRadius: 10,
+  },
+
+  statCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 18,
+    marginBottom: 26,
+  },
+
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  statEmoji: {
+    fontSize: 20,
+  },
+
+  statValue: {
     fontSize: 17,
-    fontWeight: 'bold',
-    marginBottom: 11,
+    fontWeight: '800',
     marginTop: 5,
   },
 
-  menuCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 17,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+  statLabel: {
+    fontSize: 11,
+    color: '#888888',
+    marginTop: 3,
   },
 
-  menuIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#e9eee5',
+  divider: {
+    width: 1,
+    backgroundColor: '#EEEEEE',
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+  },
+
+  moreText: {
+    color: '#55705A',
+    fontWeight: '600',
+  },
+
+  ddayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 17,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  ddayLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  ddayBadge: {
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    backgroundColor: '#E8EEE4',
+    alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 14,
+  },
+
+  ddayBadgeText: {
+    color: '#4F6C53',
+    fontWeight: '800',
+  },
+
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  cardDescription: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 5,
+  },
+
+  arrow: {
+    fontSize: 25,
+    color: '#888888',
+  },
+
+  questCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 25,
+  },
+
+  questHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  questProgress: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#55705A',
+  },
+
+  questProgressBackground: {
+    height: 8,
+    backgroundColor: '#EEEEEE',
+    borderRadius: 10,
+    marginTop: 15,
+    overflow: 'hidden',
+  },
+
+  questProgressBar: {
+    height: '100%',
+    backgroundColor: '#5E7D61',
+  },
+
+  questReward: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 15,
+    marginTop: 10,
+  },
+
+  rewardText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  libraryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 26,
+  },
+
+  libraryPreview: {
+    height: 110,
+    borderRadius: 16,
+    backgroundColor: '#EEE9DF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    marginBottom: 15,
+  },
+
+  libraryEmoji: {
+    fontSize: 34,
+  },
+
+  libraryTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  libraryDescription: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 5,
+  },
+
+  shopButton: {
+    backgroundColor: '#5E7D61',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+
+  shopButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  menuCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 17,
+    padding: 17,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  menuLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
 
   menuEmoji: {
-    fontSize: 23,
-  },
-
-  menuContent: {
-    flex: 1,
-    marginLeft: 13,
+    fontSize: 24,
+    marginRight: 14,
   },
 
   menuTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 
   menuDescription: {
     fontSize: 11,
-    color: '#777777',
+    color: '#888888',
     marginTop: 4,
   },
 
-  menuGroup: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    paddingHorizontal: 17,
-    marginBottom: 28,
-  },
-
-  menuRow: {
-    flexDirection: 'row',
+  logoutButton: {
+    marginTop: 20,
+    paddingVertical: 15,
     alignItems: 'center',
-    paddingVertical: 17,
   },
 
-  rowIcon: {
-    fontSize: 19,
-    width: 32,
-  },
-
-  rowTitle: {
-    flex: 1,
-    fontSize: 14,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#eeeeee',
-  },
-
-  arrow: {
-    fontSize: 24,
-    color: '#888888',
-  },
-
-  notice: {
-    backgroundColor: '#f0ede5',
-    borderRadius: 15,
-    padding: 16,
-    marginTop: 5,
-  },
-
-  noticeTitle: {
+  logoutText: {
+    color: '#999999',
     fontSize: 13,
-    fontWeight: 'bold',
-  },
-
-  noticeText: {
-    fontSize: 11,
-    lineHeight: 17,
-    color: '#777777',
-    marginTop: 5,
   },
 });

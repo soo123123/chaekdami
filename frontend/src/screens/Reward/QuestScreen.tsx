@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-
 import { router } from 'expo-router';
 import { getQuests } from '../../api/rewardApi';
 
@@ -23,74 +23,73 @@ interface Quest {
   type?: 'DDAY' | 'EXP';
 }
 
+const testQuests: Quest[] = [
+  {
+    id: 1,
+    title: '오늘 30분 독서하기',
+    description: '오늘 하루 30분 이상 책을 읽어보세요.',
+    progress: 20,
+    target: 30,
+    rewardXp: 50,
+    rewardCurrency: 20,
+    completed: false,
+    type: 'DDAY',
+  },
+  {
+    id: 2,
+    title: '오늘 독서 기록 남기기',
+    description: '독서를 완료하고 기록을 남겨보세요.',
+    progress: 1,
+    target: 1,
+    rewardXp: 30,
+    rewardCurrency: 10,
+    completed: true,
+    type: 'DDAY',
+  },
+  {
+    id: 3,
+    title: '누적 300분 독서하기',
+    description: '총 독서 시간을 300분까지 채워보세요.',
+    progress: 180,
+    target: 300,
+    rewardXp: 100,
+    rewardCurrency: 50,
+    completed: false,
+    type: 'EXP',
+  },
+  {
+    id: 4,
+    title: '책 5권 완독하기',
+    description: '책을 총 5권 완독해보세요.',
+    progress: 3,
+    target: 5,
+    rewardXp: 150,
+    rewardCurrency: 100,
+    completed: false,
+    type: 'EXP',
+  },
+];
+
 const QuestScreen = () => {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTestData, setIsTestData] = useState(false);
 
-  // 퀘스트 목록 불러오기
   useEffect(() => {
     const loadQuests = async () => {
       try {
         const data = await getQuests();
 
-        setQuests(data);
-      } catch (error) {
-        console.error(
-          '퀘스트 조회 실패:',
-          error
-        );
+        if (!Array.isArray(data)) {
+          throw new Error('퀘스트 응답 형식이 올바르지 않습니다.');
+        }
 
-        // 백엔드 연결 전 테스트용 데이터
-        setQuests([
-          {
-            id: 1,
-            title: '오늘 30분 독서하기',
-            description:
-              '오늘 하루 30분 이상 책을 읽어보세요.',
-            progress: 20,
-            target: 30,
-            rewardXp: 50,
-            rewardCurrency: 20,
-            completed: false,
-            type: 'DDAY',
-          },
-          {
-            id: 2,
-            title: '오늘 독서 기록 남기기',
-            description:
-              '독서를 완료하고 기록을 남겨보세요.',
-            progress: 1,
-            target: 1,
-            rewardXp: 30,
-            rewardCurrency: 10,
-            completed: true,
-            type: 'DDAY',
-          },
-          {
-            id: 3,
-            title: '누적 300분 독서하기',
-            description:
-              '총 독서 시간을 300분까지 채워보세요.',
-            progress: 180,
-            target: 300,
-            rewardXp: 100,
-            rewardCurrency: 50,
-            completed: false,
-            type: 'EXP',
-          },
-          {
-            id: 4,
-            title: '책 5권 완독하기',
-            description:
-              '책을 총 5권 완독해보세요.',
-            progress: 3,
-            target: 5,
-            rewardXp: 150,
-            rewardCurrency: 100,
-            completed: false,
-            type: 'EXP',
-          },
-        ]);
+        setQuests(data);
+        setIsTestData(false);
+      } catch (error) {
+        console.warn('퀘스트 조회 실패:', error);
+        setQuests(testQuests);
+        setIsTestData(true);
       } finally {
         setIsLoading(false);
       }
@@ -102,8 +101,7 @@ const QuestScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
-
+        <ActivityIndicator size="large" color="#5E7D61" />
         <Text style={styles.loadingText}>
           퀘스트를 불러오는 중...
         </Text>
@@ -111,67 +109,85 @@ const QuestScreen = () => {
     );
   }
 
-  const dailyQuests =
-    quests.filter(
-      quest => quest.type === 'DDAY'
-    );
+  const dailyQuests = quests.filter(
+    quest => quest.type === 'DDAY'
+  );
 
-  const achievementQuests =
-    quests.filter(
-      quest => quest.type === 'EXP'
-    );
+  const achievementQuests = quests.filter(
+    quest => quest.type === 'EXP'
+  );
+
+  const completedDaily = dailyQuests.filter(
+    quest => quest.completed
+  ).length;
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
+          style={styles.backArea}
         >
-          <Text style={styles.backButton}>
-            ‹
-          </Text>
+          <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
-          퀘스트
-        </Text>
-
-        <View style={styles.headerSpace} />
+        <Text style={styles.headerTitle}>독서 퀘스트</Text>
+        <View style={styles.backArea} />
       </View>
 
-      {/* 안내 */}
-      <View style={styles.guideCard}>
-        <Text style={styles.guideEmoji}>
-          🎯
+      {isTestData && (
+        <Text style={styles.testNotice}>
+          현재 서버 연결 전 테스트 데이터를 표시하고 있어요.
+        </Text>
+      )}
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryEyebrow}>
+          오늘의 독서 도전
         </Text>
 
-        <View style={styles.guideContent}>
-          <Text style={styles.guideTitle}>
-            독서 퀘스트
-          </Text>
+        <Text style={styles.summaryTitle}>
+          오늘도 책과 함께 성장해요!
+        </Text>
 
-          <Text style={styles.guideDescription}>
-            퀘스트를 완료하고 XP와 재화를
-            획득해 보세요.
+        <Text style={styles.summaryDescription}>
+          작은 독서 습관을 쌓고 경험치와 재화를 모아보세요.
+        </Text>
+
+        <View style={styles.summaryProgressHeader}>
+          <Text style={styles.summaryProgressLabel}>
+            오늘의 퀘스트 달성
+          </Text>
+          <Text style={styles.summaryProgressValue}>
+            {completedDaily} / {dailyQuests.length}
           </Text>
         </View>
+
+        <ProgressBar
+          progress={
+            dailyQuests.length > 0
+              ? completedDaily / dailyQuests.length
+              : 0
+          }
+          color="#5E7D61"
+        />
       </View>
 
-      {/* 일일 퀘스트 */}
-      <Text style={styles.sectionTitle}>
-        오늘의 퀘스트
-      </Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>
+          오늘의 퀘스트
+        </Text>
+        <Text style={styles.sectionCount}>
+          {completedDaily}/{dailyQuests.length} 완료
+        </Text>
+      </View>
 
       {dailyQuests.length > 0 ? (
         dailyQuests.map(quest => (
-          <QuestCard
-            key={quest.id}
-            quest={quest}
-          />
+          <QuestCard key={quest.id} quest={quest} />
         ))
       ) : (
         <Text style={styles.emptyText}>
@@ -179,17 +195,18 @@ const QuestScreen = () => {
         </Text>
       )}
 
-      {/* 누적 퀘스트 */}
-      <Text style={styles.sectionTitle}>
-        누적 퀘스트
-      </Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>
+          누적 퀘스트
+        </Text>
+        <Text style={styles.sectionCount}>
+          {achievementQuests.length}개
+        </Text>
+      </View>
 
       {achievementQuests.length > 0 ? (
         achievementQuests.map(quest => (
-          <QuestCard
-            key={quest.id}
-            quest={quest}
-          />
+          <QuestCard key={quest.id} quest={quest} />
         ))
       ) : (
         <Text style={styles.emptyText}>
@@ -197,115 +214,130 @@ const QuestScreen = () => {
         </Text>
       )}
 
-      {/* 레벨 이동 */}
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>🌱 독서 성장 TIP</Text>
+        <Text style={styles.tipDescription}>
+          매일 꾸준히 독서하고 퀘스트를 완료하면
+          레벨을 올리고 상점에서 사용할 재화를
+          모을 수 있어요.
+        </Text>
+      </View>
+
       <TouchableOpacity
-        style={styles.rewardButton}
-        onPress={() =>
-          router.push('/reward')
-        }
+        style={styles.primaryButton}
+        onPress={() => router.push('/reward/reward')}
       >
-        <Text style={styles.rewardButtonText}>
-          나의 레벨 확인하기
+        <Text style={styles.primaryButtonText}>
+          나의 레벨 확인하기 ›
         </Text>
       </TouchableOpacity>
 
-      {/* 상점 이동 */}
       <TouchableOpacity
-        style={styles.shopButton}
-        onPress={() =>
-          router.push('/shop')
-        }
+        style={styles.secondaryButton}
+        onPress={() => router.push('/reward/shop')}
       >
-        <Text style={styles.shopButtonText}>
-          상점으로 이동
+        <Text style={styles.secondaryButtonText}>
+          상점으로 이동 ›
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
-interface QuestCardProps {
-  quest: Quest;
-}
+const ProgressBar = ({
+  progress,
+  color,
+}: {
+  progress: number;
+  color: string;
+}) => {
+  const safeProgress = Number.isFinite(progress)
+    ? Math.max(0, Math.min(progress, 1))
+    : 0;
 
-const QuestCard = ({
-  quest,
-}: QuestCardProps) => {
-  const progress =
-    quest.target > 0
-      ? Math.min(
-          quest.progress / quest.target,
-          1
-        )
-      : 0;
+  return (
+    <View style={styles.progressTrack}>
+      <View
+        style={[
+          styles.progressFill,
+          {
+            width: `${safeProgress * 100}%`,
+            backgroundColor: color,
+          },
+        ]}
+      />
+    </View>
+  );
+};
+
+const QuestCard = ({ quest }: { quest: Quest }) => {
+  const current = Number(quest.progress) || 0;
+  const target = Number(quest.target) || 0;
+
+  const progress = target > 0
+    ? current / target
+    : 0;
+
+  const isCompleted = Boolean(quest.completed);
 
   return (
     <View style={styles.questCard}>
       <View style={styles.questTop}>
-        <View style={styles.questTextArea}>
+        <View style={styles.questIcon}>
+          <Text style={styles.questIconText}>
+            {isCompleted ? '✓' : '📖'}
+          </Text>
+        </View>
+
+        <View style={styles.questInfo}>
           <Text style={styles.questTitle}>
-            {quest.completed
-              ? '✅ '
-              : '📖 '}
             {quest.title}
           </Text>
 
           {quest.description && (
-            <Text
-              style={styles.questDescription}
-            >
+            <Text style={styles.questDescription}>
               {quest.description}
             </Text>
           )}
         </View>
 
-        {quest.completed && (
-          <Text style={styles.completeText}>
-            완료
-          </Text>
+        {isCompleted && (
+          <View style={styles.completedBadge}>
+            <Text style={styles.completedBadgeText}>
+              완료
+            </Text>
+          </View>
         )}
       </View>
 
-      {/* 진행도 */}
       <View style={styles.progressHeader}>
         <Text style={styles.progressLabel}>
-          진행도
+          진행 현황
         </Text>
-
         <Text style={styles.progressValue}>
-          {quest.progress} / {quest.target}
+          {current} / {target}
         </Text>
       </View>
 
-      <View
-        style={styles.progressBackground}
-      >
-        <View
-          style={[
-            styles.progressBar,
-            {
-              width: `${progress * 100}%`,
-            },
-          ]}
-        />
-      </View>
+      <ProgressBar
+        progress={progress}
+        color="#688168"
+      />
 
-      {/* 보상 */}
       <View style={styles.rewardRow}>
         <Text style={styles.rewardLabel}>
-          보상
+          완료 보상
         </Text>
 
-        <View style={styles.rewardValues}>
+        <View style={styles.rewardItems}>
           {quest.rewardXp !== undefined && (
-            <Text style={styles.rewardValue}>
+            <Text style={styles.rewardText}>
               ⭐ {quest.rewardXp} XP
             </Text>
           )}
 
-          {quest.rewardCurrency !==
-            undefined && (
-            <Text style={styles.rewardValue}>
+          {quest.rewardCurrency !== undefined && (
+            <Text style={styles.rewardText}>
               🪙 {quest.rewardCurrency}
             </Text>
           )}
@@ -320,205 +352,246 @@ export default QuestScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf8f3',
+    backgroundColor: '#FAF8F3',
   },
-
   content: {
-    padding: 20,
-    paddingBottom: 50,
+    padding: 22,
+    paddingBottom: 55,
   },
-
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#faf8f3',
+    backgroundColor: '#FAF8F3',
   },
-
   loadingText: {
-    marginTop: 10,
+    marginTop: 12,
     color: '#777777',
+    fontSize: 13,
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    marginBottom: 30,
   },
-
-  backButton: {
-    fontSize: 34,
+  backArea: {
+    width: 35,
+    alignItems: 'flex-start',
   },
-
+  backText: {
+    fontSize: 32,
+    color: '#303B30',
+  },
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#242B24',
   },
-
-  headerSpace: {
-    width: 25,
-  },
-
-  guideCard: {
-    backgroundColor: '#e9eee5',
-    borderRadius: 18,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-
-  guideEmoji: {
-    fontSize: 35,
-  },
-
-  guideContent: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  guideTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-  },
-
-  guideDescription: {
+  testNotice: {
     fontSize: 12,
-    color: '#777777',
-    marginTop: 5,
-    lineHeight: 18,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#95774F',
     marginBottom: 12,
-    marginTop: 5,
   },
-
+  summaryCard: {
+    backgroundColor: '#EAF0E7',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 30,
+  },
+  summaryEyebrow: {
+    fontSize: 12,
+    color: '#637A63',
+    marginBottom: 15,
+  },
+  summaryTitle: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#344F38',
+    marginBottom: 10,
+  },
+  summaryDescription: {
+    fontSize: 13,
+    color: '#728172',
+    lineHeight: 21,
+    marginBottom: 26,
+  },
+  summaryProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  summaryProgressLabel: {
+    fontSize: 12,
+    color: '#566E57',
+  },
+  summaryProgressValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#405B43',
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: '#E7E7E7',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#242B24',
+  },
+  sectionCount: {
+    fontSize: 12,
+    color: '#718371',
+    fontWeight: '700',
+  },
   questCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 15,
   },
-
   questTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-
-  questTextArea: {
-    flex: 1,
+  questIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EAF0E7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 13,
   },
-
+  questIconText: {
+    fontSize: 21,
+    color: '#55765B',
+    fontWeight: '800',
+  },
+  questInfo: {
+    flex: 1,
+    paddingTop: 3,
+  },
   questTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    color: '#303630',
   },
-
   questDescription: {
-    fontSize: 11,
-    color: '#777777',
-    marginTop: 5,
-    lineHeight: 17,
-  },
-
-  completeText: {
-    color: '#4f7658',
     fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 10,
+    color: '#888888',
+    lineHeight: 19,
+    marginTop: 6,
   },
-
+  completedBadge: {
+    backgroundColor: '#EAF0E7',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    color: '#4F7658',
+    fontWeight: '800',
+  },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 18,
-    marginBottom: 7,
+    marginTop: 22,
+    marginBottom: 9,
   },
-
   progressLabel: {
-    fontSize: 11,
-    color: '#777777',
+    fontSize: 12,
+    color: '#888888',
   },
-
   progressValue: {
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontSize: 12,
+    color: '#4D674F',
+    fontWeight: '800',
   },
-
-  progressBackground: {
-    height: 9,
-    backgroundColor: '#eeeeee',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#4f7658',
-    borderRadius: 5,
-  },
-
   rewardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 15,
+    flexWrap: 'wrap',
+    marginTop: 20,
   },
-
   rewardLabel: {
-    fontSize: 11,
-    color: '#777777',
-  },
-
-  rewardValues: {
-    flexDirection: 'row',
-  },
-
-  rewardValue: {
     fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 12,
+    color: '#888888',
   },
-
+  rewardItems: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  rewardText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#526C55',
+  },
   emptyText: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 18,
-    color: '#777777',
-    marginBottom: 20,
-  },
-
-  rewardButton: {
-    backgroundColor: '#4f7658',
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    paddingVertical: 15,
-    alignItems: 'center',
+    padding: 20,
+    color: '#888888',
+    marginBottom: 22,
+  },
+  tipCard: {
+    backgroundColor: '#F0EBDD',
+    borderRadius: 20,
+    padding: 20,
     marginTop: 15,
+    marginBottom: 22,
   },
-
-  rewardButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  tipTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#5A604F',
   },
-
-  shopButton: {
-    borderWidth: 1,
-    borderColor: '#4f7658',
-    borderRadius: 18,
-    paddingVertical: 15,
-    alignItems: 'center',
+  tipDescription: {
+    fontSize: 12,
+    lineHeight: 21,
+    color: '#858174',
     marginTop: 10,
   },
-
-  shopButtonText: {
-    color: '#4f7658',
+  primaryButton: {
+    backgroundColor: '#5E7D61',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '800',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D9E2D7',
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  secondaryButtonText: {
+    color: '#55765B',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
