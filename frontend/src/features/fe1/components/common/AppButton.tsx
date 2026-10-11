@@ -1,0 +1,6 @@
+import type { PropsWithChildren } from 'react';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { colors, radius, spacing } from '../../constants/theme';
+type Props = PropsWithChildren<{ onPress?: () => void; disabled?: boolean; variant?: 'primary' | 'secondary' | 'danger' }>;
+export function AppButton({ children, onPress, disabled = false, variant = 'primary' }: Props) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'secondary' && styles.secondary, variant === 'danger' && styles.danger, disabled && styles.disabled, pressed && !disabled && styles.pressed]}><Text style={[styles.label, variant === 'secondary' && styles.secondaryLabel]}>{children}</Text></Pressable>; }
+const styles = StyleSheet.create({ button: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.button }, primary: { backgroundColor: colors.primary }, secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, danger: { backgroundColor: colors.danger }, disabled: { opacity: 0.5 }, pressed: { opacity: 0.82 }, label: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' }, secondaryLabel: { color: colors.text } });
