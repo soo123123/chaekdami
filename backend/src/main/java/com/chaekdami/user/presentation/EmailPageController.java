@@ -22,27 +22,6 @@ public class EmailPageController {
 
     private final UserService userService;
 
-    @GetMapping("/email/verify")
-    public ResponseEntity<String> verifyForm(@RequestParam String token) {
-        return html(page("이메일 인증", """
-                <p>아래 버튼을 누르면 이메일 인증이 완료됩니다.</p>
-                <form method="post" action="/email/verify">
-                  <input type="hidden" name="token" value="%s">
-                  <button type="submit">이메일 인증</button>
-                </form>
-                """.formatted(escape(token))));
-    }
-
-    @PostMapping("/email/verify")
-    public ResponseEntity<String> verify(@RequestParam String token) {
-        try {
-            userService.verifyEmail(token);
-            return html(page("이메일 인증", "<p>이메일 인증이 완료되었습니다. 앱에서 로그인해 주세요.</p>"));
-        } catch (InvalidRequestException exception) {
-            return html(page("이메일 인증", "<p>" + escape(exception.getMessage()) + "</p>"));
-        }
-    }
-
     @GetMapping("/email/reset")
     public ResponseEntity<String> resetForm(@RequestParam String token) {
         return html(resetPage(token, null));

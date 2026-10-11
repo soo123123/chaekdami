@@ -82,9 +82,7 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
                                 "/api/auth/password/reset-request",
-                                "/api/auth/password/reset",
-                                "/api/auth/email/verification-request",
-                                "/api/auth/email/verify").permitAll()
+                                "/api/auth/password/reset").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

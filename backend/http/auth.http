@@ -27,19 +27,19 @@ Content-Type: application/json
   client.global.set("refreshToken", response.body.refreshToken);
 %}
 
-### 3. 내 정보 조회 — GET /api/auth/me
-GET {{baseUrl}}/api/auth/me
-Authorization: Bearer {{accessToken}}
-
-### 4. 내 정보 조회 — GET /api/me
+### 3. 내 정보 조회
 GET {{baseUrl}}/api/me
 Authorization: Bearer {{accessToken}}
 
-### 5. 토큰 없이 조회
+### 4. 예전 경로 /api/auth/me — 404
 GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 5. 토큰 없이 조회
+GET {{baseUrl}}/api/me
 
 ### 6. 잘못된 토큰으로 조회
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}/api/me
 Authorization: Bearer invalid.token.value
 
 ### 7. 짧은 비밀번호 — 400 VALIDATION_ERROR
@@ -161,6 +161,26 @@ Content-Type: application/json
   "nickname": "nick_name"
 }
 
+### 18-1. 닉네임 17자 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "nick-long@chaekdami.local",
+  "password": "password123",
+  "nickname": "가나다라마바사아자차카타파하거너더"
+}
+
+### 18-2. 이메일 형식 오류 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "password123",
+  "nickname": "bademail"
+}
+
 ### 19. 대소문자만 다른 닉네임 — 409 NICKNAME_ALREADY_EXISTS
 # 1번 가입(nickname=tester) 이후 실행
 POST {{baseUrl}}/api/auth/signup
@@ -173,7 +193,7 @@ Content-Type: application/json
 }
 
 ### 20. 만료되었거나 서명이 틀린 Access Token — 401
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}/api/me
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxfQ.invalid
 
 ### 21. Access Token 재발급
@@ -261,6 +281,35 @@ Content-Type: application/json
   client.global.set("refreshToken", response.body.refreshToken);
 %}
 
+### 28-1. 현재 비밀번호가 틀림 — 400
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "wrong-password",
+  "newPassword": "Password123"
+}
+
+### 28-2. 새 비밀번호가 현재 비밀번호와 같음 — 400
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "password123"
+}
+
+### 28-3. 로그인 없이 비밀번호 변경 — 401
+POST {{baseUrl}}/api/auth/password
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "Password123"
+}
+
 ### 29. 비밀번호 변경 — 204, Access·Refresh Token 전부 무효
 POST {{baseUrl}}/api/auth/password
 Authorization: Bearer {{accessToken}}
@@ -272,7 +321,7 @@ Content-Type: application/json
 }
 
 ### 29-1. 비밀번호 변경 후 기존 Access Token으로 내 정보 — 401
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}/api/me
 Authorization: Bearer {{accessToken}}
 
 ### 30. 비밀번호 변경 후 기존 Refresh Token — 401
@@ -320,7 +369,7 @@ POST {{baseUrl}}/api/auth/logout-all
 Authorization: Bearer {{accessToken}}
 
 ### 35. 전체 로그아웃 후 기존 Access Token — 401
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}/api/me
 Authorization: Bearer {{accessToken}}
 
 ### 36. 전체 로그아웃 후 Refresh Token — 401
@@ -332,7 +381,7 @@ Content-Type: application/json
 }
 
 ### 37. 비밀번호 재설정 요청 — 가입 여부와 상관없이 204
-# 가입된 이메일이면 재설정 링크가 메일로 간다.
+# 가입된 테스트 메일이면 재설정 링크를 발송한다.
 POST {{baseUrl}}/api/auth/password/reset-request
 Content-Type: application/json
 
@@ -374,24 +423,23 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "password-change@chaekdami.local",
+  "email": "lockout@chaekdami.local",
   "password": "wrong-password"
 }
 
-### 42. 이메일 인증 메일 다시 보내기 — 가입 여부와 상관없이 204
-POST {{baseUrl}}/api/auth/email/verification-request
+### 42. 재설정 요청 6회째 — 429
+# 같은 이메일과 주소로 6번째 보내면 TOO_MANY_ATTEMPTS. 1~5번째는 204.
+POST {{baseUrl}}/api/auth/password/reset-request
 Content-Type: application/json
 
 {
-  "email": "password-change@chaekdami.local"
+  "email": "reset-limit@chaekdami.local"
 }
 
-### 43. 이메일 인증 — 204, 토큰은 한 번만 사용
-# 메일의 링크를 열어도 된다. API로 확인할 때는 링크의 token 값을 넣는다.
-POST {{baseUrl}}/api/auth/email/verify
-Content-Type: application/json
+### 43. 로그인 없이 전체 로그아웃 — 401
+POST {{baseUrl}}/api/auth/logout-all
 
-{
-  "token": "메일의-토큰"
-}
+### 44. 비밀번호 재설정 페이지
+# 토큰은 메일의 링크 값을 넣는다. 화면은 HTML이다.
+GET {{baseUrl}}/email/reset?token=메일의-토큰
 

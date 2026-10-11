@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -38,34 +39,19 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long getUserId(String token) {
+    public Optional<AccessTokenClaims> parse(String token) {
         try {
-            return Long.valueOf(parseClaims(token).getSubject());
-        } catch (NumberFormatException exception) {
-            throw new JwtException("subject is not a user id");
-        }
-    }
-
-    public String getRole(String token) {
-        Object role = parseClaims(token).get("role");
-        return role != null ? role.toString() : "USER";
-    }
-
-    public long getTokenVersion(String token) {
-        Object value = parseClaims(token).get("tokenVersion");
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return -1L;
-    }
-
-    public boolean validateToken(String token) {
-        try {
-            parseClaims(token);
-            return true;
+            Claims claims = parseClaims(token);
+            Long userId = Long.valueOf(claims.getSubject());
+            Object role = claims.get("role");
+            Object version = claims.get("tokenVersion");
+            return Optional.of(new AccessTokenClaims(
+                    userId,
+                    role != null ? role.toString() : "USER",
+                    version instanceof Number number ? number.longValue() : -1L));
         } catch (JwtException | IllegalArgumentException e) {
             log.warn(">>> [JWT] Token validation failed: {}", e.getMessage());
-            return false;
+            return Optional.empty();
         }
     }
 

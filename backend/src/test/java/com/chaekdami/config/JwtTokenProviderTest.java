@@ -12,6 +12,7 @@ import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtTokenProviderTest {
 
@@ -27,8 +28,19 @@ class JwtTokenProviderTest {
 
         long seconds = (claims.getExpiration().getTime() - claims.getIssuedAt().getTime()) / 1000;
         assertEquals(900, seconds);
-        assertEquals(3L, provider.getTokenVersion(token));
-        assertEquals(7L, provider.getUserId(token));
+        AccessTokenClaims parsed = provider.parse(token).orElseThrow();
+        assertEquals(3L, parsed.tokenVersion());
+        assertEquals(7L, parsed.userId());
+        assertEquals("USER", parsed.role());
+    }
+
+    @Test
+    void rejectsTamperedToken() {
+        JwtTokenProvider provider = new JwtTokenProvider(SECRET);
+        String token = provider.createAccessToken(7L, "USER", 3L);
+
+        assertTrue(provider.parse(token + "x").isEmpty());
+        assertTrue(provider.parse("not.a.token").isEmpty());
     }
 
     @Test
@@ -43,7 +55,7 @@ class JwtTokenProviderTest {
                 .compact();
 
         JwtTokenProvider provider = new JwtTokenProvider(SECRET);
-        assertEquals(-1L, provider.getTokenVersion(legacy));
+        assertEquals(-1L, provider.parse(legacy).orElseThrow().tokenVersion());
     }
 
     @Test

@@ -41,9 +41,6 @@ public class User {
     @Column(name = "token_version", nullable = false)
     private long tokenVersion;
 
-    @Column(name = "email_verified", nullable = false)
-    private boolean emailVerified;
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -75,9 +72,5 @@ public class User {
 
     public void bumpTokenVersion() {
         this.tokenVersion++;
-    }
-
-    public void verifyEmail() {
-        this.emailVerified = true;
     }
 }

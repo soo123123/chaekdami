@@ -53,7 +53,7 @@ class JwtAuthenticationFilterTest {
     }
 
     private static MockHttpServletRequest requestWith(String token) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/auth/me");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/me");
         request.addHeader("Authorization", "Bearer " + token);
         return request;
     }

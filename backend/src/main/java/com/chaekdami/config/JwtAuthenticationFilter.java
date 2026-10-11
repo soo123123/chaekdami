@@ -47,18 +47,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 effectiveRequest.getRequestURI(),
                 effectiveRequest.getDispatcherType());
 
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
+        AccessTokenClaims claims = StringUtils.hasText(token)
+                ? jwtTokenProvider.parse(token).orElse(null)
+                : null;
+        if (claims != null) {
             try {
-                Long userId = jwtTokenProvider.getUserId(token);
-                long tokenVersion = jwtTokenProvider.getTokenVersion(token);
-                if (!tokenVersionChecker.matches(userId, tokenVersion)) {
+                if (!tokenVersionChecker.matches(claims.userId(), claims.tokenVersion())) {
                     log.warn(">>> [JWT] Access token version rejected");
                 } else {
-                    String role = jwtTokenProvider.getRole(token);
                     List<SimpleGrantedAuthority> authorities =
-                            Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(role)));
+                            Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(claims.role())));
                     UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                            new UsernamePasswordAuthenticationToken(claims.userId(), null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (RuntimeException exception) {

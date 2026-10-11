@@ -27,7 +27,7 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 	compileOnly 'org.projectlombok:lombok'
-	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
