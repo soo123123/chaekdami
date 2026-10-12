@@ -232,7 +232,7 @@ export default function ShopScreen() {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push('/reward/quest')}
+          onPress={() => router.push('/fe2/reward/quest')}
         >
           <Text style={styles.currencyLink}>재화 얻기 ›</Text>
         </TouchableOpacity>
@@ -363,7 +363,7 @@ export default function ShopScreen() {
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => router.push('/reward/reward')}
+        onPress={() => router.push('/fe2/reward/reward')}
       >
         <Text style={styles.primaryButtonText}>
           나의 레벨 확인하기 ›
@@ -372,7 +372,7 @@ export default function ShopScreen() {
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => router.push('/reward/quest')}
+        onPress={() => router.push('/fe2/reward/quest')}
       >
         <Text style={styles.secondaryButtonText}>
           퀘스트 확인하기 ›

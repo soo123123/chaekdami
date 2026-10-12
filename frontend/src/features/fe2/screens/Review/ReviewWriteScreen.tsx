@@ -136,7 +136,7 @@ const ReviewWriteScreen = () => {
       );
 
       router.replace({
-        pathname: '/review/review-detail',
+        pathname: '/fe2/review/review-detail',
         params: {
           readingRecordId: String(readingRecordId),
         },

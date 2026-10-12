@@ -47,7 +47,7 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.profileButton}
-          onPress={() => router.push('/user/mypage')}
+          onPress={() => router.push('/fe2/user/mypage')}
         >
           <Text style={styles.profileEmoji}>
             🐱
@@ -209,7 +209,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.menuCard}
           onPress={() =>
-            router.push('/user/reading-stats')
+            router.push('/fe2/user/reading-stats')
           }
         >
           <View style={styles.menuIcon}>
@@ -236,7 +236,7 @@ const HomeScreen = () => {
         {/* FE2 */}
         <TouchableOpacity
           style={styles.menuCard}
-          onPress={() => router.push('/user/mypage')}
+          onPress={() => router.push('/fe2/user/mypage')}
           
         >
           <View style={styles.menuIcon}>

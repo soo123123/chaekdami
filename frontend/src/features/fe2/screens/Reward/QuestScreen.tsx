@@ -225,7 +225,7 @@ const QuestScreen = () => {
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => router.push('/reward/reward')}
+        onPress={() => router.push('/fe2/reward/reward')}
       >
         <Text style={styles.primaryButtonText}>
           나의 레벨 확인하기 ›
@@ -234,7 +234,7 @@ const QuestScreen = () => {
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => router.push('/reward/shop')}
+        onPress={() => router.push('/fe2/reward/shop')}
       >
         <Text style={styles.secondaryButtonText}>
           상점으로 이동 ›

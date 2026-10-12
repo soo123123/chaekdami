@@ -113,7 +113,7 @@ const ReviewDetailScreen = () => {
           onPress={() =>
             router.push({
               pathname:
-                '/review/review-write',
+                '/fe2/review/review-write',
 
               params: {
                 readingRecordId:
@@ -234,7 +234,7 @@ const ReviewDetailScreen = () => {
         onPress={() =>
           router.push({
             pathname:
-              '/review/review-write',
+              '/fe2/review/review-write',
 
             params: {
               readingRecordId:

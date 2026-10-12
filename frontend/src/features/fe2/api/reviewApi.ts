@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from '@/api/apiClient';
 
 // ========================================
 // 문장 저장 관련 기능

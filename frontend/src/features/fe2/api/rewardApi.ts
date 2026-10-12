@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from '@/api/apiClient';
 
 export const getRewardStatus = async () => {
   const response = await apiClient.get(

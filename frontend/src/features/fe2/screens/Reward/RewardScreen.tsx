@@ -147,7 +147,7 @@ export default function RewardScreen() {
 
         <TouchableOpacity
           style={styles.outlineButton}
-          onPress={() => router.push('/reward/shop')}
+          onPress={() => router.push('/fe2/reward/shop')}
         >
           <Text style={styles.outlineButtonText}>
             상점 가기 ›
@@ -182,7 +182,7 @@ export default function RewardScreen() {
 
       <TouchableOpacity
         style={styles.questCard}
-        onPress={() => router.push('/reward/quest')}
+        onPress={() => router.push('/fe2/reward/quest')}
       >
         <View style={styles.questIcon}>
           <Text style={styles.questEmoji}>🎯</Text>

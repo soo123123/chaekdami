@@ -120,7 +120,7 @@ const MyPageScreen = () => {
           {/* 레벨 */}
           <TouchableOpacity
             style={styles.levelArea}
-            onPress={() => router.push('/reward/reward')}
+            onPress={() => router.push('/fe2/reward/reward')}
           >
             <View style={styles.levelHeader}>
               <Text style={styles.levelText}>
@@ -147,7 +147,7 @@ const MyPageScreen = () => {
         <View style={styles.statCard}>
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => router.push('/reward/reward')}
+            onPress={() => router.push('/fe2/reward/reward')}
           >
             <Text style={styles.statEmoji}>⭐</Text>
             <Text style={styles.statValue}>Lv.{level}</Text>
@@ -166,7 +166,7 @@ const MyPageScreen = () => {
 
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => router.push('/user/reading-stats')}
+            onPress={() => router.push('/fe2/user/reading-stats')}
           >
             <Text style={styles.statEmoji}>📚</Text>
             <Text style={styles.statValue}>3권</Text>
@@ -181,7 +181,7 @@ const MyPageScreen = () => {
 
         <TouchableOpacity
           style={styles.ddayCard}
-          onPress={() => router.push('/reward/dday')}
+          onPress={() => router.push('/fe2/reward/dday')}
         >
           <View style={styles.ddayLeft}>
             <View style={styles.ddayBadge}>
@@ -205,7 +205,7 @@ const MyPageScreen = () => {
         {/* 퀘스트 */}
         <TouchableOpacity
           style={styles.questCard}
-          onPress={() => router.push('/reward/quest')}
+          onPress={() => router.push('/fe2/reward/quest')}
         >
           <View style={styles.questHeader}>
             <View>
@@ -246,7 +246,7 @@ const MyPageScreen = () => {
           <Text style={styles.sectionTitle}>나의 서재</Text>
 
           <TouchableOpacity
-            onPress={() => router.push('/reward/shop')}
+            onPress={() => router.push('/fe2/reward/shop')}
           >
             <Text style={styles.moreText}>꾸미기 ›</Text>
           </TouchableOpacity>
@@ -270,7 +270,7 @@ const MyPageScreen = () => {
 
           <TouchableOpacity
             style={styles.shopButton}
-            onPress={() => router.push('/reward/shop')}
+            onPress={() => router.push('/fe2/reward/shop')}
           >
             <Text style={styles.shopButtonText}>
               상점 보러가기
@@ -285,7 +285,7 @@ const MyPageScreen = () => {
 
         <TouchableOpacity
           style={styles.menuCard}
-          onPress={() => router.push('/user/reading-stats')}
+          onPress={() => router.push('/fe2/user/reading-stats')}
         >
           <View style={styles.menuLeft}>
             <Text style={styles.menuEmoji}>📊</Text>
@@ -303,7 +303,7 @@ const MyPageScreen = () => {
 
         <TouchableOpacity
           style={styles.menuCard}
-          onPress={() => router.push('/reward/quest')}
+          onPress={() => router.push('/fe2/reward/quest')}
         >
           <View style={styles.menuLeft}>
             <Text style={styles.menuEmoji}>🎯</Text>
@@ -321,7 +321,7 @@ const MyPageScreen = () => {
 
         <TouchableOpacity
           style={styles.menuCard}
-          onPress={() => router.push('/reward/shop')}
+          onPress={() => router.push('/fe2/reward/shop')}
         >
           <View style={styles.menuLeft}>
             <Text style={styles.menuEmoji}>🛍️</Text>

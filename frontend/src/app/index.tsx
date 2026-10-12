@@ -1,1 +1,1 @@
-export { default } from '../screens/Home/HomeScreen';
+export { default } from '@/features/fe2/screens/Home/HomeScreen';
