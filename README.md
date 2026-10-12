@@ -320,7 +320,7 @@ Domain
 
 | 분류 | 기술 | 용도 |
 |---|---|---|
-| Database | MySQL | 사용자 및 서비스 데이터 저장 |
+| Database | postgreSQL | 사용자 및 서비스 데이터 저장 |
 
 ## Development / Deployment
 
