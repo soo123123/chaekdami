@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { readingApi } from '@/api/readingApi';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import type { ManualBookInput, RegisteredBook } from '../../types/reading';
 import { toAppError } from '../../utils/apiError';
 import { isValidIsbn, todayIso } from '../../utils/format';

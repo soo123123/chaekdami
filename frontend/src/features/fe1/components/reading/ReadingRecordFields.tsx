@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, radius, spacing } from '../../constants/theme';
-import { digitsOnly, formatDuration } from '../../utils/format';
+import { useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, keepAllWords, radius, spacing } from '../../constants/theme';
+import { formatDuration } from '../../utils/format';
 import { validatePageRange } from '../../utils/validation';
 import { BottomSheetModal } from '../common/BottomSheetModal';
 import { AppButton } from '../common/AppButton';
+import { Icon, type IconName } from '../common/Icon';
 import { InlineError } from '../common/StateView';
+import { PageInput } from './PageInput';
 
 /* ------------------------------------------------------------------ */
 /* ReadingTime — 독서 시간 표시 및 수정                                 */
@@ -37,21 +39,17 @@ export function ReadingTime({ duration, onChange }: ReadingTimeProps) {
   };
 
   return (
-    <View style={styles.cell}>
-      <Text style={styles.cellLabel}>⏱  독서 시간</Text>
-      <View style={styles.valueRow}>
-        <Text style={styles.value}>{formatDuration(duration)}</Text>
-        <EditButton label="독서 시간 수정" onPress={open} />
-      </View>
+    <FieldCell icon="alarm" label="독서 시간" onEdit={open} editLabel="독서 시간 수정">
+      <Text style={styles.value}>{formatDuration(duration)}</Text>
       <BottomSheetModal visible={isOpen} title="독서 시간 수정" onClose={() => setIsOpen(false)}>
         <View style={styles.modalRow}>
-          <NumberBox value={hours} onChange={setHours} suffix="시간" label="시간" />
-          <NumberBox value={minutes} onChange={setMinutes} suffix="분" label="분" />
+          <PageInput value={hours} onChange={setHours} suffix="시간" label="시간" />
+          <PageInput value={minutes} onChange={setMinutes} suffix="분" label="분" />
         </View>
         <InlineError message={error} />
         <AppButton size="md" onPress={confirm}>확인</AppButton>
       </BottomSheetModal>
-    </View>
+    </FieldCell>
   );
 }
 
@@ -89,27 +87,39 @@ export function ReadingPageRange({ startPage, endPage, totalPages, onChange }: R
   };
 
   return (
-    <View style={styles.cell}>
-      <Text style={styles.cellLabel}>📖  읽은 페이지</Text>
-      <View style={styles.valueRow}>
-        <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{`${startPage} ~ ${endPage} 페이지`}</Text>
-        <EditButton label="읽은 페이지 수정" onPress={open} />
-      </View>
+    <FieldCell icon="bookOpenOutline" label="읽은 페이지" onEdit={open} editLabel="읽은 페이지 수정">
+      <Text style={styles.value}>{`${startPage} 페이지 ~ ${endPage} 페이지`}</Text>
       {totalPages ? <Text style={styles.caption}>{`전체 ${totalPages}페이지 중`}</Text> : null}
       <BottomSheetModal visible={isOpen} title="읽은 페이지 수정" onClose={() => setIsOpen(false)}>
         <View style={styles.modalRow}>
-          <NumberBox value={start} onChange={setStart} suffix="쪽부터" label="시작 페이지" />
-          <NumberBox value={end} onChange={setEnd} suffix="쪽까지" label="종료 페이지" />
+          <PageInput value={start} onChange={setStart} suffix="쪽부터" label="시작 페이지" />
+          <PageInput value={end} onChange={setEnd} suffix="쪽까지" label="종료 페이지" />
         </View>
         {totalPages ? <Text style={styles.caption}>{`전체 ${totalPages}페이지`}</Text> : null}
         <InlineError message={error} />
         <AppButton size="md" onPress={confirm}>확인</AppButton>
       </BottomSheetModal>
-    </View>
+    </FieldCell>
   );
 }
 
 /* ------------------------------------------------------------------ */
+
+type FieldCellProps = { icon: IconName; label: string; editLabel: string; onEdit: () => void; children: ReactNode };
+
+/** 아이콘 · 라벨 · 값 · 수정 버튼으로 이루어진 기록 칸 */
+function FieldCell({ icon, label, editLabel, onEdit, children }: FieldCellProps) {
+  return (
+    <View style={styles.cell}>
+      <View style={styles.cellHead}>
+        <Icon name={icon} size={22} color={colors.text} />
+        <Text style={styles.cellLabel}>{label}</Text>
+        <EditButton label={editLabel} onPress={onEdit} />
+      </View>
+      {children}
+    </View>
+  );
+}
 
 function EditButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
@@ -119,32 +129,13 @@ function EditButton({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-function NumberBox({ value, onChange, suffix, label }: { value: string; onChange: (v: string) => void; suffix: string; label: string }) {
-  return (
-    <View style={styles.numberBox}>
-      <TextInput
-        value={value}
-        onChangeText={text => onChange(digitsOnly(text))}
-        keyboardType="number-pad"
-        style={styles.numberInput}
-        accessibilityLabel={label}
-        selectTextOnFocus
-      />
-      <Text style={styles.suffix}>{suffix}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  cell: { flex: 1, gap: spacing.xs, padding: spacing.sm + 4 },
-  cellLabel: { fontSize: 13, color: colors.secondaryText },
-  valueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
-  value: { flexShrink: 1, fontSize: 17, fontWeight: '800', color: colors.text },
+  cell: { flex: 1, gap: spacing.sm, paddingVertical: spacing.sm + 6, paddingHorizontal: spacing.sm + 6 },
+  cellHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cellLabel: { flex: 1, fontSize: 13, color: colors.secondaryText, ...keepAllWords },
+  value: { fontSize: 17, fontWeight: '800', color: colors.text, ...keepAllWords },
   caption: { fontSize: 12, color: colors.secondaryText },
-  edit: { minHeight: 34, paddingHorizontal: spacing.sm + 2, borderRadius: radius.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },
+  edit: { minHeight: 32, paddingHorizontal: spacing.sm + 2, borderRadius: radius.input, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface, justifyContent: 'center' },
   editLabel: { fontSize: 13, color: colors.text },
   modalRow: { flexDirection: 'row', gap: spacing.sm },
-  numberBox: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  numberInput: { flex: 1, minHeight: 52, borderRadius: radius.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, textAlign: 'center', fontSize: 18, color: colors.text },
-  suffix: { fontSize: 14, color: colors.secondaryText },
 });

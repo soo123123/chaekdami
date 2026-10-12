@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Option } from '../../constants/options';
 import { colors, radius, spacing } from '../../constants/theme';
 import { BottomSheetModal } from './BottomSheetModal';
+import { Icon } from './Icon';
 
 type SortSelectorProps<T extends string> = {
   options: Option<T>[];
@@ -24,7 +25,7 @@ export function SortSelector<T extends string>({ options, value, onChange, varia
         style={[styles.trigger, variant === 'soft' && styles.soft]}
       >
         <Text style={styles.triggerLabel}>{current?.label}</Text>
-        <Text style={styles.caret}>⌄</Text>
+        <Icon name="chevronDown" size={16} />
       </Pressable>
       <BottomSheetModal visible={isOpen} title="정렬 기준" onClose={() => setIsOpen(false)}>
         <View>
@@ -39,7 +40,7 @@ export function SortSelector<T extends string>({ options, value, onChange, varia
                 style={styles.option}
               >
                 <Text style={[styles.optionLabel, isSelected && styles.optionSelected]}>{option.label}</Text>
-                {isSelected ? <Text style={styles.check}>✓</Text> : null}
+                {isSelected ? <Icon name="check" size={18} color={colors.primary} /> : null}
               </Pressable>
             );
           })}
@@ -51,11 +52,9 @@ export function SortSelector<T extends string>({ options, value, onChange, varia
 
 const styles = StyleSheet.create({
   trigger: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  soft: { backgroundColor: 'rgba(255,249,242,0.85)' },
+  soft: { backgroundColor: 'rgba(255,252,247,0.85)', borderColor: 'rgba(236,227,216,0.7)' },
   triggerLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
-  caret: { fontSize: 14, color: colors.text, marginTop: -6 },
   option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   optionLabel: { fontSize: 16, color: colors.text },
   optionSelected: { fontWeight: '700', color: colors.primary },
-  check: { fontSize: 16, color: colors.primary, fontWeight: '700' },
 });

@@ -1,16 +1,18 @@
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BookCover } from '../components/common/BookCover';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { BookInfo } from '../components/book/BookInfo';
+import { Icon } from '../components/common/Icon';
 import { ConfirmModal } from '../components/common/BottomSheetModal';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, LoadingView } from '../components/common/StateView';
 import { ReadingProgress } from '../components/reading/ReadingProgress';
+import { ReadingStage } from '../components/reading/ReadingStage';
 import { ReadingTimeSummary } from '../components/reading/ReadingTimeSummary';
 import { FinishReadingButton, FocusModeButton, PauseButton, ReadingTimer } from '../components/reading/TimerControls';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, radius, softShadow, spacing } from '../constants/theme';
 import { useBookIdParam } from '../hooks/common/useRouteParams';
 import { useReadingSession } from '../hooks/reading/useReadingSession';
 import { useReadingTimer } from '../hooks/reading/useReadingTimer';
@@ -60,6 +62,8 @@ export function ReadingStartScreen() {
     router.back();
   };
 
+  const background = session.isFocusMode ? '#F3E6D4' : colors.background;
+
   const header = (
     <ScreenHeader
       title="독서 시작"
@@ -77,7 +81,7 @@ export function ReadingStartScreen() {
   }
 
   return (
-    <ScreenContainer header={header} backgroundColor={session.isFocusMode ? '#F1E6D6' : colors.background}>
+    <ScreenContainer header={header} backgroundColor={background}>
       {session.isLoading ? <LoadingView /> : null}
       {!session.isLoading && session.error ? (
         <ErrorView error={session.error} onRetry={session.reload} onBack={() => router.back()} />
@@ -91,29 +95,36 @@ export function ReadingStartScreen() {
               onPress={() => router.back()}
               style={styles.bookCard}
             >
-              <BookCover uri={book.coverImageUrl} title={book.title} width={70} />
               <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
-                <Text style={styles.bookAuthor} numberOfLines={1}>{book.author}</Text>
-                <ReadingProgress currentPage={book.currentPage} totalPages={book.totalPages} />
+                <BookInfo book={book} coverWidth={80} coverHeight={104} titleSize={19} showTags={false}>
+                  <ReadingProgress currentPage={book.currentPage} totalPages={book.totalPages} />
+                </BookInfo>
               </View>
+              <Icon name="chevronRight" size={20} color={colors.secondaryText} style={styles.chevron} />
             </Pressable>
           ) : null}
 
-          <View style={[styles.stage, session.isFocusMode && styles.stageFocus]}>
-            <View style={styles.bubble}>
-              <Text style={styles.bubbleText}>
-                {session.isFocusMode ? '집중 모드예요.\n책에만 몰입해볼까요?' : '좋은 책과 함께,\n오늘도 한 걸음 더!'}
-              </Text>
-            </View>
-            <ReadingTimer elapsedTime={timer.elapsedTime} isRunning={timer.isRunning} />
-            <View style={styles.controls}>
-              <PauseButton isRunning={timer.isRunning} onPress={handleTogglePause} />
-              <FinishReadingButton onPress={handleFinish} />
-            </View>
-          </View>
+          <ReadingStage
+            isRunning={timer.isRunning}
+            backgroundColor={background}
+            bubbleText={session.isFocusMode ? '집중 모드예요.\n책에만 몰입해볼까요?' : '좋은 책과 함께,\n오늘도 한 걸음 더!'}
+          >
+            {scale => (
+              <>
+                <ReadingTimer elapsedTime={timer.elapsedTime} isRunning={timer.isRunning} scale={scale} />
+                <View style={[styles.controls, { gap: 56 * scale }]}>
+                  <PauseButton isRunning={timer.isRunning} onPress={handleTogglePause} scale={scale} />
+                  <FinishReadingButton onPress={handleFinish} scale={scale} />
+                </View>
+              </>
+            )}
+          </ReadingStage>
 
-          {!session.isFocusMode ? <ReadingTimeSummary summary={session.readingTimeSummary} /> : null}
+          {!session.isFocusMode ? <ReadingTimeSummary
+              today={session.readingTimeSummary?.todaySeconds}
+              book={session.readingTimeSummary?.bookSeconds}
+              week={session.readingTimeSummary?.weekSeconds}
+            /> : null}
         </View>
       ) : null}
 
@@ -132,14 +143,9 @@ export function ReadingStartScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { flexGrow: 1, gap: spacing.lg },
-  bookCard: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
-  bookInfo: { flex: 1, gap: spacing.xs },
-  bookTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  bookAuthor: { fontSize: 14, color: colors.secondaryText },
-  stage: { alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.md },
-  stageFocus: { flexGrow: 1, justifyContent: 'center' },
-  bubble: { backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm + 4, borderWidth: 1, borderColor: colors.border },
-  bubbleText: { fontSize: 15, lineHeight: 22, color: colors.text, textAlign: 'center' },
-  controls: { flexDirection: 'row', gap: spacing.xl + 8, justifyContent: 'center' },
+  body: { flexGrow: 1, gap: spacing.sm },
+  bookCard: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.md, zIndex: 1, ...softShadow },
+  bookInfo: { flex: 1, paddingRight: spacing.md },
+  chevron: { position: 'absolute', top: spacing.md + 6, right: spacing.md },
+  controls: { flexDirection: 'row', justifyContent: 'center' },
 });

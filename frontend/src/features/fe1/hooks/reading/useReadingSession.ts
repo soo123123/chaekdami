@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { readingApi } from '@/api/readingApi';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import { useAsyncResource } from '../common/useAsyncResource';
 
 /** 독서 중인 책 정보, 집중 모드, 독서 시간 요약(FE2) */

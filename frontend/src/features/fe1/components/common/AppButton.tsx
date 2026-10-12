@@ -57,16 +57,16 @@ export function AppButton({
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 56, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.button },
+  button: { minHeight: 58, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.button },
   buttonMd: { minHeight: 44, paddingHorizontal: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.danger },
-  dangerOutline: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  dangerOutline: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.82 },
-  label: { color: colors.onPrimary, fontSize: 17, fontWeight: '700' },
+  label: { color: colors.onPrimary, fontSize: 18, fontWeight: '700' },
   labelMd: { fontSize: 15, fontWeight: '600' },
   secondaryLabel: { color: colors.text },
   dangerLabel: { color: colors.danger },

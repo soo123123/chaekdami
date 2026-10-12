@@ -1,16 +1,19 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, HIT_SLOP, radius, spacing } from '../../constants/theme';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { colors, HIT_SLOP, noWebOutline, radius, spacing } from '../../constants/theme';
+import { Icon } from '../common/Icon';
 
 type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
   onSearch: () => void;
+  /** 바코드(ISBN) 스캔 버튼 */
+  onPressScan?: () => void;
 };
 
-export function SearchBar({ value, onChange, onSearch }: SearchBarProps) {
+export function SearchBar({ value, onChange, onSearch, onPressScan }: SearchBarProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.icon} accessibilityElementsHidden importantForAccessibility="no">⌕</Text>
+      <Icon name="search" size={22} color={colors.text} />
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -25,7 +28,12 @@ export function SearchBar({ value, onChange, onSearch }: SearchBarProps) {
       />
       {value.length > 0 ? (
         <Pressable accessibilityRole="button" accessibilityLabel="검색어 지우기" hitSlop={HIT_SLOP} onPress={() => onChange('')}>
-          <Text style={styles.clear}>✕</Text>
+          <Icon name="close" size={18} color={colors.secondaryText} />
+        </Pressable>
+      ) : null}
+      {onPressScan ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="바코드로 검색" hitSlop={HIT_SLOP} onPress={onPressScan}>
+          <Icon name="scan" size={24} color={colors.text} />
         </Pressable>
       ) : null}
     </View>
@@ -33,8 +41,6 @@ export function SearchBar({ value, onChange, onSearch }: SearchBarProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52, paddingHorizontal: spacing.md, borderRadius: radius.button, backgroundColor: colors.surfaceMuted },
-  icon: { fontSize: 22, color: colors.text, transform: [{ scaleX: -1 }] },
-  input: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: spacing.sm },
-  clear: { fontSize: 14, color: colors.secondaryText, paddingHorizontal: spacing.xs },
+  container: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, minHeight: 54, paddingHorizontal: spacing.md, borderRadius: radius.button + 2, backgroundColor: colors.surfaceMuted },
+  input: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: spacing.sm, ...noWebOutline },
 });

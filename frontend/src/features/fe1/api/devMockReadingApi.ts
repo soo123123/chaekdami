@@ -5,7 +5,7 @@
  * - 데이터는 앱 실행 중 메모리에만 유지되며, 새로고침하면 초기화된다.
  * - 응답 구조는 FE1 타입(types/reading.ts) 기준이며 백엔드 계약을 의미하지 않는다.
  */
-import type { ReadingApi } from '@/api/readingApi';
+import type { ReadingApi } from './readingApi';
 import type {
   BookCatalogDetail,
   BookDetail,

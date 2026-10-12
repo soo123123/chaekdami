@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { readingApi } from '@/api/readingApi';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import { MAX_RECENT_SEARCHES } from '../../constants/options';
 import type { BookSearchItem, SearchCategory, SearchSort } from '../../types/reading';
 import { toAppError, type AppError } from '../../utils/apiError';

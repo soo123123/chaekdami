@@ -1,17 +1,19 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookInfo } from '../components/book/BookInfo';
 import { BookSpecTable } from '../components/book/BookSpecTable';
 import { ExpandableText } from '../components/book/ExpandableText';
 import { RatingText } from '../components/book/RatingText';
-import { AppButton } from '../components/common/AppButton';
+import { RegisterBookButton } from '../components/book/RegisterBookButton';
 import { BookCover } from '../components/common/BookCover';
 import { Card } from '../components/common/Card';
+import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, LoadingView } from '../components/common/StateView';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, HIT_SLOP, keepAllWords, radius, serifFont, spacing } from '../constants/theme';
 import { useBookInfo } from '../hooks/book/useBookInfo';
 import { useItemIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
@@ -19,8 +21,26 @@ import { formatDate } from '../utils/format';
 export function BookInfoScreen() {
   const itemId = useItemIdParam();
   const { book, isLoading, error, reload } = useBookInfo(itemId);
+  // 찜하기 API가 아직 없어 화면 안에서만 유지되는 상태다.
+  const [isLiked, setIsLiked] = useState(false);
 
-  const header = <ScreenHeader title="책 정보" onBack={() => router.back()} />;
+  const header = (
+    <ScreenHeader
+      title="책 정보"
+      onBack={() => router.back()}
+      right={book ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isLiked ? '찜 해제' : '찜하기'}
+          accessibilityState={{ selected: isLiked }}
+          hitSlop={HIT_SLOP}
+          onPress={() => setIsLiked(v => !v)}
+        >
+          <Icon name={isLiked ? 'heart' : 'heartOutline'} size={30} color={isLiked ? colors.danger : colors.text} />
+        </Pressable>
+      ) : undefined}
+    />
+  );
 
   if (!itemId) {
     return (
@@ -35,17 +55,17 @@ export function BookInfoScreen() {
   return (
     <ScreenContainer
       header={header}
-      footer={book ? <AppButton onPress={handleRegister} icon={<Text style={styles.btnIcon}>📖</Text>}>이 책을 등록하기</AppButton> : undefined}
+      footer={book ? <RegisterBookButton onPress={handleRegister} /> : undefined}
     >
       {isLoading ? <LoadingView /> : null}
       {!isLoading && error ? <ErrorView error={error} onRetry={reload} onBack={() => router.back()} /> : null}
       {!isLoading && !error && book ? (
         <>
-          <BookInfo book={book} coverWidth={140}>
-            <RatingText rating={book.rating} reviewCount={book.reviewCount} size={16} />
+          <BookInfo book={book} coverWidth={140} titleSize={23}>
+            <RatingText rating={book.rating} reviewCount={book.reviewCount} size={17} />
             {book.highlight ? (
               <View style={styles.highlight}>
-                <Text style={styles.highlightText}>{`“ ${book.highlight} ”`}</Text>
+                <Text style={styles.highlightText}>{`“${book.highlight}”`}</Text>
               </View>
             ) : null}
           </BookInfo>
@@ -67,9 +87,9 @@ export function BookInfoScreen() {
           ) : null}
 
           {book.relatedItems && book.relatedItems.length > 0 ? (
-            <Card title="이런 책은 어때요?">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.related}>
-                {book.relatedItems.map(item => (
+            <Card title="이런 책은 어때요?" right={<Icon name="chevronRight" size={22} color={colors.text} />}>
+              <View style={styles.related}>
+                {book.relatedItems.slice(0, 2).map(item => (
                   <Pressable
                     key={item.itemId}
                     accessibilityRole="button"
@@ -77,14 +97,14 @@ export function BookInfoScreen() {
                     onPress={() => router.push({ pathname: FE1_ROUTES.info, params: { itemId: item.itemId } })}
                     style={styles.relatedItem}
                   >
-                    <BookCover uri={item.coverImageUrl} title={item.title} width={56} />
+                    <BookCover uri={item.coverImageUrl} title={item.title} width={50} height={64} />
                     <View style={styles.relatedText}>
                       <Text style={styles.relatedTitle} numberOfLines={2}>{item.title}</Text>
-                      <Text style={styles.relatedAuthor} numberOfLines={1}>{item.author}</Text>
+                      <Text style={styles.relatedAuthor} numberOfLines={2}>{item.author}</Text>
                     </View>
                   </Pressable>
                 ))}
-              </ScrollView>
+              </View>
             </Card>
           ) : null}
         </>
@@ -94,12 +114,11 @@ export function BookInfoScreen() {
 }
 
 const styles = StyleSheet.create({
-  btnIcon: { fontSize: 18 },
-  highlight: { backgroundColor: colors.surfaceMuted, borderRadius: radius.input, padding: spacing.sm + 4 },
-  highlightText: { fontSize: 14, lineHeight: 21, color: colors.text, textAlign: 'center' },
-  related: { gap: spacing.md },
-  relatedItem: { flexDirection: 'row', gap: spacing.sm + 4, width: 220, alignItems: 'center' },
+  highlight: { backgroundColor: '#F4ECE2', borderRadius: radius.input + 2, paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginTop: spacing.xs },
+  highlightText: { fontFamily: serifFont, fontSize: 15, lineHeight: 24, color: '#4A4540', textAlign: 'center', ...keepAllWords },
+  related: { flexDirection: 'row', gap: spacing.md },
+  relatedItem: { flex: 1, flexDirection: 'row', gap: spacing.sm + 4, alignItems: 'center' },
   relatedText: { flex: 1, gap: 4 },
-  relatedTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  relatedTitle: { fontSize: 15, fontWeight: '800', color: colors.text, ...keepAllWords },
   relatedAuthor: { fontSize: 13, color: colors.secondaryText },
 });

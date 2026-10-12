@@ -1,13 +1,18 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ChipTabs } from '../components/common/ChipTabs';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { BottomSheetModal } from '../components/common/BottomSheetModal';
+import { CatBooksDecor } from '../components/common/Decor';
+import { Icon, type IconName } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
-import { SortSelector } from '../components/common/SortSelector';
 import { EmptyView, ErrorView, LoadingView } from '../components/common/StateView';
 import { BookShelfSection } from '../components/library/BookShelfSection';
-import { LIBRARY_FILTERS, LIBRARY_SORTS } from '../constants/options';
+import { LibraryCategoryTab } from '../components/library/LibraryCategoryTab';
+import { LibraryCustomizeButton } from '../components/library/LibraryCustomizeButton';
+import { LibrarySortSelector } from '../components/library/LibrarySortSelector';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, radius, serifFont, softShadow, spacing } from '../constants/theme';
 import { useLibraryBooks } from '../hooks/library/useLibraryBooks';
 import type { BookStatus } from '../types/reading';
 
@@ -20,10 +25,16 @@ const SECTION_TITLES: Record<BookStatus, string> = {
 export function LibraryScreen() {
   const library = useLibraryBooks();
   const { theme } = library;
+  const { palette } = theme;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleAddBook = () => router.push(FE1_ROUTES.search);
   const handleBookPress = (bookId: number) => router.push({ pathname: FE1_ROUTES.detail, params: { bookId: String(bookId) } });
   const handleCustomize = () => router.push(FE1_ROUTES.customize);
+  const runMenu = (action: () => void) => () => {
+    setIsMenuOpen(false);
+    action();
+  };
 
   const renderContent = () => {
     if (library.isLoading && !library.books) return <LoadingView message="서재를 불러오는 중이에요…" />;
@@ -38,50 +49,58 @@ export function LibraryScreen() {
         />
       );
     }
-    return library.sections.map(section => (
-      <BookShelfSection
-        key={section.status}
-        title={SECTION_TITLES[section.status]}
-        books={section.books}
-        theme={theme}
-        onBookPress={handleBookPress}
-        // '책 추가하기' 칸은 읽는 중 책장(전체/읽는 중 필터)에 둔다.
-        onAddBook={section.status === 'READING' ? handleAddBook : undefined}
-        onTitlePress={library.selectedCategory === 'all' ? () => library.setSelectedCategory(section.status) : undefined}
-      />
-    ));
+    return (
+      <View style={styles.cabinetWrap}>
+        <CatBooksDecor width={108} style={styles.cat} />
+        <View style={[styles.cabinet, { backgroundColor: palette.shelf, borderColor: palette.shelfEdge }]}>
+          <View style={[styles.cabinetTop, { backgroundColor: palette.shelf, borderBottomColor: palette.shelfEdge }]} />
+          {library.sections.map(section => (
+            <BookShelfSection
+              key={section.status}
+              title={SECTION_TITLES[section.status]}
+              books={section.books}
+              theme={theme}
+              onBookPress={handleBookPress}
+              // '책 추가하기' 칸은 읽는 중 책장(전체/읽는 중 필터)에 둔다.
+              onAddBook={section.status === 'READING' ? handleAddBook : undefined}
+              onTitlePress={library.selectedCategory === 'all' ? () => library.setSelectedCategory(section.status) : undefined}
+            />
+          ))}
+        </View>
+      </View>
+    );
   };
 
   return (
-    <ScreenContainer backgroundColor={theme.palette.wall}>
+    <ScreenContainer backgroundColor={palette.wall}>
+      <WallLight />
       <View style={styles.header}>
         <View style={styles.titleWrap}>
-          <Text accessibilityRole="header" style={[styles.title, { color: theme.palette.text }]}>나의 서재</Text>
-          <Text style={[styles.quote, { color: theme.palette.text }]}>“좋은 책이, 좋은 하루를 만든다.”</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>나의 서재</Text>
+          <Text style={[styles.quote, { color: palette.text }]}>“좋은 책이, 좋은 하루를 만든다.”</Text>
         </View>
+        <Poster />
         <View style={styles.headerActions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="책 추가하기" onPress={handleAddBook} style={styles.iconButton}>
-            <Text style={styles.iconLabel}>＋</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="책 검색해서 추가하기" onPress={handleAddBook} style={styles.iconButton}>
+            <Icon name="search" size={24} />
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="서재 꾸미기" onPress={handleCustomize} style={styles.iconButton}>
-            <Text style={styles.iconLabel}>🎨</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="서재 메뉴" onPress={() => setIsMenuOpen(true)} style={styles.iconButton}>
+            <Icon name="more" size={24} />
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.filters}>
+      <View style={styles.filterRow}>
         <View style={styles.tabs}>
-          <ChipTabs
-            options={LIBRARY_FILTERS}
-            selected={library.selectedCategory}
-            onChange={library.setSelectedCategory}
+          <LibraryCategoryTab
+            selectedCategory={library.selectedCategory}
+            onCategoryChange={library.setSelectedCategory}
             counts={library.books ? library.counts : undefined}
-            accessibilityLabel="독서 상태 필터"
           />
         </View>
       </View>
       <View style={styles.sortRow}>
-        <SortSelector options={LIBRARY_SORTS} value={library.sortType} onChange={library.setSortType} variant="soft" />
+        <LibrarySortSelector sortType={library.sortType} onSortChange={library.setSortType} />
       </View>
 
       {library.error && library.books ? (
@@ -91,21 +110,71 @@ export function LibraryScreen() {
       ) : null}
 
       <View style={styles.shelves}>{renderContent()}</View>
+
+      <BottomSheetModal visible={isMenuOpen} title="나의 서재" onClose={() => setIsMenuOpen(false)}>
+        <View>
+          <MenuItem icon="plus" label="책 추가하기" onPress={runMenu(handleAddBook)} />
+          <LibraryCustomizeButton onPress={runMenu(handleCustomize)} />
+        </View>
+      </BottomSheetModal>
     </ScreenContainer>
   );
 }
 
+/** 벽에 붙은 'Good Books Better Me' 메모 */
+function Poster() {
+  return (
+    <View style={styles.poster} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={styles.pin} />
+      <Text style={styles.posterText}>{'Good\nBooks\nBetter Me'}</Text>
+      <Icon name="heart" size={10} color="#D9826F" />
+    </View>
+  );
+}
+
+/** 창가 햇살처럼 왼쪽 위가 밝은 벽 조명 */
+function WallLight() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <RadialGradient id="wall-light" cx="15%" cy="0%" r="75%">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#wall-light)" />
+    </Svg>
+  );
+}
+
+function MenuItem({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuItem}>
+      <Icon name={icon} size={22} />
+      <Text style={styles.menuLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: spacing.md, gap: spacing.sm },
-  titleWrap: { flex: 1, gap: spacing.xs },
-  title: { fontSize: 30, fontWeight: '800' },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: spacing.lg, gap: spacing.sm },
+  titleWrap: { flex: 1, gap: spacing.sm, paddingTop: spacing.sm },
+  title: { fontSize: 34, fontWeight: '800', letterSpacing: -0.8 },
   quote: { fontSize: 15, opacity: 0.8 },
-  headerActions: { flexDirection: 'row', gap: spacing.sm },
-  iconButton: { width: 46, height: 46, borderRadius: radius.button, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  iconLabel: { fontSize: 20, color: colors.text },
-  filters: { flexDirection: 'row' },
+  poster: { position: 'absolute', right: 112, top: -spacing.sm, width: 70, paddingTop: spacing.md, paddingBottom: spacing.sm, alignItems: 'center', gap: 4, backgroundColor: '#F7EFE3', transform: [{ rotate: '2deg' }], ...softShadow },
+  pin: { position: 'absolute', top: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: '#B98A5E' },
+  posterText: { fontFamily: serifFont, fontSize: 11, lineHeight: 15, color: '#6B5A48', textAlign: 'center' },
+  headerActions: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.sm },
+  iconButton: { width: 48, height: 48, borderRadius: radius.button, backgroundColor: 'rgba(255,252,247,0.92)', alignItems: 'center', justifyContent: 'center', ...softShadow },
+  filterRow: { flexDirection: 'row', marginTop: spacing.xs },
   tabs: { flex: 1 },
   sortRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: -spacing.sm },
   staleError: { fontSize: 13, color: colors.danger },
-  shelves: { gap: spacing.md + 4, flexGrow: 1 },
+  shelves: { flexGrow: 1 },
+  cabinetWrap: { marginHorizontal: -spacing.md, paddingTop: 92, marginTop: -spacing.lg },
+  cat: { right: spacing.lg, top: 0, zIndex: 2 },
+  cabinet: { borderLeftWidth: 12, borderRightWidth: 12, paddingBottom: spacing.md, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  cabinetTop: { height: 14, borderBottomWidth: 4, marginHorizontal: -12, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, minHeight: 54, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  menuLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
 });

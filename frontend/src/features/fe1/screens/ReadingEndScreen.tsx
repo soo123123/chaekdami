@@ -1,29 +1,33 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { AppButton } from '../components/common/AppButton';
-import { BookCover } from '../components/common/BookCover';
 import { Card } from '../components/common/Card';
+import { ReadingEndSceneDecor } from '../components/common/Decor';
+import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
 import { BookPhotoUploader } from '../components/reading/BookPhotoUploader';
 import { ReadingPageRange, ReadingTime } from '../components/reading/ReadingRecordFields';
+import { ReadingResult } from '../components/reading/ReadingResult';
+import { SaveReadingRecordButton } from '../components/reading/SaveReadingRecordButton';
 import { SentenceInput } from '../components/reading/SentenceInput';
 import { FE1_ROUTES, READING_COMPLETE_ROUTE } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, HIT_SLOP, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
+import { useImagePicker } from '../hooks/common/useImagePicker';
 import { useReadingEndParams } from '../hooks/common/useRouteParams';
 import { useReadingEnd } from '../hooks/reading/useReadingEnd';
-import { formatDateWithWeekday, formatDuration, todayIso } from '../utils/format';
-
-/** 사진 첨부는 expo-image-picker 설치 및 업로드 계약 확정 후 연결한다. */
-const PHOTO_UNAVAILABLE = '사진 첨부는 업로드 방식이 확정되면 사용할 수 있어요. (선택 항목)';
+import { formatDuration, todayIso } from '../utils/format';
 
 export function ReadingEndScreen() {
   const { bookId, elapsedTime } = useReadingEndParams();
   const record = useReadingEnd(bookId, elapsedTime);
   const { book } = record;
   const [today] = useState(todayIso);
+  const picker = useImagePicker();
+  const { width: windowWidth } = useWindowDimensions();
+  const sceneWidth = Math.min(windowWidth, 560) * 0.66;
 
   // 독서 시작 화면은 이 화면으로 대체되었으므로 이전 화면이 책 상세다 (포커스 시 재조회).
   const goToBookDetail = () => {
@@ -41,10 +45,30 @@ export function ReadingEndScreen() {
     }
   };
 
+  /** 선택한 사진을 기존 목록 뒤에 붙인다 (같은 사진은 한 번만) */
+  const addPhotos = (uris: string[]) => {
+    if (uris.length === 0) return;
+    record.setPhotos(prev => {
+      const known = new Set(prev.map(photo => photo.uri));
+      return [...prev, ...uris.filter(uri => !known.has(uri)).map(uri => ({ uri }))];
+    });
+  };
+
+  // 이번 기록 입력 내용은 유지한 채 책 상세(지난 기록·문장)를 연다.
+  const openRecords = () => {
+    if (bookId !== null) router.push({ pathname: FE1_ROUTES.detail, params: { bookId: String(bookId) } });
+  };
+
   const header = (
     <ScreenHeader
       title="독서 종료하기"
       onBack={() => router.back()}
+      right={bookId !== null ? (
+        <Pressable accessibilityRole="button" hitSlop={HIT_SLOP} onPress={openRecords} style={styles.recordsButton}>
+          <Icon name="record" size={18} color={colors.text} />
+          <Text style={styles.recordsLabel}>독서 기록 보기</Text>
+        </Pressable>
+      ) : undefined}
     />
   );
 
@@ -61,7 +85,7 @@ export function ReadingEndScreen() {
     return (
       <ScreenContainer header={<ScreenHeader title="독서 종료하기" />} footer={<AppButton onPress={goToBookDetail}>책 상세로 돌아가기</AppButton>}>
         <View style={styles.done}>
-          <Text style={styles.doneEmoji}>🎉</Text>
+          <Icon name="check" size={56} color={colors.primary} />
           <Text style={styles.doneTitle}>독서 기록을 저장했어요!</Text>
           <Text style={styles.doneDesc}>
             {`${formatDuration(record.readingTime)} 동안 ${record.startPage}쪽부터 ${record.endPage}쪽까지 읽었어요.`}
@@ -75,9 +99,7 @@ export function ReadingEndScreen() {
     <ScreenContainer
       header={header}
       footer={book ? (
-        <AppButton onPress={handleSave} isLoading={record.isLoading} icon={<Text style={styles.saveIcon}>💾</Text>}>
-          기록 저장하기
-        </AppButton>
+        <SaveReadingRecordButton onPress={handleSave} isLoading={record.isLoading} />
       ) : undefined}
     >
       {record.isBookLoading ? <LoadingView /> : null}
@@ -87,27 +109,21 @@ export function ReadingEndScreen() {
       {book ? (
         <>
           <View style={styles.intro}>
+            <ReadingEndSceneDecor width={sceneWidth} style={styles.scene} />
             <Text style={styles.introTitle}>{'오늘도\n좋은 책과 함께했어요!'}</Text>
-            <Text style={styles.introDesc}>지금의 이 순간이, 더 나은 내일을 만들어 줄 거예요.</Text>
+            <Text style={styles.introDesc}>{'지금의 이 순간이, 더 나은 내일을\n만들어 줄 거예요.'}</Text>
           </View>
 
-          {/* ReadingResult */}
-          <Card>
-            <View style={styles.result}>
-              <BookCover uri={book.coverImageUrl} title={book.title} width={78} />
-              <View style={styles.resultInfo}>
-                <View style={styles.resultTitleRow}>
-                  <Text style={styles.resultTitle} numberOfLines={2}>{book.title}</Text>
-                  {book.totalPages && record.endPage >= book.totalPages ? (
-                    <View style={styles.badge}><Text style={styles.badgeLabel}>독서 완료</Text></View>
-                  ) : null}
-                </View>
-                <Text style={styles.resultAuthor} numberOfLines={1}>{book.author}</Text>
-                <Text style={styles.resultMeta}>{`📅  ${formatDateWithWeekday(today)}`}</Text>
-                <Text style={styles.resultMeta}>{`🕒  독서 시간 ${formatDuration(record.readingTime)}`}</Text>
-              </View>
-            </View>
-          </Card>
+          <ReadingResult
+            result={{
+              title: book.title,
+              author: book.author,
+              coverImageUrl: book.coverImageUrl,
+              date: today,
+              readingTime: record.readingTime,
+              isFinished: !!book.totalPages && record.endPage >= book.totalPages,
+            }}
+          />
 
           <Card title="독서 정보 기록" subtitle="오늘의 독서 기록을 남겨보세요.">
             <View style={styles.fields}>
@@ -125,8 +141,14 @@ export function ReadingEndScreen() {
             ) : null}
           </Card>
 
-          <Card title="책 사진 첨부하기" subtitle="책 표지나 인상 깊었던 페이지를 남겨보세요.">
-            <BookPhotoUploader photos={record.photos} onChange={record.setPhotos} unavailableMessage={PHOTO_UNAVAILABLE} />
+          <Card title="책 사진 첨부하기" subtitle="책 표지나 인상 깊었던 페이지를 사진으로 남겨보세요.">
+            <BookPhotoUploader
+              photos={record.photos}
+              onChange={record.setPhotos}
+              onTakePhoto={async () => addPhotos(await picker.takePhoto())}
+              onPickFromGallery={async () => addPhotos(await picker.pickFromLibrary({ multiple: true }))}
+              errorMessage={picker.error}
+            />
           </Card>
 
           <Card title="인상 깊었던 문장" subtitle="가장 기억에 남는 문장을 적어보세요.">
@@ -146,24 +168,17 @@ export function ReadingEndScreen() {
 }
 
 const styles = StyleSheet.create({
-  saveIcon: { fontSize: 18 },
-  intro: { gap: spacing.sm, paddingVertical: spacing.xs },
-  introTitle: { fontSize: 24, lineHeight: 32, fontWeight: '800', color: colors.text },
-  introDesc: { fontSize: 14, color: colors.secondaryText },
-  result: { flexDirection: 'row', gap: spacing.md },
-  resultInfo: { flex: 1, gap: spacing.xs },
-  resultTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  resultTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: colors.text },
-  resultAuthor: { fontSize: 14, color: colors.secondaryText },
-  resultMeta: { fontSize: 14, color: colors.secondaryText },
-  badge: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: 4 },
-  badgeLabel: { fontSize: 12, color: colors.primary, fontWeight: '700' },
-  fields: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: colors.border, borderRadius: radius.input, backgroundColor: colors.background },
-  fieldDivider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  recordsButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.md - 2, borderRadius: radius.pill, backgroundColor: colors.surface, ...softShadow },
+  recordsLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
+  intro: { gap: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.md, minHeight: 128 },
+  scene: { right: -spacing.md, top: -spacing.sm },
+  introTitle: { fontSize: 23, lineHeight: 32, fontWeight: '800', color: colors.text, letterSpacing: -0.4, ...keepAllWords },
+  introDesc: { fontSize: 14, lineHeight: 20, color: colors.secondaryText },
+  fields: { flexDirection: 'row', borderWidth: 1, borderColor: colors.border, borderRadius: radius.input + 2, backgroundColor: '#FBF7F1' },
+  fieldDivider: { width: 1, backgroundColor: colors.border },
   hint: { fontSize: 13, color: colors.secondaryText },
   retry: { fontSize: 14, color: colors.primary, fontWeight: '700', textAlign: 'center' },
   done: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.md },
-  doneEmoji: { fontSize: 56 },
   doneTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
   doneDesc: { fontSize: 15, color: colors.secondaryText, textAlign: 'center', lineHeight: 22 },
 });

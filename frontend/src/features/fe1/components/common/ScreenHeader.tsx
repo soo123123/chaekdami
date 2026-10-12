@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, HIT_SLOP, spacing } from '../../constants/theme';
+import { Icon } from './Icon';
 
 type ScreenHeaderProps = {
   title?: string;
@@ -8,37 +9,41 @@ type ScreenHeaderProps = {
   onBack?: () => void;
   right?: ReactNode;
   align?: 'left' | 'center';
+  /** 제목 아래 보조 문구 (가운데 정렬 헤더에서 사용) */
+  subtitle?: string;
 };
 
-export function ScreenHeader({ title, onBack, right, align = 'left' }: ScreenHeaderProps) {
+export function ScreenHeader({ title, onBack, right, align = 'left', subtitle }: ScreenHeaderProps) {
+  const isCenter = align === 'center';
   return (
     <View style={styles.container}>
-      <View style={styles.side}>
-        {onBack ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" hitSlop={HIT_SLOP} onPress={onBack} style={styles.back}>
-            <Text style={styles.backGlyph}>‹</Text>
-          </Pressable>
-        ) : null}
+      <View style={styles.row}>
+        <View style={[styles.side, isCenter && styles.sideCenter]}>
+          {onBack ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" hitSlop={HIT_SLOP} onPress={onBack} style={styles.back}>
+              <Icon name="back" size={28} />
+            </Pressable>
+          ) : null}
+        </View>
+        <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, isCenter ? styles.center : styles.left]}>
+          {title}
+        </Text>
+        <View style={[styles.side, styles.right, isCenter && styles.sideCenter]}>{right}</View>
       </View>
-      <Text
-        accessibilityRole="header"
-        numberOfLines={1}
-        style={[styles.title, align === 'center' ? styles.center : styles.left]}
-      >
-        {title}
-      </Text>
-      <View style={[styles.side, styles.right]}>{right}</View>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingHorizontal: spacing.md, gap: spacing.sm },
+  container: { paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.sm, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 52, gap: spacing.sm },
   side: { minWidth: 32, justifyContent: 'center' },
-  right: { alignItems: 'flex-end', minWidth: 32 },
-  back: { width: 32, height: 40, justifyContent: 'center' },
-  backGlyph: { fontSize: 34, lineHeight: 38, color: colors.text, fontWeight: '300' },
-  title: { flex: 1, fontSize: 20, fontWeight: '700', color: colors.text },
+  sideCenter: { minWidth: 96 },
+  right: { alignItems: 'flex-end' },
+  back: { width: 36, height: 44, justifyContent: 'center', marginLeft: -6 },
+  title: { flex: 1, fontSize: 24, fontWeight: '800', color: colors.text, letterSpacing: -0.4 },
   left: { textAlign: 'left' },
   center: { textAlign: 'center' },
+  subtitle: { fontSize: 15, color: colors.secondaryText, textAlign: 'center' },
 });

@@ -22,6 +22,7 @@
 
 ```
 features/fe1/
+├── api/readingApi.ts         # 화면/Hook이 사용하는 유일한 API 진입점
 ├── api/devMockReadingApi.ts   # ⚠️ 개발 전용 Mock (실제 API 아님)
 ├── components/{common,book,reading,library}
 ├── constants/{theme,options,routes,config}.ts
@@ -29,7 +30,6 @@ features/fe1/
 ├── screens/
 ├── types/reading.ts
 └── utils/{format,validation,apiError}.ts
-api/readingApi.ts               # 화면/Hook이 사용하는 유일한 API 진입점
 ```
 
 ## API 연동 상태
