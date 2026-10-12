@@ -29,7 +29,7 @@ export function CurrentThemePreview({ theme, isApplied }: CurrentThemePreviewPro
 
 const styles = StyleSheet.create({
   card: { borderRadius: radius.card, overflow: 'hidden' },
-  overlay: { ...StyleSheet.absoluteFillObject, padding: spacing.md, gap: spacing.xs + 2, width: '58%' },
+  overlay: { ...StyleSheet.absoluteFill, padding: spacing.md, gap: spacing.xs + 2, width: '58%' },
   badge: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.input, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },
   badgeLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: '600' },
   name: { fontSize: 22, fontWeight: '800' },
