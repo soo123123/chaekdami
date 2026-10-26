@@ -13,7 +13,7 @@ AI와 게이미피케이션을 활용하여 사용자의 지속적인 독서와 
 | Java | JDK 21 |
 | Spring Boot | 4.1.1 |
 | Gradle | 9.7.1 |
-| Database | MySQL |
+| Database | postgreSQL |
 
 > Gradle은 프로젝트에 포함된 Gradle Wrapper(`gradlew`)를 사용합니다.
 > 별도의 Gradle 설치 없이 프로젝트의 Wrapper를 사용하는 것을 권장합니다.
@@ -353,7 +353,7 @@ Domain
            ↓
 ┌─────────────────────┐
 │     Data Layer      │
-│    JPA / MySQL      │
+│    JPA / postgreSQL │
 └─────────────────────┘
 ```
 
@@ -554,12 +554,12 @@ AI 피드백
 - [ ] 데이터 흐름 설계
 - [ ] REST API 설계
 - [ ] Entity 설계
-- [ ] MySQL 테이블 설계
+- [ ] postgreSQL 테이블 설계
 - [ ] 테이블 관계 정의
 - [ ] 인증 / 보안 구조 설계
 - [ ] 사용자 Flow 설계
 - [ ] React Native 화면 설계
 - [ ] Spring Boot API 구현
-- [ ] MySQL 연동
+- [ ] postgreSQL 연동
 - [ ] AI 기능 연동
 - [ ] Docker 기반 실행 환경 구성
