@@ -65,14 +65,27 @@ public class RewardAccount extends BaseTimeEntity {
     public void deductCurrency(int amount) {
         validatePositive(amount);
         if (this.currency < amount) {
-            throw new IllegalStateException("보유 재화가 부족합니다. (보유: " + this.currency + ", 필요: " + amount + ")");
+            throw new RewardException(RewardErrorCode.INSUFFICIENT_CURRENCY);
         }
         this.currency -= amount;
     }
 
-    public void addExperience(int amount) {
+    /**
+     * 경험치를 더하고, 누적 경험치가 다음 레벨 기준을 넘으면 레벨업과 승급 보상 재화 지급까지 처리한다.
+     *
+     * @return 이번 호출로 지급된 승급 보상 재화 합계 (레벨업이 없으면 0)
+     */
+    public int addExperience(int amount) {
         validatePositive(amount);
         this.experience += amount;
+
+        int promotionReward = 0;
+        while (this.experience >= LevelPolicy.totalExperienceToReach(this.level + 1)) {
+            this.level++;
+            promotionReward += LevelPolicy.promotionReward(this.level);
+        }
+        this.currency += promotionReward;
+        return promotionReward;
     }
 
     private void validatePositive(int amount) {

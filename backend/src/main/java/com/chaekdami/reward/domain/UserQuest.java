@@ -76,10 +76,10 @@ public class UserQuest extends BaseTimeEntity {
      */
     public void claimReward() {
         if (status == QuestStatus.REWARDED) {
-            throw new IllegalStateException("이미 보상을 수령한 퀘스트입니다.");
+            throw new RewardException(RewardErrorCode.QUEST_ALREADY_REWARDED);
         }
         if (status != QuestStatus.COMPLETED) {
-            throw new IllegalStateException("아직 달성하지 못한 퀘스트입니다.");
+            throw new RewardException(RewardErrorCode.QUEST_NOT_COMPLETED);
         }
         this.status = QuestStatus.REWARDED;
     }
