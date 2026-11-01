@@ -9,6 +9,8 @@ public final class ExperiencePolicy {
 
     private static final int SECONDS_PER_EXPERIENCE = 60;
     private static final int PAGES_PER_EXPERIENCE = 5;
+    /** 경험치 부스터 버프 적용 중 독서 경험치 배율. user_buffs 에 배율 컬럼이 없어 고정값으로 둔다. */
+    private static final int BOOSTER_MULTIPLIER = 2;
 
     private ExperiencePolicy() {
     }
@@ -27,6 +29,13 @@ public final class ExperiencePolicy {
         }
         int readPages = endPage - startPage;
         return roundDivide(durationSeconds, SECONDS_PER_EXPERIENCE) + roundDivide(readPages, PAGES_PER_EXPERIENCE);
+    }
+
+    /**
+     * 경험치 부스터 버프가 적용 중일 때의 독서 경험치
+     */
+    public static int boostedExperience(int experience) {
+        return experience * BOOSTER_MULTIPLIER;
     }
 
     /** 0 이상 정수의 Math.round(value / divisor) 와 같은 반올림 나눗셈 */
