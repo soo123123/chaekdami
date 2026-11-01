@@ -49,6 +49,9 @@ public class QuestService {
      */
     @Transactional
     public List<QuestResult> recordReadingSession(Long userId, int durationSeconds) {
+        if (durationSeconds < 0) {
+            throw new IllegalArgumentException("독서 시간은 0 이상이어야 합니다. (입력: " + durationSeconds + ")");
+        }
         rewardLedger.lockAccount(userId);
         int readingMinutes = (durationSeconds + SECONDS_PER_MINUTE / 2) / SECONDS_PER_MINUTE;
 
