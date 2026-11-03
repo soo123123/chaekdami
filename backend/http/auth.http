@@ -443,3 +443,54 @@ POST {{baseUrl}}/api/auth/logout-all
 # 토큰은 메일의 링크 값을 넣는다. 화면은 HTML이다.
 GET {{baseUrl}}/email/reset?token=메일의-토큰
 
+### 45. 탈퇴용 가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123",
+  "nickname": "withdrawer"
+}
+
+### 46. 탈퇴용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 47. 틀린 비밀번호로 탈퇴 — 400
+DELETE {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "wrong-password"
+}
+
+### 48. 회원 탈퇴 — 204
+DELETE {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123"
+}
+
+### 49. 탈퇴한 계정 로그인 — 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123"
+}
+

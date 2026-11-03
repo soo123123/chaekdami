@@ -14,11 +14,13 @@ import com.chaekdami.user.presentation.dto.RefreshTokenRequest;
 import com.chaekdami.user.presentation.dto.ResetPasswordRequest;
 import com.chaekdami.user.presentation.dto.SignUpRequest;
 import com.chaekdami.user.presentation.dto.UserResponse;
+import com.chaekdami.user.presentation.dto.WithdrawRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -86,5 +88,11 @@ public class UserController {
     @GetMapping("/api/me")
     public ResponseEntity<UserResponse> me() {
         return ResponseEntity.ok(UserResponse.from(userService.getMe()));
+    }
+
+    @DeleteMapping("/api/me")
+    public ResponseEntity<Void> withdraw(@RequestBody @Valid WithdrawRequest request) {
+        userService.withdraw(request.getCurrentPassword());
+        return ResponseEntity.noContent().build();
     }
 }

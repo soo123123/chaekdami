@@ -20,6 +20,7 @@ import com.chaekdami.user.domain.User;
 import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
+import com.chaekdami.user.presentation.validation.NicknameRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,7 +40,7 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService {
+public class UserService implements NicknameChanger {
 
     private static final String DUMMY_PASSWORD_HASH = new BCryptPasswordEncoder().encode("timing-safe-dummy");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -148,6 +149,38 @@ public class UserService {
 
     public UserAccount getMe() {
         return UserAccount.from(loadCurrentUser());
+    }
+
+    @Override
+    @Transactional
+    public void changeNickname(Long userId, String nickname) {
+        accessGuard.requireSelf(userId);
+        String violation = NicknameRules.violationMessage(nickname);
+        if (nickname == null || violation != null) {
+            throw new InvalidRequestException("nickname",
+                    violation != null ? violation : "닉네임을 입력해야 합니다.");
+        }
+        String normalized = nickname.trim();
+        User user = userRepository.findById(userId).orElseThrow(UnauthorizedException::new);
+        if (!normalized.equalsIgnoreCase(user.getNickname())
+                && userRepository.existsByNicknameIgnoreCase(normalized)) {
+            throw new DuplicateNicknameException();
+        }
+        if (passwordEncoder.matches(normalized, user.getPasswordHash())) {
+            throw new InvalidRequestException("nickname", "닉네임은 비밀번호와 같을 수 없습니다.");
+        }
+        user.changeNickname(normalized);
+    }
+
+    @Transactional
+    public void withdraw(String currentPassword) {
+        User user = loadCurrentUser();
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new InvalidRequestException("currentPassword", "현재 비밀번호가 올바르지 않습니다.");
+        }
+        refreshTokenRepository.deleteByUser_Id(user.getId());
+        passwordResetTokenRepository.deleteByUser_Id(user.getId());
+        userRepository.delete(user);
     }
 
     @Transactional

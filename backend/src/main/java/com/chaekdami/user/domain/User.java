@@ -73,4 +73,8 @@ public class User {
     public void bumpTokenVersion() {
         this.tokenVersion++;
     }
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }
