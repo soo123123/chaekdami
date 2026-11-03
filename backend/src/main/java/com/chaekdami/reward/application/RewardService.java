@@ -29,6 +29,7 @@ public class RewardService {
     private final UserItemRepository userItemRepository;
     private final UserBuffRepository userBuffRepository;
     private final RewardLedger rewardLedger;
+    private final StreakService streakService;
 
     /**
      * 사용자의 보상 계정을 만든다. 이미 있으면 기존 계정을 그대로 둔다. (회원가입 직후 호출)
@@ -40,8 +41,13 @@ public class RewardService {
         }
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * 보상 상태 통합 조회. 놓친 날이 있으면 방어권 차감/스트릭 초기화를 먼저 정산하므로 쓰기 트랜잭션이다.
+     * 정산이 계정을 잠그고 읽어야 최신 값이 반영되므로, 계정 조회보다 먼저 호출한다.
+     */
+    @Transactional
     public RewardStatusResult getRewardStatus(Long userId) {
+        streakService.settleIfNeeded(userId);
         RewardAccount account = rewardAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
 

@@ -71,6 +71,21 @@ public class RewardAccount extends BaseTimeEntity {
     }
 
     /**
+     * 독서에 성공한 날 연속 일수를 1 늘리고, 최고 기록을 넘으면 함께 갱신한다.
+     */
+    public void extendStreak() {
+        this.dday++;
+        this.maxDday = Math.max(this.maxDday, this.dday);
+    }
+
+    /**
+     * 독서를 놓친 날을 방어권으로 막지 못하면 연속 일수를 0으로 되돌린다. 최고 기록은 유지한다.
+     */
+    public void resetStreak() {
+        this.dday = 0;
+    }
+
+    /**
      * 경험치를 더하고, 누적 경험치가 다음 레벨 기준을 넘으면 레벨업과 승급 보상 재화 지급까지 처리한다.
      *
      * @return 이번 호출로 지급된 승급 보상 재화 합계 (레벨업이 없으면 0)
