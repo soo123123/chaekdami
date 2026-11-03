@@ -21,4 +21,12 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
     @Query("select coalesce(sum(ui.quantity), 0) from UserItem ui, ShopItem si"
             + " where si.id = ui.shopItemId and ui.userId = :userId and si.type = :type")
     int sumQuantityByUserIdAndItemType(@Param("userId") Long userId, @Param("type") ShopItemType type);
+
+    /**
+     * 사용자가 보유 중(수량 1 이상)인 특정 종류 아이템을 먼저 들어온 순으로 조회한다. (예: 차감할 스트릭 방어권)
+     */
+    @Query("select ui from UserItem ui, ShopItem si"
+            + " where si.id = ui.shopItemId and ui.userId = :userId and si.type = :type and ui.quantity > 0"
+            + " order by ui.id")
+    List<UserItem> findAllInStockByUserIdAndItemType(@Param("userId") Long userId, @Param("type") ShopItemType type);
 }
