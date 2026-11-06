@@ -1,16 +1,22 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
-
+import { Ionicons } from '@expo/vector-icons';
 import { getMyProfile } from '../../api/userApi';
+
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface UserProfile {
   id?: number;
@@ -18,705 +24,1041 @@ interface UserProfile {
   email?: string;
 }
 
-const MyPageScreen = () => {
+const COLORS = {
+  background: '#FAF7F1',
+  white: '#FFFDF9',
+  green: '#365F49',
+  darkGreen: '#274B3B',
+  muted: '#77736C',
+  text: '#29231F',
+  line: '#EBE5DB',
+};
+
+const DATA = {
+  level: 5,
+  xp: 320,
+  maxXp: 640,
+  currency: 1250,
+  dday: 12,
+  questMinutes: 0,
+  questTarget: 30,
+};
+
+// frontend/assets/images/mypage/
+const ART = {
+  profileBanner: require('../../../assets/images/mypage/profile-banner.png'),
+  profileCat: require('../../../assets/images/mypage/profile-cat.png'),
+  questBanner: require('../../../assets/images/mypage/quest-banner.png'),
+  questCat: require('../../../assets/images/mypage/quest-cat.png'),
+  bookshelf: require('../../../assets/images/mypage/bookshelf.png'),
+  bookPlant: require('../../../assets/images/mypage/book-plant.png'),
+  coin: require('../../../assets/images/mypage/coin-icon.png'),
+  level: require('../../../assets/images/mypage/level-icon.png'),
+  decoration: require('../../../assets/images/mypage/decoration-icon.png'),
+  stats: require('../../../assets/images/mypage/stats-icon.png'),
+  bell: require('../../../assets/images/mypage/notification-bell.png'),
+  settings: require('../../../assets/images/mypage/settings-gear.png'),
+  readingCat: require('../../../assets/images/mypage/reading-cat.png'),
+  sleepingCat: require('../../../assets/images/mypage/sleeping-cat.png'),
+};
+
+function goTo(path: string) {
+  router.push(path as any);
+}
+
+function pending(name: string) {
+  Alert.alert('안내', `${name} 기능은 연결 준비 중입니다.`);
+}
+
+export default function MyPageScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 임시 데이터
-  const level = 5;
-  const xp = 320;
-  const maxXp = 500;
-  const currency = 1250;
+  const { width } = useWindowDimensions();
+  const compact = width < 410;
 
-  const xpPercent = Math.min((xp / maxXp) * 100, 100);
+  const xpPercent = Math.min(100, (DATA.xp / DATA.maxXp) * 100);
+  const questPercent = Math.min(
+    100,
+    (DATA.questMinutes / DATA.questTarget) * 100
+  );
 
   useEffect(() => {
+    let active = true;
+
     const loadProfile = async () => {
       try {
         const data = await getMyProfile();
-        setProfile(data);
+
+        if (active) {
+          setProfile(data);
+        }
       } catch (error) {
         console.log('사용자 정보 조회 실패:', error);
 
-        // 백엔드 연결 전 임시 데이터
-        setProfile({
-          id: 1,
-          nickname: '책다듬이',
-          email: 'user@example.com',
-        });
+        if (active) {
+          setProfile({
+            id: 1,
+            nickname: '책읽는고양이',
+          });
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
     loadProfile();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={COLORS.green} />
+        <Text style={styles.loadingText}>
+          마이페이지를 불러오는 중...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.content}
       >
-        {/* 상단 */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>마이페이지</Text>
+        {/* 프로필 배너 */}
+        <ImageBackground
+          source={ART.profileBanner}
+          resizeMode="cover"
+          imageStyle={styles.heroBackground}
+          style={styles.hero}
+        >
+          <View style={styles.heroHeader}>
+            <Text style={styles.heroTitle}>마이페이지</Text>
 
-          <TouchableOpacity
-            style={styles.settingButton}
-            onPress={() =>
-              Alert.alert(
-                '설정',
-                '설정 기능은 추후 연결할 예정입니다.'
-              )
-            }
-          >
-            <Text style={styles.settingIcon}>⚙</Text>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.heroActions}>
+              <TouchableOpacity
+                onPress={() => pending('알림')}
+                accessibilityLabel="알림"
+              >
+                <Image
+                  source={ART.bell}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
 
-        {/* 프로필 */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileTop}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarEmoji}>🌱</Text>
+              <TouchableOpacity
+                onPress={() => pending('설정')}
+                accessibilityLabel="설정"
+              >
+                <Image
+                  source={ART.settings}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.profileInfo}>
-              <Text style={styles.nickname}>
-                {profile?.nickname ?? '사용자'}
-              </Text>
-
-              <Text style={styles.email}>
-                {profile?.email ?? ''}
-              </Text>
-
-              <Text style={styles.profileMessage}>
-                오늘도 책과 함께 성장해요.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() =>
-                Alert.alert(
-                  '프로필 수정',
-                  '프로필 수정 기능은 추후 연결할 예정입니다.'
-                )
-              }
-            >
-              <Text style={styles.editButtonText}>수정</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* 레벨 */}
-          <TouchableOpacity
-            style={styles.levelArea}
-            onPress={() => router.push('/reward/reward')}
-          >
-            <View style={styles.levelHeader}>
-              <Text style={styles.levelText}>
-                Lv. {level}
+          <View style={styles.profileRow}>
+            <TouchableOpacity
+              style={styles.avatar}
+              onPress={() => pending('프로필 수정')}
+            >
+              <Image
+                source={ART.profileCat}
+                style={styles.avatarImage}
+                resizeMode="contain"
+              />
+
+              <View style={styles.editDot}>
+                <Ionicons
+                  name="pencil"
+                  size={11}
+                  color="#FFFFFF"
+                />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.profileDetails}>
+              <Text
+                style={styles.nickname}
+                numberOfLines={1}
+              >
+                {profile?.nickname || '책읽는고양이'}
               </Text>
 
-              <Text style={styles.xpText}>
-                {xp} / {maxXp} XP
+              <Text
+                style={styles.quote}
+                numberOfLines={2}
+              >
+                조금씩, 꾸준히. 그게 큰 변화를 만들어요.
               </Text>
+
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => pending('프로필 수정')}
+              >
+                <Text style={styles.editButtonText}>
+                  프로필 편집
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={13}
+                  color={COLORS.muted}
+                />
+              </TouchableOpacity>
             </View>
+          </View>
 
-            <View style={styles.progressBackground}>
+          <Image
+            source={ART.bookPlant}
+            style={styles.heroPlant}
+            resizeMode="contain"
+            pointerEvents="none"
+          />
+        </ImageBackground>
+
+        {/* D-day, 레벨, 재화 */}
+        <View style={styles.summary}>
+          <TouchableOpacity
+            style={styles.summaryItem}
+            onPress={() => goTo('/reward/dday')}
+          >
+            <Image
+              source={ART.readingCat}
+              style={styles.summaryArt}
+              resizeMode="contain"
+            />
+            <Text style={styles.summaryLabel}>
+              독서 D-day
+            </Text>
+            <Text style={styles.summaryValue}>
+              {DATA.dday}일
+            </Text>
+            <Text
+              style={styles.summaryHint}
+              numberOfLines={2}
+            >
+              꾸준히 읽고 있어요!
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.summaryItem}
+            onPress={() => goTo('/reward/reward')}
+          >
+            <Image
+              source={ART.level}
+              style={styles.summaryArt}
+              resizeMode="contain"
+            />
+            <Text style={styles.summaryLabel}>
+              나의 레벨
+            </Text>
+            <Text style={styles.summaryValue}>
+              Lv. {DATA.level}
+            </Text>
+            <View style={styles.miniTrack}>
               <View
                 style={[
-                  styles.progressBar,
+                  styles.miniFill,
                   { width: `${xpPercent}%` },
                 ]}
               />
             </View>
+            <Text
+              style={styles.summaryHint}
+              numberOfLines={2}
+            >
+              다음 레벨까지 {DATA.maxXp - DATA.xp} XP
+            </Text>
           </TouchableOpacity>
-        </View>
-
-        {/* 활동 정보 */}
-        <View style={styles.statCard}>
-          <TouchableOpacity
-            style={styles.statItem}
-            onPress={() => router.push('/reward/reward')}
-          >
-            <Text style={styles.statEmoji}>⭐</Text>
-            <Text style={styles.statValue}>Lv.{level}</Text>
-            <Text style={styles.statLabel}>레벨</Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <View style={styles.statItem}>
-            <Text style={styles.statEmoji}>🪙</Text>
-            <Text style={styles.statValue}>{currency}</Text>
-            <Text style={styles.statLabel}>보유 재화</Text>
-          </View>
-
-          <View style={styles.divider} />
 
           <TouchableOpacity
-            style={styles.statItem}
-            onPress={() => router.push('/user/reading-stats')}
+            style={styles.summaryItem}
+            onPress={() => goTo('/reward/shop')}
           >
-            <Text style={styles.statEmoji}>📚</Text>
-            <Text style={styles.statValue}>3권</Text>
-            <Text style={styles.statLabel}>완독</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 독서 목표 */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>나의 독서 활동</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.ddayCard}
-          onPress={() => router.push('/reward/dday')}
-        >
-          <View style={styles.ddayLeft}>
-            <View style={styles.ddayBadge}>
-              <Text style={styles.ddayBadgeText}>D-10</Text>
-            </View>
-
-            <View>
-              <Text style={styles.cardTitle}>
-                현재 읽는 책 완독하기
-              </Text>
-
-              <Text style={styles.cardDescription}>
-                목표일까지 꾸준히 읽어보세요.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* 퀘스트 */}
-        <TouchableOpacity
-          style={styles.questCard}
-          onPress={() => router.push('/reward/quest')}
-        >
-          <View style={styles.questHeader}>
-            <View>
-              <Text style={styles.cardTitle}>
-                오늘의 독서 퀘스트
-              </Text>
-
-              <Text style={styles.cardDescription}>
-                오늘 30분 독서하기
-              </Text>
-            </View>
-
-            <Text style={styles.questProgress}>20 / 30분</Text>
-          </View>
-
-          <View style={styles.questProgressBackground}>
-            <View
-              style={[
-                styles.questProgressBar,
-                { width: '67%' },
-              ]}
+            <Image
+              source={ART.coin}
+              style={styles.summaryArt}
+              resizeMode="contain"
             />
-          </View>
-
-          <View style={styles.questReward}>
-            <Text style={styles.rewardText}>
-              ⭐ 50 XP
+            <Text style={styles.summaryLabel}>
+              보유 재화
             </Text>
-
-            <Text style={styles.rewardText}>
-              🪙 20
+            <Text style={styles.summaryValue}>
+              {DATA.currency.toLocaleString()}
             </Text>
-          </View>
+            <Text
+              style={styles.summaryHint}
+              numberOfLines={2}
+            >
+              상점에서 사용해요
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 오늘의 퀘스트 */}
+        <TouchableOpacity
+          style={styles.quest}
+          onPress={() => goTo('/reward/quest')}
+        >
+          <ImageBackground
+            source={ART.questBanner}
+            resizeMode="cover"
+            imageStyle={styles.questBackgroundImage}
+            style={styles.questBackground}
+          >
+            <Image
+              source={ART.questCat}
+              style={styles.questCat}
+              resizeMode="contain"
+            />
+
+            <View style={styles.questInfo}>
+              <Text style={styles.questTitle}>
+                오늘의 퀘스트
+              </Text>
+              <Text style={styles.questDescription}>
+                30분 이상 독서하기
+              </Text>
+
+              <View style={styles.questProgressRow}>
+                <View style={styles.questTrack}>
+                  <View
+                    style={[
+                      styles.questFill,
+                      { width: `${questPercent}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.questCount}>
+                  {DATA.questMinutes}/{DATA.questTarget}분
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.questArrow}>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={COLORS.green}
+              />
+            </View>
+          </ImageBackground>
         </TouchableOpacity>
+
+        {/* 바로가기 */}
+        <View style={styles.shortcuts}>
+          <Shortcut
+            title="재화 상점"
+            subtitle="아이템 구매"
+            image={ART.coin}
+            tint="#FFF1E4"
+            compact={compact}
+            onPress={() => goTo('/reward/shop')}
+          />
+
+          <Shortcut
+            title="서재 꾸미기"
+            subtitle="나만의 공간"
+            image={ART.decoration}
+            tint="#F4EFE2"
+            compact={compact}
+            onPress={() => goTo('/reward/shop')}
+          />
+
+          <Shortcut
+            title="레벨 혜택"
+            subtitle="성장 기록"
+            image={ART.level}
+            tint="#F0F3E8"
+            compact={compact}
+            onPress={() => goTo('/reward/reward')}
+          />
+
+          <Shortcut
+            title="독서 통계"
+            subtitle="독서 분석"
+            image={ART.stats}
+            tint="#E9F2EC"
+            compact={compact}
+            onPress={() => goTo('/user/reading-stats')}
+          />
+        </View>
 
         {/* 나의 서재 */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>나의 서재</Text>
-
-          <TouchableOpacity
-            onPress={() => router.push('/reward/shop')}
-          >
-            <Text style={styles.moreText}>꾸미기 ›</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.libraryCard}>
-          <View style={styles.libraryPreview}>
-            <Text style={styles.libraryEmoji}>🪴</Text>
-            <Text style={styles.libraryEmoji}>📚</Text>
-            <Text style={styles.libraryEmoji}>🪑</Text>
-            <Text style={styles.libraryEmoji}>💡</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>
+              나의 서재 미리보기
+            </Text>
+
+            <TouchableOpacity
+              style={styles.moreButton}
+              onPress={() => goTo('/reading/library')}
+            >
+              <Text style={styles.moreText}>
+                전체보기
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={15}
+                color={COLORS.muted}
+              />
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.libraryTitle}>
-            나만의 독서 공간
-          </Text>
-
-          <Text style={styles.libraryDescription}>
-            독서 활동으로 모은 재화로 서재를 꾸며보세요.
-          </Text>
-
           <TouchableOpacity
-            style={styles.shopButton}
-            onPress={() => router.push('/reward/shop')}
+            style={styles.libraryPreview}
+            onPress={() => goTo('/reading/library')}
           >
-            <Text style={styles.shopButtonText}>
-              상점 보러가기
-            </Text>
+            <Image
+              source={ART.bookshelf}
+              style={styles.bookshelfImage}
+              resizeMode="contain"
+            />
+
+            <Image
+              source={ART.sleepingCat}
+              style={styles.shelfCat}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
 
-        {/* 메뉴 */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>독서 기록</Text>
+        {/* 설정 */}
+        <View style={styles.settingsCard}>
+          <SettingsRow
+            icon="person-outline"
+            title="계정 정보"
+            onPress={() => pending('계정 정보')}
+          />
+          <SettingsRow
+            icon="notifications-outline"
+            title="알림 설정"
+            onPress={() => pending('알림 설정')}
+          />
+          <SettingsRow
+            icon="help-circle-outline"
+            title="고객센터"
+            onPress={() => pending('고객센터')}
+          />
+          <SettingsRow
+            icon="document-text-outline"
+            title="이용약관 및 정책"
+            last
+            onPress={() => pending('이용약관 및 정책')}
+          />
         </View>
-
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={() => router.push('/user/reading-stats')}
-        >
-          <View style={styles.menuLeft}>
-            <Text style={styles.menuEmoji}>📊</Text>
-
-            <View>
-              <Text style={styles.menuTitle}>독서 통계</Text>
-              <Text style={styles.menuDescription}>
-                나의 독서 활동을 확인해요.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={() => router.push('/reward/quest')}
-        >
-          <View style={styles.menuLeft}>
-            <Text style={styles.menuEmoji}>🎯</Text>
-
-            <View>
-              <Text style={styles.menuTitle}>퀘스트</Text>
-              <Text style={styles.menuDescription}>
-                독서 목표와 진행 상황을 확인해요.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={() => router.push('/reward/shop')}
-        >
-          <View style={styles.menuLeft}>
-            <Text style={styles.menuEmoji}>🛍️</Text>
-
-            <View>
-              <Text style={styles.menuTitle}>상점</Text>
-              <Text style={styles.menuDescription}>
-                재화로 서재 아이템을 구매해요.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* 로그아웃 */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={() =>
-            Alert.alert(
-              '로그아웃',
-              '로그아웃 기능은 백엔드 인증 연결 후 구현합니다.'
-            )
-          }
-        >
-          <Text style={styles.logoutText}>로그아웃</Text>
-        </TouchableOpacity>
       </ScrollView>
+
+      {/* 하단 내비게이션 */}
+      <View style={styles.bottomNav}>
+        <BottomTab
+          icon="home-outline"
+          title="홈"
+          onPress={() => goTo('/')}
+        />
+        <BottomTab
+          icon="search-outline"
+          title="탐색"
+          onPress={() => goTo('/reading/search')}
+        />
+        <BottomTab
+          icon="library-outline"
+          title="나의 서재"
+          onPress={() => goTo('/reading/library')}
+        />
+        <BottomTab
+          icon="people-outline"
+          title="커뮤니티"
+          onPress={() => pending('커뮤니티')}
+        />
+        <BottomTab
+          icon="person"
+          title="마이페이지"
+          active
+          onPress={() => {}}
+        />
+      </View>
     </View>
   );
-};
+}
 
-export default MyPageScreen;
+function Shortcut({
+  title,
+  subtitle,
+  image,
+  tint,
+  compact,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  image: any;
+  tint: string;
+  compact: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.shortcut}
+      onPress={onPress}
+    >
+      <View
+        style={[
+          styles.shortcutArtBox,
+          { backgroundColor: tint },
+        ]}
+      >
+        <Image
+          source={image}
+          style={styles.shortcutArt}
+          resizeMode="contain"
+        />
+      </View>
+
+      <Text
+        style={[
+          styles.shortcutTitle,
+          compact && styles.shortcutTitleCompact,
+        ]}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
+
+      <Text
+        style={styles.shortcutSubtitle}
+        numberOfLines={1}
+      >
+        {subtitle}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function SettingsRow({
+  icon,
+  title,
+  onPress,
+  last = false,
+}: {
+  icon: IconName;
+  title: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.settingsRow,
+        last && styles.lastRow,
+      ]}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={COLORS.green}
+      />
+
+      <Text style={styles.settingsText}>
+        {title}
+      </Text>
+
+      <Ionicons
+        name="chevron-forward"
+        size={17}
+        color={COLORS.muted}
+      />
+    </TouchableOpacity>
+  );
+}
+
+function BottomTab({
+  icon,
+  title,
+  onPress,
+  active = false,
+}: {
+  icon: IconName;
+  title: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.tab}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={22}
+        color={active ? COLORS.green : '#77768B'}
+      />
+
+      <Text
+        style={[
+          styles.tabText,
+          active && styles.tabActive,
+        ]}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#F8F6F0',
+    backgroundColor: COLORS.background,
   },
 
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 50,
-  },
-
-  loadingContainer: {
+  loading: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8F6F0',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
 
-  header: {
+  loadingText: {
+    marginTop: 12,
+    color: COLORS.muted,
+  },
+
+  content: {
+    width: '100%',
+    maxWidth: 620,
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+
+  hero: {
+    height: 205,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    marginBottom: 12,
+    backgroundColor: '#F0E5D5',
+  },
+
+  heroBackground: {
+    borderRadius: 23,
+  },
+
+  heroHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    zIndex: 2,
   },
 
-  headerTitle: {
-    fontSize: 26,
+  heroTitle: {
+    fontSize: 24,
     fontWeight: '800',
+    color: COLORS.text,
   },
 
-  settingButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  settingIcon: {
-    fontSize: 20,
-  },
-
-  profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 14,
-  },
-
-  profileTop: {
+  heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+
+  headerIcon: {
+    width: 25,
+    height: 25,
+  },
+
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    gap: 11,
+    zIndex: 2,
+    paddingRight: 24,
   },
 
   avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#E8EEE4',
+    width: 74,
+    height: 74,
+    borderRadius: 40,
+    backgroundColor: '#FFF9EF',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  avatarImage: {
+    width: 65,
+    height: 65,
+  },
+
+  editDot: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.green,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  avatarEmoji: {
-    fontSize: 34,
-  },
-
-  profileInfo: {
+  profileDetails: {
     flex: 1,
-    marginLeft: 15,
+    minWidth: 0,
   },
 
   nickname: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
+    color: COLORS.text,
   },
 
-  email: {
-    fontSize: 12,
-    color: '#999999',
-    marginTop: 3,
-  },
-
-  profileMessage: {
-    fontSize: 13,
-    color: '#777777',
-    marginTop: 6,
+  quote: {
+    fontSize: 10,
+    color: '#4E4942',
+    marginTop: 5,
+    lineHeight: 15,
   },
 
   editButton: {
-    borderWidth: 1,
-    borderColor: '#D7DDD3',
-    borderRadius: 15,
-    paddingHorizontal: 12,
+    marginTop: 9,
+    backgroundColor: COLORS.white,
+    borderRadius: 18,
     paddingVertical: 6,
+    paddingHorizontal: 11,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
 
   editButtonText: {
-    fontSize: 12,
-    color: '#55705A',
-  },
-
-  levelArea: {
-    marginTop: 20,
-  },
-
-  levelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-
-  levelText: {
-    fontWeight: '700',
-    color: '#49634E',
-  },
-
-  xpText: {
-    fontSize: 12,
-    color: '#777777',
-  },
-
-  progressBackground: {
-    height: 9,
-    backgroundColor: '#E8E8E8',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#5E7D61',
-    borderRadius: 10,
-  },
-
-  statCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 18,
-    marginBottom: 26,
-  },
-
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  statEmoji: {
-    fontSize: 20,
-  },
-
-  statValue: {
-    fontSize: 17,
-    fontWeight: '800',
-    marginTop: 5,
-  },
-
-  statLabel: {
-    fontSize: 11,
-    color: '#888888',
-    marginTop: 3,
-  },
-
-  divider: {
-    width: 1,
-    backgroundColor: '#EEEEEE',
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-  },
-
-  moreText: {
-    color: '#55705A',
+    fontSize: 10,
+    color: '#625B51',
     fontWeight: '600',
   },
 
-  ddayCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 17,
+  heroPlant: {
+    position: 'absolute',
+    width: 90,
+    height: 92,
+    right: -12,
+    bottom: -13,
+    opacity: 0.8,
+  },
+
+  summary: {
+    backgroundColor: '#EFF1E9',
+    borderRadius: 22,
+    flexDirection: 'row',
+    gap: 5,
+    padding: 6,
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 
-  ddayLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  ddayBadge: {
-    width: 55,
-    height: 55,
-    borderRadius: 28,
-    backgroundColor: '#E8EEE4',
+  summaryItem: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 127,
+    backgroundColor: COLORS.white,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 3,
   },
 
-  ddayBadgeText: {
-    color: '#4F6C53',
+  summaryArt: {
+    width: 36,
+    height: 36,
+    marginBottom: 4,
+  },
+
+  summaryLabel: {
+    fontSize: 10,
+    color: COLORS.muted,
+    textAlign: 'center',
+  },
+
+  summaryValue: {
+    fontSize: 18,
     fontWeight: '800',
+    color: COLORS.green,
+    marginTop: 4,
+    textAlign: 'center',
   },
 
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+  summaryHint: {
+    fontSize: 9,
+    color: COLORS.muted,
+    marginTop: 5,
+    textAlign: 'center',
+    lineHeight: 12,
   },
 
-  cardDescription: {
-    fontSize: 12,
-    color: '#888888',
+  miniTrack: {
+    width: '76%',
+    height: 4,
+    backgroundColor: '#E3E7E0',
+    borderRadius: 3,
+    overflow: 'hidden',
     marginTop: 5,
   },
 
-  arrow: {
-    fontSize: 25,
-    color: '#888888',
+  miniFill: {
+    height: '100%',
+    backgroundColor: COLORS.green,
   },
 
-  questCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 25,
+  quest: {
+    marginBottom: 12,
+    borderRadius: 21,
+    overflow: 'hidden',
+    backgroundColor: COLORS.green,
   },
 
-  questHeader: {
+  questBackground: {
+    minHeight: 116,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
 
-  questProgress: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#55705A',
+  questBackgroundImage: {
+    borderRadius: 21,
   },
 
-  questProgressBackground: {
-    height: 8,
-    backgroundColor: '#EEEEEE',
-    borderRadius: 10,
-    marginTop: 15,
+  questCat: {
+    width: 76,
+    height: 84,
+    flexShrink: 0,
+  },
+
+  questInfo: {
+    flex: 1,
+    minWidth: 0,
+    paddingLeft: 7,
+  },
+
+  questTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+
+  questDescription: {
+    fontSize: 11,
+    color: '#F0F6EE',
+    marginTop: 6,
+  },
+
+  questProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+
+  questTrack: {
+    flex: 1,
+    height: 7,
+    backgroundColor: '#9AB2A1',
+    borderRadius: 5,
     overflow: 'hidden',
   },
 
-  questProgressBar: {
+  questFill: {
     height: '100%',
-    backgroundColor: '#5E7D61',
+    backgroundColor: '#F6F0D8',
   },
 
-  questReward: {
+  questCount: {
+    fontSize: 9,
+    color: '#FFFFFF',
+  },
+
+  questArrow: {
+    backgroundColor: '#FFFFFF',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 3,
+  },
+
+  shortcuts: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 15,
-    marginTop: 10,
+    gap: 6,
+    marginBottom: 12,
   },
 
-  rewardText: {
-    fontSize: 12,
-    fontWeight: '700',
+  shortcut: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    paddingVertical: 9,
+  },
+
+  shortcutArtBox: {
+    width: '100%',
+    height: 57,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 7,
+  },
+
+  shortcutArt: {
+    width: 43,
+    height: 43,
+  },
+
+  shortcutTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+
+  shortcutTitleCompact: {
+    fontSize: 10,
+  },
+
+  shortcutSubtitle: {
+    fontSize: 9,
+    color: COLORS.muted,
+    marginTop: 4,
+    textAlign: 'center',
   },
 
   libraryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 26,
+    backgroundColor: COLORS.white,
+    borderRadius: 21,
+    padding: 14,
+    marginBottom: 12,
   },
 
-  libraryPreview: {
-    height: 110,
-    borderRadius: 16,
-    backgroundColor: '#EEE9DF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    marginBottom: 15,
-  },
-
-  libraryEmoji: {
-    fontSize: 34,
-  },
-
-  libraryTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-
-  libraryDescription: {
-    fontSize: 12,
-    color: '#888888',
-    marginTop: 5,
-  },
-
-  shopButton: {
-    backgroundColor: '#5E7D61',
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 15,
-  },
-
-  shopButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
-  menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 17,
-    padding: 17,
-    marginBottom: 10,
+  sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
 
-  menuLeft: {
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  moreButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  menuEmoji: {
-    fontSize: 24,
-    marginRight: 14,
-  },
-
-  menuTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-
-  menuDescription: {
+  moreText: {
     fontSize: 11,
-    color: '#888888',
-    marginTop: 4,
+    color: COLORS.muted,
   },
 
-  logoutButton: {
-    marginTop: 20,
-    paddingVertical: 15,
+  libraryPreview: {
+    height: 168,
+    backgroundColor: '#F2E8D9',
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
 
-  logoutText: {
-    color: '#999999',
+  bookshelfImage: {
+    width: '94%',
+    height: '94%',
+  },
+
+  shelfCat: {
+    position: 'absolute',
+    right: 6,
+    bottom: 5,
+    width: 66,
+    height: 66,
+  },
+
+  settingsCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 21,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+
+  settingsRow: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+
+  lastRow: {
+    borderBottomWidth: 0,
+  },
+
+  settingsText: {
+    flex: 1,
     fontSize: 13,
+    color: '#56534D',
+  },
+
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+    paddingTop: 10,
+    paddingBottom: 13,
+  },
+
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+
+  tabText: {
+    fontSize: 10,
+    color: '#77768B',
+  },
+
+  tabActive: {
+    fontWeight: '800',
+    color: COLORS.green,
   },
 });
