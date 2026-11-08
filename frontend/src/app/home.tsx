@@ -29,13 +29,12 @@ export default function HomePage() {
   const devPreviewEnabled =
     __DEV__ && ENABLE_DEV_HOME_PREVIEW;
 
-  const [checking, setChecking] = useState(
+  const [checking, setChecking] = useState<boolean>(
     !devPreviewEnabled
   );
 
-  const [authenticated, setAuthenticated] = useState(
-    devPreviewEnabled
-  );
+  const [authenticated, setAuthenticated] =
+    useState<boolean>(devPreviewEnabled);
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
