@@ -15,19 +15,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-// 로그인 API
 import { login, AuthApiError } from '../../api/authApi';
-
-// 토큰 저장 함수
 import { saveTokens } from '../../utils/tokenStorage';
 
-// 색상
 const GREEN = '#405F4B';
 const DARK_GREEN = '#2E503D';
 const BG = '#FAF7F1';
 const BROWN = '#79654C';
 
-// 로그인 일러스트
 const IMAGES = {
   cat: require('../../../assets/images/login/login-cat-reading.png'),
   flowerLeft: require('../../../assets/images/login/login-flower-left.png'),
@@ -40,7 +35,6 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 웹과 모바일에서 알림 표시
   const showMessage = (title: string, message: string) => {
     if (Platform.OS === 'web') {
       window.alert(`${title}\n${message}`);
@@ -49,7 +43,6 @@ export default function LoginScreen() {
     }
   };
 
-  // 실제 로그인 함수
   const handleLogin = async () => {
     if (loading) return;
 
@@ -64,24 +57,45 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. 백엔드 로그인 API 호출
+      console.log('[LOGIN] 1. 로그인 요청 시작');
+
       const response = await login({
         email: email.trim(),
         password,
       });
 
-      // 2. 로그인 토큰 저장
+      console.log('[LOGIN] 2. 로그인 API 응답 수신');
+
+      if (
+        !response?.accessToken ||
+        !response?.refreshToken
+      ) {
+        console.error(
+          '[LOGIN] 응답에 필요한 토큰이 없습니다.'
+        );
+
+        showMessage(
+          '로그인 오류',
+          '로그인 응답에서 인증 토큰을 확인할 수 없습니다.'
+        );
+        return;
+      }
+
+      console.log('[LOGIN] 3. 토큰 저장 시작');
+
       await saveTokens(
         response.accessToken,
         response.refreshToken
       );
 
-      // 3. 로그인 성공 알림
-   // 3. 로그인 성공 후 홈 화면으로 이동
-       router.replace('/home');
-      // 다음 단계에서 홈 화면 이동 추가
+      console.log('[LOGIN] 4. 토큰 저장 완료');
+      console.log('[LOGIN] 5. 홈 화면 이동 시작');
+
+      router.replace('/home');
 
     } catch (error) {
+      console.error('[LOGIN] 로그인 처리 실패:', error);
+
       if (error instanceof AuthApiError) {
         if (
           error.status === 401 ||
@@ -105,7 +119,9 @@ export default function LoginScreen() {
       } else {
         showMessage(
           '오류 발생',
-          '로그인 처리 중 문제가 발생했습니다.'
+          error instanceof Error
+            ? error.message
+            : '로그인 처리 중 문제가 발생했습니다.'
         );
       }
     } finally {
@@ -191,9 +207,7 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity
-              onPress={() =>
-                setShowPassword(!showPassword)
-              }
+              onPress={() => setShowPassword(!showPassword)}
             >
               <Text style={styles.showPassword}>
                 {showPassword ? '숨기기' : '보기'}

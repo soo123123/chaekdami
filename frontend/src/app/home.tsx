@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
-import HomeScreen from '../screens/Home/HomeScreen';
+import HomeScreen from '../features/fe2/screens/Home/HomeScreen';
 
 import {
   getAccessToken,
@@ -20,19 +20,40 @@ import {
   AuthApiError,
 } from '../api/authApi';
 
+// 개발 중 홈 화면 UI 테스트를 위한 설정
+// true: 개발 모드에서 로그인 없이 홈 화면 접근
+// false: 개발 모드에서도 정상 로그인 인증 진행
+const ENABLE_DEV_HOME_PREVIEW = false;
+
 export default function HomePage() {
-  const [checking, setChecking] = useState(true);
-  const [authenticated, setAuthenticated] =
-    useState(false);
+  const devPreviewEnabled =
+    __DEV__ && ENABLE_DEV_HOME_PREVIEW;
+
+  const [checking, setChecking] = useState(
+    !devPreviewEnabled
+  );
+
+  const [authenticated, setAuthenticated] = useState(
+    devPreviewEnabled
+  );
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
   useEffect(() => {
+    // 개발 모드 UI 미리보기에서는 인증 요청 생략
+    if (devPreviewEnabled) {
+      console.log(
+        '[DEV] 로그인 없이 FE2 홈 화면 미리보기'
+      );
+      return;
+    }
+
     let active = true;
 
     const checkLogin = async () => {
       try {
-        // 1. 저장된 Access Token 가져오기
+        // 1. 저장된 Access Token 확인
         const token = await getAccessToken();
 
         if (!active) return;
@@ -62,7 +83,6 @@ export default function HomePage() {
           (error.status === 401 ||
             error.status === 403)
         ) {
-          // 인증이 거부된 경우 토큰 삭제
           await clearTokens();
 
           if (!active) return;
@@ -71,7 +91,6 @@ export default function HomePage() {
           return;
         }
 
-        // 네트워크 오류 등은 인증 실패로 단정하지 않음
         setErrorMessage(
           '서버에 연결할 수 없습니다. 연결 상태를 확인한 후 다시 시도해주세요.'
         );
@@ -87,7 +106,7 @@ export default function HomePage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [devPreviewEnabled]);
 
   // 인증 확인 중
   if (checking) {
@@ -120,12 +139,12 @@ export default function HomePage() {
     );
   }
 
-  // 인증되지 않은 사용자는 홈 화면을 표시하지 않음
+  // 인증되지 않은 사용자는 홈 화면 표시 안 함
   if (!authenticated) {
     return null;
   }
 
-  // 인증된 사용자만 실제 FE2 홈 화면 표시
+  // 실제 FE2 홈 화면
   return <HomeScreen />;
 }
 
