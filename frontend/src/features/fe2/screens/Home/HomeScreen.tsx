@@ -1,524 +1,907 @@
+
 import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
+  Image,
+  ImageBackground,
   ScrollView,
   TouchableOpacity,
+  StyleSheet,
   Alert,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
-
 import { router } from 'expo-router';
 
-const HomeScreen = () => {
-  // FE1 담당 화면
-  // 나중에 FE1이 만든 실제 route로 변경
+const GREEN = '#315E49';
+const BG = '#FAF7F1';
+
+// 실제 frontend/assets/images 폴더 기준
+const images = {
+  banner: require('../../../../../assets/images/home/햇살 가득한 책 읽는 공간.png'),
+  quest: require('../../../../../assets/images/home/quest-cat.png'),
+  record: require('../../../../../assets/images/home/reading-record.png'),
+  current: require('../../../../../assets/images/books/current-book.png'),
+  recent1: require('../../../../../assets/images/books/recent-book-1.png'),
+  recent2: require('../../../../../assets/images/books/recent-book-2.png'),
+  recent3: require('../../../../../assets/images/books/recent-book-3.png'),
+  recent4: require('../../../../../assets/images/books/recent-book-4.png'),
+  recent5: require('../../../../../assets/images/books/recent-book-5.png'),
+  recent6: require('../../../../../assets/images/books/recent-book-6.png'),
+};
+
+const recentBooks = [
+  { title: '불편한 편의점', image: images.recent1 },
+  { title: '작은 것들의 힘', image: images.recent2 },
+  { title: '달의 조각', image: images.recent3 },
+  {
+    title: '우리가 빛의 속도로 갈 수 없다면',
+    image: images.recent4,
+  },
+  { title: '내일도, 괜찮아', image: images.recent5 },
+  { title: '하루의 온도', image: images.recent6 },
+];
+
+const questItems = [
+  { title: '30분 이상 독서하기', completed: true },
+  { title: '한 줄 독서 메모 작성하기', completed: false },
+  { title: '오늘의 감정 기록하기', completed: false },
+];
+
+const recordItems = [
+  { icon: '◷', value: '30분', label: '독서 시간' },
+  { icon: '▤', value: '25쪽', label: '읽은 페이지' },
+  { icon: '✎', value: '3개', label: '작성한 메모' },
+];
+
+export default function HomeScreen() {
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
+
+  const showMessage = (
+    title: string,
+    message: string
+  ) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  // FE1 기능은 추후 연결
   const handleStartReading = () => {
-    Alert.alert(
+    showMessage(
       '독서 시작',
       'FE1 담당 독서 시작 화면과 연결할 예정입니다.'
     );
   };
 
-  // FE1 담당 화면
   const handleLibrary = () => {
-    Alert.alert(
+    showMessage(
       '나의 서재',
       'FE1 담당 나의 서재 화면과 연결할 예정입니다.'
     );
   };
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      {/* 상단 */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.logo}>
-            책다듬이
-          </Text>
+  const handlePending = (name: string) => {
+    showMessage(
+      name,
+      '해당 화면 연결을 확인한 후 적용할 예정입니다.'
+    );
+  };
 
-          <Text style={styles.greeting}>
-            오늘도 책과 함께 성장해요.
-          </Text>
+  // FE2 화면 이동
+  const goToDday = () => {
+    router.push('/fe2/reward/dday');
+  };
+
+  const goToShop = () => {
+    router.push('/fe2/reward/shop');
+  };
+
+  const goToLevel = () => {
+    router.push('/fe2/reward/reward');
+  };
+
+  const goToMyPage = () => {
+    router.push('/fe2/user/mypage');
+  };
+
+  const goToReadingStats = () => {
+    router.push('/fe2/user/reading-stats');
+  };
+
+  const goToHome = () => {
+    router.replace('/home');
+  };
+
+  return (
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 상단 배너 */}
+        <ImageBackground
+          source={images.banner}
+          resizeMode="cover"
+          style={[
+            styles.banner,
+            { height: compact ? 240 : 380 },
+          ]}
+          imageStyle={styles.bannerImage}
+        >
+          <View style={styles.bannerTop}>
+            <View style={styles.bannerText}>
+              <Text
+                style={[
+                  styles.greeting,
+                  compact && styles.greetingCompact,
+                ]}
+              >
+                오늘도,{'\n'}좋은 책과 함께해요!
+              </Text>
+
+              <Text
+                style={[
+                  styles.subtitle,
+                  compact && styles.subtitleCompact,
+                ]}
+              >
+                조금씩, 꾸준히. 그게 큰 변화를 만들어요.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.avatar}
+              onPress={goToMyPage}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.avatarText}>🐱</Text>
+            </TouchableOpacity>
+          </View>
+        </ImageBackground>
+
+        {/* D-day / 보유 재화 / 레벨 */}
+        <View style={styles.summaryRow}>
+          {[
+            {
+              icon: '🗓️',
+              value: 'D - 12',
+              label: '목표까지 12일 남았어요!',
+              onPress: goToDday,
+            },
+            {
+              icon: '🪙',
+              value: '1,250',
+              label: '보유 재화',
+              onPress: goToShop,
+            },
+            {
+              icon: '🌱',
+              value: 'Lv. 5',
+              label: '다음 레벨까지 180 XP',
+              onPress: goToLevel,
+            },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              style={styles.summaryCard}
+              onPress={item.onPress}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.summaryIcon}>
+                {item.icon}
+              </Text>
+
+              <Text
+                style={styles.summaryValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {item.value}
+              </Text>
+
+              <Text
+                style={styles.summaryLabel}
+                numberOfLines={2}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => router.push('/fe2/user/mypage')}
-        >
-          <Text style={styles.profileEmoji}>
-            🐱
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 오늘의 독서 */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroTextArea}>
-          <Text style={styles.heroSmall}>
-            오늘의 독서
-          </Text>
-
-          <Text style={styles.heroTitle}>
-            오늘도 한 페이지{'\n'}
-            읽어볼까요?
-          </Text>
-
-          <Text style={styles.heroDescription}>
-            꾸준한 독서가 작은 변화를 만들어요.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={handleStartReading}
-          >
-            <Text style={styles.startButtonText}>
-              독서 시작하기
+        {/* 현재 읽고 있는 책 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              현재 읽고 있는 책
             </Text>
+
+            <TouchableOpacity onPress={handleLibrary}>
+              <Text style={styles.more}>더보기 ›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.currentBookRow}>
+            <Image
+              source={images.current}
+              style={
+                compact
+                  ? styles.currentCoverCompact
+                  : styles.currentCover
+              }
+              resizeMode="cover"
+            />
+
+            <View style={styles.currentInfo}>
+              <Text style={styles.currentTitle}>
+                여름의 빌라
+              </Text>
+
+              <Text style={styles.author}>
+                백수린
+              </Text>
+
+              <View style={styles.progressRow}>
+                <View style={styles.progressTrack}>
+                  <View style={styles.progressFill} />
+                </View>
+
+                <Text style={styles.progressText}>
+                  45%
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={handleStartReading}
+              >
+                <Text style={styles.continueText}>
+                  이어읽기
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* 최근 읽은 책 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              최근 읽은 책
+            </Text>
+
+            <TouchableOpacity onPress={handleLibrary}>
+              <Text style={styles.more}>더보기 ›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {recentBooks.map((book, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recentBook}
+                onPress={handleLibrary}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={book.image}
+                  style={styles.recentCover}
+                  resizeMode="cover"
+                />
+
+                <Text
+                  style={styles.recentTitle}
+                  numberOfLines={2}
+                >
+                  {book.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* 오늘의 퀘스트 / 오늘의 독서 기록 */}
+        <View
+          style={[
+            styles.bottomCards,
+            compact && styles.bottomCompact,
+          ]}
+        >
+          {/* 오늘의 퀘스트 */}
+          <View
+            style={[
+              styles.bottomCard,
+              styles.questCard,
+              compact && styles.bottomCardCompact,
+            ]}
+          >
+            <Text style={styles.sectionTitle}>
+              오늘의 퀘스트
+            </Text>
+
+            <View style={styles.questBody}>
+              <Image
+                source={images.quest}
+                style={[
+                  styles.questImage,
+                  compact && styles.questImageCompact,
+                ]}
+                resizeMode="contain"
+              />
+
+              <View style={styles.questList}>
+                {questItems.map((item) => (
+                  <View
+                    key={item.title}
+                    style={styles.questRow}
+                  >
+                    <View
+                      style={[
+                        styles.questCircle,
+                        item.completed &&
+                          styles.questCircleCompleted,
+                      ]}
+                    >
+                      {item.completed && (
+                        <Text style={styles.questCheck}>
+                          ✓
+                        </Text>
+                      )}
+                    </View>
+
+                    <Text
+                      style={styles.questItem}
+                      numberOfLines={2}
+                    >
+                      {item.title}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* 오늘의 독서 기록 */}
+          <TouchableOpacity
+            style={[
+              styles.bottomCard,
+              styles.recordCard,
+              compact && styles.bottomCardCompact,
+            ]}
+            onPress={goToReadingStats}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.sectionTitle}>
+              오늘의 독서 기록
+            </Text>
+
+            <View style={styles.recordBody}>
+              <Image
+                source={images.record}
+                style={[
+                  styles.recordImage,
+                  compact && styles.recordImageCompact,
+                ]}
+                resizeMode="contain"
+              />
+
+              <View style={styles.recordStats}>
+                {recordItems.map((item) => (
+                  <View
+                    key={item.label}
+                    style={styles.recordStat}
+                  >
+                    <Text style={styles.recordIcon}>
+                      {item.icon}
+                    </Text>
+
+                    <Text
+                      style={styles.recordValue}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {item.value}
+                    </Text>
+
+                    <Text
+                      style={styles.recordLabel}
+                      numberOfLines={2}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
+      </ScrollView>
 
-        <Text style={styles.heroEmoji}>
-          📖
-        </Text>
-      </View>
-
-      {/* 현재 읽는 책 */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          현재 읽는 책
-        </Text>
-
-        <TouchableOpacity
-          onPress={handleLibrary}
-        >
-          <Text style={styles.moreText}>
-            전체보기 ›
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bookCard}>
-        <View style={styles.bookCover}>
-          <Text style={styles.bookEmoji}>
-            📚
-          </Text>
-        </View>
-
-        <View style={styles.bookInfo}>
-          <Text style={styles.bookTitle}>
-            읽고 있는 책
-          </Text>
-
-          <Text style={styles.bookAuthor}>
-            도서 정보
-          </Text>
-
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>
-              독서 진행률
-            </Text>
-
-            <Text style={styles.progressValue}>
-              45%
-            </Text>
-          </View>
-
-          <View style={styles.progressBackground}>
-            <View
+      {/* 하단 내비게이션 */}
+      <View style={styles.bottomNav}>
+        {[
+          {
+            icon: '⌂',
+            label: '홈',
+            onPress: goToHome,
+          },
+          {
+            icon: '⌕',
+            label: '탐색',
+            onPress: () => handlePending('탐색'),
+          },
+          {
+            icon: '▤',
+            label: '나의 서재',
+            onPress: handleLibrary,
+          },
+          {
+            icon: '♧',
+            label: '커뮤니티',
+            onPress: () => handlePending('커뮤니티'),
+          },
+          {
+            icon: '♙',
+            label: '마이페이지',
+            onPress: goToMyPage,
+          },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={styles.navItem}
+            onPress={item.onPress}
+            activeOpacity={0.75}
+          >
+            <Text
               style={[
-                styles.progressBar,
-                { width: '45%' },
+                styles.navIcon,
+                item.label === '홈' &&
+                  styles.navActive,
               ]}
-            />
-          </View>
-        </View>
+            >
+              {item.icon}
+            </Text>
+
+            <Text
+              style={[
+                styles.navLabel,
+                item.label === '홈' &&
+                  styles.navActive,
+              ]}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
-
-      {/* 오늘의 독서 현황 */}
-      <Text style={styles.sectionTitle}>
-        오늘의 독서 현황
-      </Text>
-
-      <View style={styles.statContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>
-            ⏱️
-          </Text>
-
-          <Text style={styles.statValue}>
-            30분
-          </Text>
-
-          <Text style={styles.statLabel}>
-            오늘 독서 시간
-          </Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>
-            📖
-          </Text>
-
-          <Text style={styles.statValue}>
-            25쪽
-          </Text>
-
-          <Text style={styles.statLabel}>
-            오늘 읽은 페이지
-          </Text>
-        </View>
-      </View>
-
-      {/* 빠른 메뉴 */}
-      <Text style={styles.sectionTitle}>
-        빠른 메뉴
-      </Text>
-
-      <View style={styles.menuContainer}>
-        {/* FE1 */}
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={handleLibrary}
-        >
-          <View style={styles.menuIcon}>
-            <Text style={styles.menuEmoji}>
-              📚
-            </Text>
-          </View>
-
-          <View style={styles.menuTextArea}>
-            <Text style={styles.menuTitle}>
-              나의 서재
-            </Text>
-
-            <Text style={styles.menuDescription}>
-              등록한 책 확인하기
-            </Text>
-          </View>
-
-          <Text style={styles.arrow}>
-            ›
-          </Text>
-        </TouchableOpacity>
-
-        {/* FE2 */}
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={() =>
-            router.push('/fe2/user/reading-stats')
-          }
-        >
-          <View style={styles.menuIcon}>
-            <Text style={styles.menuEmoji}>
-              📊
-            </Text>
-          </View>
-
-          <View style={styles.menuTextArea}>
-            <Text style={styles.menuTitle}>
-              독서 통계
-            </Text>
-
-            <Text style={styles.menuDescription}>
-              나의 독서 활동 확인하기
-            </Text>
-          </View>
-
-          <Text style={styles.arrow}>
-            ›
-          </Text>
-        </TouchableOpacity>
-
-        {/* FE2 */}
-        <TouchableOpacity
-          style={styles.menuCard}
-          onPress={() => router.push('/fe2/user/mypage')}
-          
-        >
-          <View style={styles.menuIcon}>
-            <Text style={styles.menuEmoji}>
-              👤
-            </Text>
-          </View>
-
-          <View style={styles.menuTextArea}>
-            <Text style={styles.menuTitle}>
-              마이페이지
-            </Text>
-
-            <Text style={styles.menuDescription}>
-              내 정보 확인하기
-            </Text>
-          </View>
-
-          <Text style={styles.arrow}>
-            ›
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+    </View>
   );
-};
-
-export default HomeScreen;
+}
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#faf8f3',
+    backgroundColor: BG,
+  },
+
+  scroll: {
+    flex: 1,
   },
 
   content: {
-    padding: 20,
-    paddingBottom: 50,
+    width: '100%',
+    maxWidth: 1000,
+    alignSelf: 'center',
+    padding: 12,
+    paddingBottom: 28,
   },
 
-  header: {
+  banner: {
+    width: '100%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    padding: 16,
+    justifyContent: 'flex-start',
+  },
+
+  bannerImage: {
+    borderRadius: 24,
+  },
+
+  bannerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 25,
+    alignItems: 'flex-start',
   },
 
-  logo: {
-    fontSize: 25,
-    fontWeight: 'bold',
-    color: '#3f6548',
+  bannerText: {
+    flex: 1,
   },
 
   greeting: {
-    fontSize: 12,
-    marginTop: 5,
-    color: '#777777',
+    fontSize: 36,
+    lineHeight: 48,
+    fontWeight: '800',
+    color: '#241C15',
   },
 
-  profileButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: '#eee8dc',
+  greetingCompact: {
+    fontSize: 21,
+    lineHeight: 29,
+  },
+
+  subtitle: {
+    fontSize: 14,
+    color: '#4C4035',
+    marginTop: 12,
+  },
+
+  subtitleCompact: {
+    fontSize: 10,
+    marginTop: 7,
+  },
+
+  avatar: {
+    width: 42,
+    height: 42,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  profileEmoji: {
-    fontSize: 23,
-  },
-
-  heroCard: {
-    backgroundColor: '#e9eee5',
-    borderRadius: 22,
-    padding: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-
-  heroTextArea: {
-    flex: 1,
-  },
-
-  heroSmall: {
-    fontSize: 12,
-    color: '#52705a',
-    fontWeight: 'bold',
-  },
-
-  heroTitle: {
+  avatarText: {
     fontSize: 22,
-    fontWeight: 'bold',
-    lineHeight: 30,
-    marginTop: 7,
   },
 
-  heroDescription: {
-    fontSize: 11,
-    color: '#666666',
-    marginTop: 8,
-  },
-
-  heroEmoji: {
-    fontSize: 55,
-    marginLeft: 10,
-  },
-
-  startButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#4f7658',
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 12,
+    marginBottom: 16,
+    padding: 6,
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    marginTop: 16,
+    backgroundColor: '#EFF1E9',
   },
 
-  startButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 13,
+  summaryCard: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFDF9',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 5,
+  },
+
+  summaryIcon: {
+    fontSize: 25,
+    marginBottom: 5,
+  },
+
+  summaryValue: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: GREEN,
+    textAlign: 'center',
+    width: '100%',
+  },
+
+  summaryLabel: {
+    fontSize: 10,
+    color: '#6E6B66',
+    marginTop: 5,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+
+  section: {
+    backgroundColor: '#FFFDF9',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
   },
 
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
 
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#211B16',
   },
 
-  moreText: {
-    fontSize: 12,
-    color: '#52705a',
-    marginBottom: 12,
+  more: {
+    fontSize: 13,
+    color: '#55514C',
   },
 
-  bookCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 15,
+  currentBookRow: {
     flexDirection: 'row',
-    marginBottom: 28,
-  },
-
-  bookCover: {
-    width: 65,
-    height: 90,
-    borderRadius: 8,
-    backgroundColor: '#eee9df',
-    justifyContent: 'center',
     alignItems: 'center',
   },
 
-  bookEmoji: {
-    fontSize: 30,
+  currentCover: {
+    width: 120,
+    height: 175,
+    borderRadius: 9,
   },
 
-  bookInfo: {
+  currentCoverCompact: {
+    width: 105,
+    height: 155,
+    borderRadius: 9,
+  },
+
+  currentInfo: {
     flex: 1,
-    marginLeft: 15,
-    justifyContent: 'center',
+    marginLeft: 16,
+    minWidth: 0,
   },
 
-  bookTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  currentTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#241C15',
   },
 
-  bookAuthor: {
-    fontSize: 11,
-    color: '#777777',
-    marginTop: 4,
-  },
-
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
-  },
-
-  progressLabel: {
-    fontSize: 11,
-  },
-
-  progressValue: {
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-
-  progressBackground: {
-    height: 7,
-    backgroundColor: '#eeeeee',
-    borderRadius: 5,
+  author: {
+    fontSize: 13,
+    color: '#6C655F',
     marginTop: 6,
+  },
+
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 22,
+  },
+
+  progressTrack: {
+    height: 12,
+    backgroundColor: '#E7E7E7',
+    borderRadius: 10,
+    flex: 1,
     overflow: 'hidden',
   },
 
-  progressBar: {
+  progressFill: {
+    width: '45%',
     height: '100%',
-    backgroundColor: '#4f7658',
-    borderRadius: 5,
+    backgroundColor: GREEN,
+    borderRadius: 10,
   },
 
-  statContainer: {
+  progressText: {
+    fontSize: 13,
+    color: '#28231F',
+  },
+
+  continueButton: {
+    backgroundColor: GREEN,
+    borderRadius: 28,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignSelf: 'flex-start',
+    marginTop: 18,
+  },
+
+  continueText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  recentBook: {
+    width: 100,
+    marginRight: 12,
+  },
+
+  recentCover: {
+    width: 100,
+    height: 140,
+    borderRadius: 8,
+  },
+
+  recentTitle: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#2D2925',
+    marginTop: 8,
+    lineHeight: 17,
+  },
+
+  bottomCards: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 28,
+    gap: 14,
+    marginBottom: 10,
   },
 
-  statCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
+  bottomCompact: {
+    flexDirection: 'column',
   },
 
-  statEmoji: {
-    fontSize: 24,
-  },
-
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 7,
-  },
-
-  statLabel: {
-    fontSize: 10,
-    color: '#777777',
-    marginTop: 4,
-  },
-
-  menuContainer: {
-    gap: 10,
-  },
-
-  menuCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  menuIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 13,
-    backgroundColor: '#f2eee6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  menuEmoji: {
-    fontSize: 21,
-  },
-
-  menuTextArea: {
+  bottomCard: {
     flex: 1,
-    marginLeft: 13,
+    minWidth: 0,
+    borderRadius: 24,
+    padding: 20,
+    minHeight: 190,
+    overflow: 'hidden',
   },
 
-  menuTitle: {
+  bottomCardCompact: {
+    flex: 0,
+    minHeight: 170,
+    padding: 16,
+  },
+
+  questCard: {
+    backgroundColor: '#F8F1E9',
+  },
+
+  questBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    minHeight: 110,
+  },
+
+  questImage: {
+    width: 145,
+    height: 135,
+  },
+
+  questImageCompact: {
+    width: 125,
+    height: 125,
+  },
+
+  questList: {
+    flex: 1,
+    marginLeft: 8,
+    gap: 13,
+    minWidth: 0,
+  },
+
+  questRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+
+  questCircle: {
+    width: 21,
+    height: 21,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: '#8CA596',
+    backgroundColor: '#FFFDF9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  questCircleCompleted: {
+    backgroundColor: '#5E916E',
+    borderColor: '#5E916E',
+  },
+
+  questCheck: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 18,
   },
 
-  menuDescription: {
-    fontSize: 11,
-    color: '#777777',
-    marginTop: 3,
+  questItem: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#45423E',
   },
 
-  arrow: {
-    fontSize: 24,
-    color: '#777777',
+  recordCard: {
+    backgroundColor: '#F0F3EB',
+  },
+
+  recordBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    minHeight: 110,
+  },
+
+  recordImage: {
+    width: 155,
+    height: 125,
+  },
+
+  recordImageCompact: {
+    width: 125,
+    height: 115,
+  },
+
+  recordStats: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginLeft: 6,
+    minWidth: 0,
+  },
+
+  recordStat: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 2,
+  },
+
+  recordIcon: {
+    fontSize: 25,
+    color: GREEN,
+    marginBottom: 9,
+    fontWeight: '600',
+  },
+
+  recordValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: GREEN,
+    textAlign: 'center',
+  },
+
+  recordLabel: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#666666',
+    marginTop: 7,
+    textAlign: 'center',
+  },
+
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFDF9',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE7DF',
+    paddingVertical: 12,
+    paddingBottom: 16,
+  },
+
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 5,
+  },
+
+  navIcon: {
+    fontSize: 27,
+    color: '#77768A',
+  },
+
+  navLabel: {
+    fontSize: 10,
+    color: '#77768A',
+  },
+
+  navActive: {
+    color: GREEN,
+    fontWeight: '700',
   },
 });
