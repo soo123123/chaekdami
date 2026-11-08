@@ -13,6 +13,7 @@ import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -66,7 +67,8 @@ class UserServiceLoginAttemptTest {
                 mock(PasswordResetNotifier.class),
                 new LoginAttemptLimiter(authAttemptRepository),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                mock(ApplicationEventPublisher.class));
     }
 
     @Test

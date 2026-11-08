@@ -12,6 +12,7 @@ import com.chaekdami.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,7 +53,8 @@ class UserServiceTokenVersionTest {
                 mock(PasswordResetNotifier.class),
                 mock(LoginAttemptLimiter.class),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                mock(ApplicationEventPublisher.class));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 1L, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         user = User.builder()
