@@ -83,6 +83,7 @@ public class SecurityConfig {
                                 "/api/auth/logout",
                                 "/api/auth/password/reset-request",
                                 "/api/auth/password/reset").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

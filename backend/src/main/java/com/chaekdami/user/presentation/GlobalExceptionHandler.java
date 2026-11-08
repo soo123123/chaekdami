@@ -1,5 +1,7 @@
 package com.chaekdami.user.presentation;
 
+import com.chaekdami.global.error.BusinessException;
+import com.chaekdami.global.error.ErrorCode;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.ForbiddenException;
@@ -14,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +41,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleUnreadable(HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest()
                 .body(ApiErrorResponse.of("VALIDATION_ERROR", "요청 본문을 읽을 수 없습니다."));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                "VALIDATION_ERROR",
+                "요청 값이 올바르지 않습니다.",
+                List.of(new ApiErrorResponse.FieldError(exception.getName(), "형식이 올바르지 않습니다."))
+        ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingParameter(MissingServletRequestParameterException exception) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                "VALIDATION_ERROR",
+                "요청 값이 올바르지 않습니다.",
+                List.of(new ApiErrorResponse.FieldError(exception.getParameterName(), "값을 입력해야 합니다."))
+        ));
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
@@ -82,6 +104,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleDuplicateNickname(DuplicateNicknameException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiErrorResponse.of("NICKNAME_ALREADY_EXISTS", exception.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiErrorResponse> handleBusiness(BusinessException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
+        return ResponseEntity.status(errorCode.status())
+                .body(ApiErrorResponse.of(errorCode.code(), errorCode.message()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

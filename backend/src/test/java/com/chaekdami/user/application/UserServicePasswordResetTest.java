@@ -4,6 +4,7 @@ import com.chaekdami.config.JwtTokenProvider;
 import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
 import com.chaekdami.user.application.command.SignupCommand;
+import com.chaekdami.user.application.event.UserWithdrawnEvent;
 import com.chaekdami.user.application.exception.ForbiddenException;
 import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.application.result.UserAccount;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,6 +47,7 @@ class UserServicePasswordResetTest {
     private final PasswordResetTokenRepository passwordResetTokenRepository = mock(PasswordResetTokenRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final PasswordResetNotifier passwordResetNotifier = mock(PasswordResetNotifier.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private UserService userService;
     private User user;
 
@@ -58,7 +63,8 @@ class UserServicePasswordResetTest {
                 passwordResetNotifier,
                 mock(LoginAttemptLimiter.class),
                 currentUser,
-                new AccessGuard(currentUser));
+                new AccessGuard(currentUser),
+                eventPublisher);
         user = User.builder()
                 .email("reader@chaekdami.local")
                 .passwordHash("stored-hash")
@@ -141,5 +147,19 @@ class UserServicePasswordResetTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         assertThrows(ForbiddenException.class, () -> userService.getMe());
+    }
+
+    @Test
+    void withdrawPublishesEventBeforeDeletingTheUser() {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                1L, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password123", "stored-hash")).thenReturn(true);
+
+        userService.withdraw("password123");
+
+        InOrder order = inOrder(eventPublisher, userRepository);
+        order.verify(eventPublisher).publishEvent(new UserWithdrawnEvent(1L));
+        order.verify(userRepository).delete(user);
     }
 }

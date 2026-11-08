@@ -6,6 +6,7 @@ import com.chaekdami.user.application.command.LoginCommand;
 import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
 import com.chaekdami.user.application.command.SignupCommand;
+import com.chaekdami.user.application.event.UserWithdrawnEvent;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
@@ -23,6 +24,7 @@ import com.chaekdami.user.infrastructure.UserRepository;
 import com.chaekdami.user.presentation.validation.NicknameRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,7 @@ public class UserService implements NicknameChanger {
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final CurrentUser currentUser;
     private final AccessGuard accessGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${jwt.refresh-token-validity-in-seconds:7776000}")
     private long refreshTokenValidityInSeconds;
@@ -178,6 +181,8 @@ public class UserService implements NicknameChanger {
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new InvalidRequestException("currentPassword", "현재 비밀번호가 올바르지 않습니다.");
         }
+        // 리스너가 같은 트랜잭션에서 다른 도메인의 사용자 데이터를 먼저 지운다.
+        eventPublisher.publishEvent(new UserWithdrawnEvent(user.getId()));
         refreshTokenRepository.deleteByUser_Id(user.getId());
         passwordResetTokenRepository.deleteByUser_Id(user.getId());
         userRepository.delete(user);
