@@ -9,7 +9,11 @@ import com.chaekdami.reward.domain.TransactionType;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
 import com.chaekdami.reward.infrastructure.RewardTransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 /**
  * 보상 계정 잠금과 재화/경험치 변경, 변동 이력 기록을 한곳에서 처리한다.
@@ -21,13 +25,38 @@ class RewardLedger {
 
     private final RewardAccountRepository rewardAccountRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
+    private final RewardAccountInitializer rewardAccountInitializer;
 
     /**
      * 보상 계정 행을 비관적 쓰기 잠금으로 조회한다. 같은 사용자의 다른 변경 요청은 트랜잭션이 끝날 때까지 대기한다.
+     * 계정이 없으면 먼저 만든다. 잠금 대기 시간을 넘기면 CONCURRENCY_001 로 응답한다.
      */
     RewardAccount lockAccount(Long userId) {
-        return rewardAccountRepository.findByUserIdWithLock(userId)
-                .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
+        try {
+            Optional<RewardAccount> account = rewardAccountRepository.findByUserIdWithLock(userId);
+            if (account.isPresent()) {
+                return account.get();
+            }
+            createAccountIfAbsent(userId);
+            return rewardAccountRepository.findByUserIdWithLock(userId)
+                    .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
+        } catch (PessimisticLockingFailureException lockTimeout) {
+            throw new RewardException(RewardErrorCode.CONCURRENT_REQUEST);
+        }
+    }
+
+    /**
+     * 보상 계정이 없으면 만든다. 같은 사용자의 동시 첫 요청이 먼저 만들었으면 그대로 둔다.
+     */
+    void createAccountIfAbsent(Long userId) {
+        if (rewardAccountRepository.findByUserId(userId).isPresent()) {
+            return;
+        }
+        try {
+            rewardAccountInitializer.insert(userId);
+        } catch (DataIntegrityViolationException alreadyCreated) {
+            // 동시 요청이 먼저 계정을 만들었다.
+        }
     }
 
     void addCurrency(RewardAccount account, int amount, TransactionReason reason) {
