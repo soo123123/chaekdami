@@ -21,6 +21,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShopService {
 
+    /** 한 번에 구매할 수 있는 최대 수량. 요청 DTO 의 @Max 와 같은 값으로 맞춘다. */
+    public static final int MAX_PURCHASE_QUANTITY = 99;
+
     private final ShopItemRepository shopItemRepository;
     private final UserItemRepository userItemRepository;
     private final RewardLedger rewardLedger;
@@ -37,18 +40,22 @@ public class ShopService {
      */
     @Transactional
     public PurchaseResult purchase(Long userId, Long itemId, int purchaseQuantity) {
-        if (purchaseQuantity <= 0) {
-            throw new IllegalArgumentException("구매 수량은 1 이상이어야 합니다. (입력: " + purchaseQuantity + ")");
+        if (purchaseQuantity < 1 || purchaseQuantity > MAX_PURCHASE_QUANTITY) {
+            throw new IllegalArgumentException(
+                    "구매 수량은 1 이상 " + MAX_PURCHASE_QUANTITY + " 이하여야 합니다. (입력: " + purchaseQuantity + ")");
         }
         ShopItem item = shopItemRepository.findById(itemId)
                 .filter(ShopItem::getActive)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.SHOP_ITEM_NOT_FOUND));
 
         RewardAccount account = rewardLedger.lockAccount(userId);
-        int totalPrice = Math.multiplyExact(item.getPrice(), purchaseQuantity);
+        long totalPrice = (long) item.getPrice() * purchaseQuantity;
+        if (totalPrice > account.getCurrency()) {
+            throw new RewardException(RewardErrorCode.INSUFFICIENT_CURRENCY);
+        }
         Long purchaseId = null;
         if (totalPrice > 0) {
-            purchaseId = rewardLedger.deductCurrency(account, totalPrice, TransactionReason.SHOP_PURCHASE);
+            purchaseId = rewardLedger.deductCurrency(account, (int) totalPrice, TransactionReason.SHOP_PURCHASE);
         }
 
         UserItem userItem = userItemRepository.findByUserIdAndShopItemId(userId, itemId)

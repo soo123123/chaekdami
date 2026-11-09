@@ -32,22 +32,22 @@ public class RewardService {
     private final StreakService streakService;
 
     /**
-     * 사용자의 보상 계정을 만든다. 이미 있으면 기존 계정을 그대로 둔다. (회원가입 직후 호출)
+     * 사용자의 보상 계정을 만든다. 이미 있으면 기존 계정을 그대로 둔다.
+     * 보상 기능을 처음 쓸 때 계정이 자동으로 생기므로 회원가입 시점에 꼭 호출하지 않아도 된다.
      */
     @Transactional
     public void createAccount(Long userId) {
-        if (rewardAccountRepository.findByUserId(userId).isEmpty()) {
-            rewardAccountRepository.save(RewardAccount.builder().userId(userId).build());
-        }
+        rewardLedger.createAccountIfAbsent(userId);
     }
 
     /**
      * 보상 상태 통합 조회. 놓친 날이 있으면 방어권 차감/스트릭 초기화를 먼저 정산하므로 쓰기 트랜잭션이다.
-     * 정산이 계정을 잠그고 읽어야 최신 값이 반영되므로, 계정 조회보다 먼저 호출한다.
+     * 정산이 계정을 잠그고 읽어야 최신 값이 반영되므로, 계정 조회보다 먼저 호출한다. 계정이 없으면 새로 만든다.
      */
     @Transactional
     public RewardStatusResult getRewardStatus(Long userId) {
         streakService.settleIfNeeded(userId);
+        rewardLedger.createAccountIfAbsent(userId);
         RewardAccount account = rewardAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
 
