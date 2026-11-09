@@ -16,20 +16,25 @@ import { SentenceList } from '../components/reading/SentenceList';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, HIT_SLOP, spacing } from '../constants/theme';
 import { useBookDetail } from '../hooks/book/useBookDetail';
-import { useBookIdParam } from '../hooks/common/useRouteParams';
+import { useBookDetailModeParam, useBookIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
 
 export function BookDetailScreen() {
   const bookId = useBookIdParam();
+  // 독서 종료 화면에서 '독서 기록 보기'로 들어온 경우: 조회만 하고 책을 바꾸는 동작(제거·다시 읽기)은 숨긴다.
+  // (저장 전에 책을 제거하면 돌아가서 기록 저장이 실패하므로)
+  const isRecordsMode = useBookDetailModeParam() === 'records';
   const detail = useBookDetail(bookId);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isRereadConfirmOpen, setIsRereadConfirmOpen] = useState(false);
   const { book } = detail;
 
   const header = (
     <ScreenHeader
+      title={isRecordsMode ? '독서 기록' : undefined}
       onBack={() => router.back()}
-      right={book ? (
+      right={book && !isRecordsMode ? (
         <Pressable accessibilityRole="button" accessibilityLabel="더보기" hitSlop={HIT_SLOP} onPress={() => setIsMenuOpen(true)}>
           <Icon name="more" size={28} />
         </Pressable>
@@ -56,7 +61,7 @@ export function BookDetailScreen() {
 
   const openBookInfo = () => {
     setIsMenuOpen(false);
-    if (book?.itemId) router.push({ pathname: FE1_ROUTES.info, params: { itemId: book.itemId } });
+    if (book?.itemId) router.push({ pathname: FE1_ROUTES.info, params: { itemId: book.itemId, registered: '1' } });
   };
 
   const openRemoveConfirm = () => {
@@ -66,11 +71,22 @@ export function BookDetailScreen() {
 
   const isCompleted = book?.status === 'COMPLETED';
 
+  // 완독한 책은 '다시 읽기' 전에 한 번 확인한다.
+  const handleReadPress = () => {
+    if (isCompleted) setIsRereadConfirmOpen(true);
+    else handleStartReading();
+  };
+
+  const confirmReread = () => {
+    setIsRereadConfirmOpen(false);
+    handleStartReading();
+  };
+
   return (
     <ScreenContainer
       header={header}
-      footer={book ? (
-        <BookAction onRemove={() => setIsConfirmOpen(true)} onStartReading={handleStartReading} isCompleted={isCompleted} />
+      footer={book && !isRecordsMode ? (
+        <BookAction onRemove={() => setIsConfirmOpen(true)} onStartReading={handleReadPress} isCompleted={isCompleted} />
       ) : undefined}
     >
       {detail.isLoading && !book ? <LoadingView /> : null}
@@ -94,7 +110,7 @@ export function BookDetailScreen() {
             </BookInfo>
           </View>
 
-          {isCompleted ? <RereadingNotice /> : null}
+          {isCompleted && !isRecordsMode ? <RereadingNotice /> : null}
 
           <BookProgress currentPage={book.currentPage} totalPages={book.totalPages} />
           <ReadingSummary summary={detail.readingSummary} startedAt={book.startedAt} />
@@ -111,6 +127,15 @@ export function BookDetailScreen() {
           <MenuItem icon="trash" label="서재에서 제거" danger onPress={openRemoveConfirm} />
         </View>
       </BottomSheetModal>
+
+      <ConfirmModal
+        visible={isRereadConfirmOpen}
+        title="이 책을 다시 읽을까요?"
+        message={book ? `'${book.title}'의 독서 진행률이 처음부터 다시 시작돼요.\n지난 독서 기록과 문장은 그대로 남아요.` : ''}
+        confirmLabel="다시 읽기"
+        onConfirm={confirmReread}
+        onCancel={() => setIsRereadConfirmOpen(false)}
+      />
 
       <ConfirmModal
         visible={isConfirmOpen}

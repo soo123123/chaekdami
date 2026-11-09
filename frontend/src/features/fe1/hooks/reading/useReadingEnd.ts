@@ -7,11 +7,15 @@ import { useAsyncResource } from '../common/useAsyncResource';
 
 export type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
+/** 저장 결과. 실패 시 화면에 띄울 안내 문구를 함께 돌려준다. */
+export type SaveResult = { ok: true } | { ok: false; message: string };
+
 /**
  * 독서 종료 기록.
  * - readingTime은 전달받은 elapsedTime(초)으로 초기화한다.
  * - startPage/endPage는 조회한 책의 currentPage로 초기화한다.
  * - 저장 성공 응답을 받은 뒤에만 status가 success가 된다.
+ * - 책 사진(1장 이상)과 인상 깊었던 문장은 필수다.
  */
 export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   const { data, error: loadError, isLoading: isBookLoading, reload } = useAsyncResource(
@@ -44,19 +48,20 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     setEndPage(e);
   };
 
-  const saveReadingRecord = async (): Promise<boolean> => {
-    if (bookId === null || !book) return false;
+  const saveReadingRecord = async (): Promise<SaveResult> => {
+    if (bookId === null || !book) return { ok: false, message: '기록할 책 정보가 없어요.' };
+    // 입력값 오류는 'idle'로 두어 '다시 시도하기'(서버 오류용)가 뜨지 않게 한다.
+    const fail = (message: string, status: SaveStatus = 'idle'): SaveResult => {
+      setSaveError(message);
+      setStatus(status);
+      return { ok: false, message };
+    };
     const rangeError = validatePageRange(startPage, endPage, book.totalPages);
-    if (rangeError) {
-      setSaveError(rangeError);
-      setStatus('error');
-      return false;
-    }
-    if (readingTime <= 0) {
-      setSaveError('독서 시간을 확인해주세요.');
-      setStatus('error');
-      return false;
-    }
+    if (rangeError) return fail(rangeError);
+    if (readingTime <= 0) return fail('독서 시간을 확인해주세요.');
+    if (photos.length === 0) return fail('책 사진을 1장 이상 첨부해주세요.');
+    if (!sentence.trim()) return fail('인상 깊었던 문장을 입력해주세요.');
+
     setStatus('saving');
     setSaveError(null);
     try {
@@ -65,16 +70,14 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
         readingTime,
         startPage,
         endPage,
-        sentence: sentence.trim() || undefined,
+        sentence: sentence.trim(),
         photos,
       });
       setResult(saved);
       setStatus('success');
-      return true;
+      return { ok: true };
     } catch (e) {
-      setSaveError(toAppError(e).message);
-      setStatus('error');
-      return false;
+      return fail(toAppError(e).message, 'error');
     }
   };
 

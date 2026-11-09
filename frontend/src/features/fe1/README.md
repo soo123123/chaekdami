@@ -17,6 +17,7 @@
 - 설계 문서의 `/reading/*` 대신 현재 브랜치의 `/fe1/*` 구조를 따른다. 경로 상수는 `constants/routes.ts`.
 - `itemId`(외부 YES24 도서)와 `bookId`(내 서재 도서)는 타입부터 분리되어 있다 (`types/reading.ts`).
 - 서재 진입점: 아직 홈/탭에서 FE1 화면으로 연결되는 링크가 없다(공용·FE2 파일이라 수정하지 않음). `/fe1/library`로 직접 진입한다.
+- 하단 탭바: 공용 컴포넌트 `src/components/BottomTabBar.tsx`. FE1은 UI 시안대로 서재 화면(`LibraryScreen`) 맨 아래에만 직접 붙인다(서재 탭 선택). 레이아웃에 두면 화면 전환 때 탭바가 사라지면서 서재 높이가 바뀌어 책장 크기가 흔들리기 때문이다. 홈·커뮤니티·마이페이지 탭은 연결 전이라 눌러도 이동하지 않으며, 경로는 파일 안 `TABS`의 `href`에서 지정한다. FE2는 화면/레이아웃 맨 아래에 `<BottomTabBar active="mypage" />`처럼 추가해서 쓸 수 있다.
 
 ## 폴더
 

@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 
 import React, { useEffect, useState } from 'react';
 
@@ -136,7 +137,7 @@ const ReviewWriteScreen = () => {
       );
 
       router.replace({
-        pathname: '/fe2/review/review-detail',
+        pathname: ROUTES.fe2.reviewDetail,
         params: {
           readingRecordId: String(readingRecordId),
         },

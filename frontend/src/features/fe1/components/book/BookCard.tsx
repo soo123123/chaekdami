@@ -21,6 +21,9 @@ type ShelfBookCardProps = {
   book: RegisteredBook;
   /** 책 클릭 → BookDetailScreen */
   onPress: (bookId: number) => void;
+  /** 표지 크기 (기본 SHELF_COVER_WIDTH × SHELF_COVER_HEIGHT) */
+  coverWidth?: number;
+  coverHeight?: number;
 };
 
 export type BookCardProps = SearchBookCardProps | ShelfBookCardProps;
@@ -65,16 +68,16 @@ function SearchBookCard({ book, onPress, onRegister }: SearchBookCardProps) {
 export const SHELF_COVER_WIDTH = 84;
 export const SHELF_COVER_HEIGHT = 124;
 
-function ShelfBookCard({ book, onPress }: ShelfBookCardProps) {
+function ShelfBookCard({ book, onPress, coverWidth = SHELF_COVER_WIDTH, coverHeight = SHELF_COVER_HEIGHT }: ShelfBookCardProps) {
   const percent = calcProgress(book.currentPage, book.totalPages);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${book.title}, ${percent === null ? '진행률 정보 없음' : `${percent}% 읽음`}`}
       onPress={() => onPress(book.bookId)}
-      style={styles.shelfBook}
+      style={[styles.shelfBook, { width: coverWidth }]}
     >
-      <BookCover uri={book.coverImageUrl} title={book.title} author={book.author} width={SHELF_COVER_WIDTH} height={SHELF_COVER_HEIGHT} />
+      <BookCover uri={book.coverImageUrl} title={book.title} author={book.author} width={coverWidth} height={coverHeight} />
       {book.status !== 'NOT_STARTED' ? (
         <BookProgress currentPage={book.currentPage} totalPages={book.totalPages} variant="overlay" />
       ) : null}

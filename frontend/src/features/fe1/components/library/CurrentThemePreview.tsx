@@ -46,12 +46,17 @@ export function CurrentThemePreview({ theme, isApplied, isSaving = false }: Curr
         </View>
         <Text style={[styles.name, { color: text }]}>{theme.name}</Text>
         <Text style={[styles.desc, { color: text }]}>{theme.description}</Text>
-        {isApplied || isSaving ? (
-          <View style={[styles.applied, isSaving && styles.saving]}>
+        {/* 상태가 바뀌어도 카드 내용이 움직이지 않도록 버튼 자리는 항상 같은 크기로 잡아 두고, 미적용일 때만 숨긴다 */}
+        <View
+          style={[styles.applied, isSaving && styles.saving, !(isApplied || isSaving) && styles.hidden]}
+          accessibilityElementsHidden={!(isApplied || isSaving)}
+          importantForAccessibility={isApplied || isSaving ? 'auto' : 'no-hide-descendants'}
+        >
+          <View style={styles.appliedIcon}>
             {isSaving ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Icon name="check" size={16} color={colors.onPrimary} />}
-            <Text style={styles.appliedLabel}>{isSaving ? '적용하는 중' : '적용 중'}</Text>
           </View>
-        ) : null}
+          <Text style={styles.appliedLabel}>{isSaving ? '적용하는 중' : '적용 중'}</Text>
+        </View>
       </View>
     </View>
   );
@@ -63,11 +68,13 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   fade: { position: 'absolute', left: 0, top: 0 },
   overlay: { ...StyleSheet.absoluteFill, padding: spacing.md + 2, gap: spacing.xs + 2, width: '56%', justifyContent: 'center' },
-  badge: { alignSelf: 'flex-start', backgroundColor: colors.primaryLight, borderRadius: radius.input - 4, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },
+  badge: { alignSelf: 'flex-start', minWidth: 68, alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: radius.input - 4, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },
   badgeLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: '600' },
   name: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4 },
   desc: { fontSize: 13, lineHeight: 19, opacity: 0.9 },
-  applied: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: spacing.xs, backgroundColor: colors.primaryLight, borderRadius: radius.input, paddingHorizontal: spacing.md - 2, paddingVertical: spacing.sm },
+  applied: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, alignSelf: 'flex-start', minWidth: 118, height: 36, marginTop: spacing.xs, backgroundColor: colors.primaryLight, borderRadius: radius.input, paddingHorizontal: spacing.md - 2 },
+  appliedIcon: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  hidden: { opacity: 0 },
   saving: { opacity: 0.85 },
   appliedLabel: { color: colors.onPrimary, fontSize: 14, fontWeight: '700' },
 });

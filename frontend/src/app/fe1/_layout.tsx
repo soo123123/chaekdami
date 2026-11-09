@@ -1,2 +1,10 @@
 import { Stack } from 'expo-router';
-export default function FE1Layout() { return <Stack screenOptions={{ headerShown: false }} />; }
+
+/**
+ * FE1 화면 공통 레이아웃.
+ * 하단 탭바는 레이아웃이 아니라 서재 화면 안에 붙어 있다.
+ * (레이아웃에 두면 다른 화면으로 넘어갈 때 탭바가 사라지면서 서재 높이가 바뀌어 책장이 커졌다 작아진다)
+ */
+export default function FE1Layout() {
+  return <Stack screenOptions={{ headerShown: false }} />;
+}

@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -113,7 +114,7 @@ const ReviewDetailScreen = () => {
           onPress={() =>
             router.push({
               pathname:
-                '/fe2/review/review-write',
+                ROUTES.fe2.reviewWrite,
 
               params: {
                 readingRecordId:
@@ -234,7 +235,7 @@ const ReviewDetailScreen = () => {
         onPress={() =>
           router.push({
             pathname:
-              '/fe2/review/review-write',
+              ROUTES.fe2.reviewWrite,
 
             params: {
               readingRecordId:
