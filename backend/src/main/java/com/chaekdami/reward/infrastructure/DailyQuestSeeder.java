@@ -10,9 +10,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * quests 테이블이 비어 있을 때만 일일 퀘스트 마스터 데이터를 넣는다. (재기동 시 중복 INSERT 없음)
- * DailyQuest 는 퀘스트 id 로 진행 기준을 판단하므로, 기동할 때마다 DB 의 id 와 enum 의 questId 가 맞는지 확인한다.
- * 테이블을 비울 때는 id 시퀀스도 함께 초기화해야 한다. (PostgreSQL: TRUNCATE quests RESTART IDENTITY)
+ * 앱이 시작될 때 quests 테이블을 DailyQuest 목록에 맞춘다.
+ * - 목록에 새로 생긴 퀘스트는 추가한다.
+ * - code 컬럼이 생기기 전에 만들어진 행은 제목으로 찾아 코드를 채운다.
+ * - 목록에서 제목/목표/보상을 바꾸면 DB 에도 반영한다.
+ * 목록에서 지운 퀘스트의 행은 기존 user_quests 기록 보존을 위해 지우지 않고, 출제에서만 빠진다.
  */
 @Slf4j
 @Component
@@ -24,22 +26,25 @@ public class DailyQuestSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (questRepository.count() == 0) {
-            for (DailyQuest dailyQuest : DailyQuest.values()) {
-                questRepository.save(dailyQuest.toEntity());
-            }
-            log.info("일일 퀘스트 시드 데이터 {}건 저장", DailyQuest.values().length);
-        }
-        verifyQuestIds();
-    }
-
-    private void verifyQuestIds() {
+        int inserted = 0;
+        int updated = 0;
         for (DailyQuest dailyQuest : DailyQuest.values()) {
-            Quest quest = questRepository.findById(dailyQuest.getQuestId()).orElse(null);
-            if (quest == null || !dailyQuest.getTitle().equals(quest.getTitle())) {
-                log.warn("일일 퀘스트 id 불일치: {} 는 id={} 여야 하지만 DB 의 해당 id 는 {} 입니다.",
-                        dailyQuest, dailyQuest.getQuestId(), quest == null ? "없음" : "'" + quest.getTitle() + "'");
+            Quest quest = questRepository.findByCode(dailyQuest.getCode())
+                    .or(() -> questRepository.findFirstByCodeIsNullAndTitleOrderByIdAsc(dailyQuest.getTitle()))
+                    .orElse(null);
+            if (quest == null) {
+                questRepository.save(dailyQuest.toEntity());
+                inserted++;
+                continue;
             }
+            boolean changed = quest.getCode() == null;
+            quest.assignCode(dailyQuest.getCode());
+            if (dailyQuest.applyTo(quest) || changed) {
+                updated++;
+            }
+        }
+        if (inserted > 0 || updated > 0) {
+            log.info("일일 퀘스트 목록 동기화: 추가 {}건, 갱신 {}건", inserted, updated);
         }
     }
 }
