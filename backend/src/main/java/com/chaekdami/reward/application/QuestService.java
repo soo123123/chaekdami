@@ -1,6 +1,7 @@
 package com.chaekdami.reward.application;
 
 import com.chaekdami.reward.domain.DailyQuest;
+import com.chaekdami.reward.domain.DailyQuestPicker;
 import com.chaekdami.reward.domain.Quest;
 import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
@@ -18,9 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 오늘의 퀘스트 조회(온디맨드 생성), 독서 세션 진행도 반영, 보상 수령
+ * 오늘의 일일 퀘스트는 사용자가 그날 처음 조회할 때 사용자마다 따로 뽑는다. (DailyQuestPicker)
  */
 @Slf4j
 @Service
@@ -57,7 +60,7 @@ public class QuestService {
 
         List<UserQuest> todayQuests = getOrCreateTodayQuests(userId);
         for (UserQuest userQuest : todayQuests) {
-            int progress = DailyQuest.fromQuestId(userQuest.getQuest().getId())
+            int progress = DailyQuest.fromCode(userQuest.getQuest().getCode())
                     .map(dailyQuest -> switch (dailyQuest.getProgressUnit()) {
                         case SESSION_COUNT -> 1;
                         case READING_MINUTES -> readingMinutes;
@@ -111,7 +114,9 @@ public class QuestService {
             return todayQuests;
         }
 
-        List<UserQuest> created = questRepository.findAllByTypeOrderByIdAsc(QuestType.DAILY).stream()
+        List<Quest> pool = questRepository.findAllByTypeOrderByIdAsc(QuestType.DAILY);
+        List<UserQuest> created = DailyQuestPicker.pick(pool, DailyQuest.DAILY_QUEST_COUNT, ThreadLocalRandom.current())
+                .stream()
                 .map(quest -> UserQuest.builder().userId(userId).quest(quest).build())
                 .toList();
         log.debug("userId={} 오늘의 일일 퀘스트 {}건 생성", userId, created.size());
