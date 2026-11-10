@@ -24,7 +24,7 @@ export function FocusModeView({ elapsedTime, isRunning, onTogglePause, onFinish 
         <ReadingTimer elapsedTime={elapsedTime} isRunning={isRunning} scale={scale} variant="dark" />
         <View style={[styles.controls, { gap: 56 * scale }]}>
           <PauseButton isRunning={isRunning} onPress={onTogglePause} scale={scale} variant="dark" />
-          <FinishReadingButton onPress={onFinish} scale={scale} variant="dark" />
+          <FinishReadingButton elapsedTime={elapsedTime} onPress={onFinish} scale={scale} variant="dark" />
         </View>
       </View>
     </View>

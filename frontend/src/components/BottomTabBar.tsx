@@ -24,8 +24,7 @@ type TabConfig = { key: BottomTabKey; label: string; icon: IonName; activeIcon: 
 const TABS: TabConfig[] = [
   { key: 'home', label: '홈', icon: 'home-outline', activeIcon: 'home', href: ROUTES.home },
   { key: 'library', label: '서재', icon: 'book-outline', activeIcon: 'book', href: ROUTES.fe1.library },
-  // 커뮤니티 화면 없음
-  { key: 'community', label: '커뮤니티', icon: 'chatbubble-outline', activeIcon: 'chatbubble', href: null },
+  { key: 'community', label: '커뮤니티', icon: 'chatbubble-outline', activeIcon: 'chatbubble', href: ROUTES.fe1.community },
   { key: 'mypage', label: '마이페이지', icon: 'person-outline', activeIcon: 'person', href: ROUTES.fe2.mypage },
 ];
 

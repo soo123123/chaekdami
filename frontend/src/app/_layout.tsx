@@ -10,7 +10,7 @@ import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation';
  */
 const TAB_SCREENS: Record<string, string[]> = {
   index: [],
-  fe1: ['library'],
+  fe1: ['library', 'community'],
   fe2: ['user/mypage'],
 };
 

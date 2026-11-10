@@ -13,11 +13,12 @@
 | BookDetailScreen | `/fe1/book-detail` | `bookId` |
 | ReadingStartScreen | `/fe1/reading-start` | `bookId` |
 | ReadingEndScreen | `/fe1/reading-end` | `bookId`, `elapsedTime`(초) |
+| CommunityScreen | `/fe1/community` | `bookId`(선택, 처음 선택할 완독 도서) |
 
 - 설계 문서의 `/reading/*` 대신 현재 브랜치의 `/fe1/*` 구조를 따른다. 경로 상수는 `constants/routes.ts`.
 - `itemId`(외부 YES24 도서)와 `bookId`(내 서재 도서)는 타입부터 분리되어 있다 (`types/reading.ts`).
 - 서재 진입점: 아직 홈/탭에서 FE1 화면으로 연결되는 링크가 없다(공용·FE2 파일이라 수정하지 않음). `/fe1/library`로 직접 진입한다.
-- 하단 탭바: 공용 컴포넌트 `src/components/BottomTabBar.tsx`. FE1은 UI 시안대로 서재 화면(`LibraryScreen`) 맨 아래에만 직접 붙인다(서재 탭 선택). 레이아웃에 두면 화면 전환 때 탭바가 사라지면서 서재 높이가 바뀌어 책장 크기가 흔들리기 때문이다. 홈·커뮤니티·마이페이지 탭은 연결 전이라 눌러도 이동하지 않으며, 경로는 파일 안 `TABS`의 `href`에서 지정한다. FE2는 화면/레이아웃 맨 아래에 `<BottomTabBar active="mypage" />`처럼 추가해서 쓸 수 있다.
+- 하단 탭바: 공용 컴포넌트 `src/components/BottomTabBar.tsx`. FE1은 UI 시안대로 서재 화면(`LibraryScreen`)과 커뮤니티 화면(`CommunityScreen`) 맨 아래에 직접 붙인다. 레이아웃에 두면 화면 전환 때 탭바가 사라지면서 서재 높이가 바뀌어 책장 크기가 흔들리기 때문이다. 탭 경로는 경로는 파일 안 `TABS`의 `href`에서 지정한다. FE2는 화면/레이아웃 맨 아래에 `<BottomTabBar active="mypage" />`처럼 추가해서 쓸 수 있다.
 
 ## 폴더
 
@@ -39,6 +40,15 @@ features/fe1/
 개발 중에는 `constants/config.ts`의 `FE1_USE_DEV_MOCK`(기본 `__DEV__`)로 Mock을 사용한다. 프로덕션 빌드에서는 Mock을 사용하지 않는다.
 
 계약이 확정되면 `httpReadingApi`의 각 함수만 구현하고 `FE1_USE_DEV_MOCK`을 `false`로 바꾸면 된다.
+
+## 커뮤니티 (한줄평·평점)
+
+- 백엔드 `be/feat/sentence-review` 브랜치의 `docs/review-api-for-frontend.md` 계약을 따른다. `api/communityApi.ts`의 HTTP 구현은 실제 Endpoint로 작성되어 있고, 해당 브랜치가 main에 병합되기 전까지는 `FE1_USE_DEV_MOCK`으로 `api/devMockCommunityApi.ts`를 쓴다.
+- 대상: 내 서재에서 **완독 + ISBN이 있는 책**만. (한줄평·별점 API가 ISBN 기준이라 직접 등록한 책은 제외)
+- 리뷰는 책당 1개(별점 필수 + 한줄평 100자·줄바꿈 불가 + 스포일러 여부). 내 리뷰는 목록에서 빼고 '내 한줄평' 카드로 보여준다. 리뷰 삭제 API는 없어서 '한줄평 지우기'는 `oneLine: ""`로 보낸다(별점은 남음).
+- 좋아요는 PUT/DELETE, 화면에 먼저 반영 후 실패 시 되돌린다. 신고 사유는 SPOILER/ABUSIVE/SPAM/INAPPROPRIATE/OTHER(기타는 300자 입력 필수).
+- 아바타 이미지가 없어 닉네임 첫 글자 원형 아바타를 쓴다(`components/community/InitialAvatar.tsx`).
+- 목록 페이지 번호는 0부터(BE1 도서 검색은 1부터라 팀에서 맞출지 결정 필요).
 
 ## 미확정 사항 (확정 전 임의 구현 금지)
 

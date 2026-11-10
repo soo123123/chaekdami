@@ -75,3 +75,33 @@ export function isValidIsbn(value: string): boolean {
   const digits = digitsOnly(value);
   return digits.length === 10 || digits.length === 13;
 }
+
+/**
+ * 서버 시각(한국 시간, 시간대 표기 없음: "2026-11-09T01:58:43.801149") → epoch ms.
+ * 시간대 표기(Z, +09:00)가 붙어 오면 그대로 해석한다.
+ */
+export function parseServerKstDateTime(value: string): number | null {
+  if (/(Z|[+-]\d{2}:?\d{2})$/.test(value)) {
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : time;
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(value);
+  if (!match) return null;
+  const [, y, mo, d, h, mi, s] = match;
+  return Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h) - 9, Number(mi), Number(s ?? 0));
+}
+
+/** 서버 시각 → 방금 전 / 5분 전 / 2시간 전 / 3일 전 / 2025.10.01 */
+export function formatRelativeTime(value: string, now = Date.now()): string {
+  const time = parseServerKstDateTime(value);
+  if (time === null) return formatDate(value);
+  const diffSec = Math.floor((now - time) / 1000);
+  if (diffSec < 60) return '방금 전';
+  const min = Math.floor(diffSec / 60);
+  if (min < 60) return `${min}분 전`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour}시간 전`;
+  const day = Math.floor(hour / 24);
+  if (day < 7) return `${day}일 전`;
+  return formatDate(value);
+}

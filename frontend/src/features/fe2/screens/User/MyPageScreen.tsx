@@ -15,6 +15,7 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyProfile } from '../../api/userApi';
+import { BottomTabBar } from '@/components/BottomTabBar';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -509,39 +510,8 @@ export default function MyPageScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* 하단 내비게이션 */}
-      <View style={styles.bottomNav}>
-        <BottomTab
-          icon="home-outline"
-          title="홈"
-          onPress={() => goTo('/')}
-        />
-
-        <BottomTab
-          icon="search-outline"
-          title="탐색"
-          onPress={() => goTo('/reading/search')}
-        />
-
-        <BottomTab
-          icon="library-outline"
-          title="나의 서재"
-          onPress={() => goTo('/reading/library')}
-        />
-
-        <BottomTab
-          icon="people-outline"
-          title="커뮤니티"
-          onPress={() => pending('커뮤니티')}
-        />
-
-        <BottomTab
-          icon="person"
-          title="마이페이지"
-          active
-          onPress={() => {}}
-        />
-      </View>
+      {/* 공용 하단 탭바 (FE1 서재와 동일) */}
+      <BottomTabBar active="mypage" />
     </View>
   );
 }
@@ -633,41 +603,6 @@ function SettingsRow({
         size={17}
         color={COLORS.muted}
       />
-    </TouchableOpacity>
-  );
-}
-
-function BottomTab({
-  icon,
-  title,
-  onPress,
-  active = false,
-}: {
-  icon: IconName;
-  title: string;
-  onPress: () => void;
-  active?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.tab}
-      onPress={onPress}
-    >
-      <Ionicons
-        name={icon}
-        size={22}
-        color={active ? COLORS.green : '#77768B'}
-      />
-
-      <Text
-        style={[
-          styles.tabText,
-          active && styles.tabActive,
-        ]}
-        numberOfLines={1}
-      >
-        {title}
-      </Text>
     </TouchableOpacity>
   );
 }
@@ -1044,27 +979,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.muted,
     fontWeight: '700',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
-    paddingTop: 10,
-    paddingBottom: 13,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  },
-  tabText: {
-    fontSize: 10,
-    color: '#77768B',
-  },
-  tabActive: {
-    fontWeight: '800',
-    color: COLORS.green,
   },
 });

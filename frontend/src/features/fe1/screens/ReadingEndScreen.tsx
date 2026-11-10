@@ -158,7 +158,7 @@ export function ReadingEndScreen() {
 
           <Card title="독서 정보 기록" subtitle="오늘의 독서 기록을 남겨보세요.">
             <View style={styles.fields}>
-              <ReadingTime duration={record.readingTime} onChange={record.setReadingTime} />
+              <ReadingTime duration={record.readingTime} maxDuration={elapsedTime} onChange={record.setReadingTime} />
               <View style={styles.fieldDivider} />
               <ReadingPageRange
                 startPage={record.startPage}

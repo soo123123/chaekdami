@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
+import { BottomTabBar } from '@/components/BottomTabBar';
+
 const GREEN = '#315E49';
 const BG = '#FAF7F1';
 
@@ -85,13 +87,6 @@ export default function HomeScreen() {
     );
   };
 
-  const handlePending = (name: string) => {
-    showMessage(
-      name,
-      '해당 화면 연결을 확인한 후 적용할 예정입니다.'
-    );
-  };
-
   // FE2 화면 이동
   const goToDday = () => {
     router.push('/fe2/reward/dday');
@@ -111,10 +106,6 @@ export default function HomeScreen() {
 
   const goToReadingStats = () => {
     router.push('/fe2/user/reading-stats');
-  };
-
-  const goToHome = () => {
-    router.replace('/home');
   };
 
   return (
@@ -426,63 +417,8 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* 하단 내비게이션 */}
-      <View style={styles.bottomNav}>
-        {[
-          {
-            icon: '⌂',
-            label: '홈',
-            onPress: goToHome,
-          },
-          {
-            icon: '⌕',
-            label: '탐색',
-            onPress: () => handlePending('탐색'),
-          },
-          {
-            icon: '▤',
-            label: '나의 서재',
-            onPress: handleLibrary,
-          },
-          {
-            icon: '♧',
-            label: '커뮤니티',
-            onPress: () => handlePending('커뮤니티'),
-          },
-          {
-            icon: '♙',
-            label: '마이페이지',
-            onPress: goToMyPage,
-          },
-        ].map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.navItem}
-            onPress={item.onPress}
-            activeOpacity={0.75}
-          >
-            <Text
-              style={[
-                styles.navIcon,
-                item.label === '홈' &&
-                  styles.navActive,
-              ]}
-            >
-              {item.icon}
-            </Text>
-
-            <Text
-              style={[
-                styles.navLabel,
-                item.label === '홈' &&
-                  styles.navActive,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* 공용 하단 탭바 (FE1 서재와 동일) */}
+      <BottomTabBar active="home" />
     </View>
   );
 }
@@ -873,35 +809,5 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: 7,
     textAlign: 'center',
-  },
-
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFDF9',
-    borderTopWidth: 1,
-    borderTopColor: '#EEE7DF',
-    paddingVertical: 12,
-    paddingBottom: 16,
-  },
-
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 5,
-  },
-
-  navIcon: {
-    fontSize: 27,
-    color: '#77768A',
-  },
-
-  navLabel: {
-    fontSize: 10,
-    color: '#77768A',
-  },
-
-  navActive: {
-    color: GREEN,
-    fontWeight: '700',
   },
 });

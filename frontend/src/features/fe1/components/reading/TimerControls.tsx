@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MIN_READING_SECONDS } from '../../constants/config';
 import { colors, softShadow, spacing } from '../../constants/theme';
 import { formatClock } from '../../utils/format';
 import { Icon } from '../common/Icon';
@@ -44,22 +45,28 @@ export function PauseButton({ isRunning, onPress, disabled, scale = 1, variant =
   );
 }
 
-/** 독서 종료 */
-export function FinishReadingButton({ onPress, disabled, scale = 1, variant = 'default' }: { onPress: () => void; disabled?: boolean; scale?: number; variant?: Variant }) {
+/** 독서 종료 — 최소 독서 시간(MIN_READING_SECONDS)이 지나야 누를 수 있다 */
+export function FinishReadingButton({ elapsedTime, onPress, disabled, scale = 1, variant = 'default' }: { elapsedTime: number; onPress: () => void; disabled?: boolean; scale?: number; variant?: Variant }) {
   const h = 50 * scale;
   const dark = variant === 'dark';
+  const remaining = MIN_READING_SECONDS - elapsedTime;
+  const isLocked = remaining > 0;
+  const isDisabled = disabled || isLocked;
+  const label = isLocked ? `${Math.ceil(remaining / 60)}분 후 종료 가능` : '독서 종료';
   return (
     <View style={styles.control}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="독서 종료"
-        disabled={disabled}
+        accessibilityHint={isLocked ? `${Math.floor(MIN_READING_SECONDS / 60)}분 이상 읽어야 종료할 수 있어요.` : undefined}
+        accessibilityState={{ disabled: isDisabled }}
+        disabled={isDisabled}
         onPress={onPress}
-        style={({ pressed }) => [styles.circle, styles.finish, { width: h * 1.25, height: h, borderRadius: h / 2 }, disabled && styles.disabled, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.circle, styles.finish, { width: h * 1.25, height: h, borderRadius: h / 2 }, isDisabled && styles.disabled, pressed && styles.pressed]}
       >
         <View style={[styles.stopSquare, { width: 17 * scale, height: 17 * scale }]} />
       </Pressable>
-      <Text style={[styles.controlLabel, { fontSize: 14 * scale }, dark && { color: DARK.text }]}>독서 종료</Text>
+      <Text style={[styles.controlLabel, { fontSize: 14 * scale }, dark && { color: DARK.text }, isLocked && styles.lockedLabel]}>{label}</Text>
     </View>
   );
 }
@@ -104,6 +111,7 @@ const styles = StyleSheet.create({
   controlLabel: { fontSize: 15, color: colors.text, fontWeight: '600' },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.5 },
+  lockedLabel: { opacity: 0.6 },
   focus: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 42, paddingHorizontal: spacing.md, borderRadius: 999, backgroundColor: colors.surface, ...softShadow },
   focusOn: { backgroundColor: 'rgba(255,255,255,0.12)', shadowOpacity: 0, elevation: 0 },
   focusLabel: { fontSize: 15, fontWeight: '600' },

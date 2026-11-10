@@ -6,6 +6,7 @@ import type {
   SearchSort,
   ThemeCategory,
 } from '../types/reading';
+import type { ReportReason, ReviewSort } from '../types/community';
 
 export type Option<T extends string> = { value: T; label: string };
 
@@ -79,3 +80,18 @@ export const LIBRARY_THEMES: LibraryTheme[] = [
 ];
 
 export const DEFAULT_THEME_ID = LIBRARY_THEMES[0].themeId;
+
+/** 커뮤니티 한줄평 정렬 (백엔드 sort=latest|likes) */
+export const REVIEW_SORTS: Option<ReviewSort>[] = [
+  { value: 'latest', label: '최신순' },
+  { value: 'likes', label: '좋아요순' },
+];
+
+/** 한줄평 신고 사유 (백엔드 ReportReason) */
+export const REPORT_REASONS: Option<ReportReason>[] = [
+  { value: 'SPOILER', label: '스포일러가 포함되어 있어요' },
+  { value: 'ABUSIVE', label: '욕설·비방이 있어요' },
+  { value: 'SPAM', label: '광고·도배예요' },
+  { value: 'INAPPROPRIATE', label: '부적절한 내용이에요' },
+  { value: 'OTHER', label: '기타' },
+];

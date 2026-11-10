@@ -13,6 +13,7 @@ import { ReadingProgress } from '../components/reading/ReadingProgress';
 import { ReadingStage } from '../components/reading/ReadingStage';
 import { ReadingTimeSummary } from '../components/reading/ReadingTimeSummary';
 import { FinishReadingButton, FocusModeButton, PauseButton, ReadingTimer } from '../components/reading/TimerControls';
+import { MIN_READING_SECONDS } from '../constants/config';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, radius, softShadow, spacing } from '../constants/theme';
 import { useBookIdParam } from '../hooks/common/useRouteParams';
@@ -60,7 +61,8 @@ export function ReadingStartScreen() {
   const handleTogglePause = () => (timer.isRunning ? pauseTimer() : startTimer());
 
   const handleFinish = () => {
-    if (bookId === null) return;
+    // 최소 독서 시간 전에는 종료할 수 없다 (버튼도 비활성화되어 있음)
+    if (bookId === null || timer.elapsedTime < MIN_READING_SECONDS) return;
     const elapsedTime = finishReading();
     allowLeaveRef.current = true;
     // 독서 종료 화면이 이 화면을 대체한다 (뒤로가기로 타이머 화면에 돌아오지 않도록).
@@ -136,7 +138,7 @@ export function ReadingStartScreen() {
                 <ReadingTimer elapsedTime={timer.elapsedTime} isRunning={timer.isRunning} scale={scale} />
                 <View style={[styles.controls, { gap: 56 * scale }]}>
                   <PauseButton isRunning={timer.isRunning} onPress={handleTogglePause} scale={scale} />
-                  <FinishReadingButton onPress={handleFinish} scale={scale} />
+                  <FinishReadingButton elapsedTime={timer.elapsedTime} onPress={handleFinish} scale={scale} />
                 </View>
               </>
             )}

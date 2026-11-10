@@ -23,6 +23,7 @@ export const ROUTES = {
     detail: '/fe1/book-detail',
     readingStart: '/fe1/reading-start',
     readingEnd: '/fe1/reading-end',
+    community: '/fe1/community',
   },
 
   fe2: {
@@ -54,6 +55,10 @@ export const toReadingStart = (bookId: number): Href => ({
   pathname: ROUTES.fe1.readingStart,
   params: { bookId: String(bookId) },
 });
+
+/** 커뮤니티 (FE1) — 특정 완독 도서를 선택한 채로 열 때 bookId를 넘긴다 */
+export const toCommunity = (bookId?: number): Href =>
+  bookId === undefined ? ROUTES.fe1.community : { pathname: ROUTES.fe1.community, params: { bookId: String(bookId) } };
 
 /** 독후감 작성 (FE2) */
 export const toReviewWrite = (readingRecordId: number, mode?: 'edit'): Href => ({
