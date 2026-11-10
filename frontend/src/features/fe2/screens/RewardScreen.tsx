@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getRewardStatus } from '../../api/rewardApi';
+import { getRewardStatus } from '../api/rewardApi';
 type RewardStatus = {
   level?: number;
   xp?: number;
@@ -41,18 +41,18 @@ const COLORS = {
 };
 
 const ART = {
-  catBooks: require('../../../../../assets/images/level/level-cat-books.png'),
-  readingCat: require('../../../../../assets/images/level/level-reading-cat.png'),
-  sproutBadge: require('../../../../../assets/images/level/level-sprout-badge.png'),
-  seed: require('../../../../../assets/images/level/level-seed.png'),
-  growingSprout: require('../../../../../assets/images/level/level-growing-sprout.png'),
-  pottedSprout: require('../../../../../assets/images/level/level-potted-sprout.png'),
-  youngTree: require('../../../../../assets/images/level/level-young-tree.png'),
-  matureTree: require('../../../../../assets/images/level/level-mature-tree.png'),
-  coin: require('../../../../../assets/images/level/level-coin.png'),
-  book: require('../../../../../assets/images/level/level-open-book.png'),
-  clock: require('../../../../../assets/images/level/level-clock.png'),
-  calendar: require('../../../../../assets/images/level/level-calendar.png'),
+  catBooks: require('../../../../assets/images/level/level-cat-books.png'),
+  readingCat: require('../../../../assets/images/level/level-reading-cat.png'),
+  sproutBadge: require('../../../../assets/images/level/level-sprout-badge.png'),
+  seed: require('../../../../assets/images/level/level-seed.png'),
+  growingSprout: require('../../../../assets/images/level/level-growing-sprout.png'),
+  pottedSprout: require('../../../../assets/images/level/level-potted-sprout.png'),
+  youngTree: require('../../../../assets/images/level/level-young-tree.png'),
+  matureTree: require('../../../../assets/images/level/level-mature-tree.png'),
+  coin: require('../../../../assets/images/level/level-coin.png'),
+  book: require('../../../../assets/images/level/level-open-book.png'),
+  clock: require('../../../../assets/images/level/level-clock.png'),
+  calendar: require('../../../../assets/images/level/level-calendar.png'),
 };
 
 const TEST_REWARD: RewardStatus = {

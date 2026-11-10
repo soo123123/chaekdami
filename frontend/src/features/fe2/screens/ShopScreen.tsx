@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getRewardStatus } from '../../api/rewardApi';
+import { getRewardStatus } from '../api/rewardApi';
 const COLORS = {
   background: '#FBF7F2',
   white: '#FFFCF9',
@@ -26,17 +26,17 @@ const COLORS = {
 };
 
 const ART = {
-  banner: require('../../../../../assets/images/shop/shop-banner-cat.png'),
-  coin: require('../../../../../assets/images/shop/shop-coin.png'),
-  categoryDeco: require('../../../../../assets/images/shop/shop-category-deco.png'),
-  categoryPackage: require('../../../../../assets/images/shop/shop-category-package.png'),
-  shield1: require('../../../../../assets/images/shop/shop-shield-1.png'),
-  shield5: require('../../../../../assets/images/shop/shop-shield-5.png'),
-  shield10: require('../../../../../assets/images/shop/shop-shield-10.png'),
-  exp1: require('../../../../../assets/images/shop/shop-exp-1.png'),
-  exp5: require('../../../../../assets/images/shop/shop-exp-5.png'),
-  exp10: require('../../../../../assets/images/shop/shop-exp-10.png'),
-  decorate: require('../../../../../assets/images/shop/shop-decorate.png'),
+  banner: require('../../../../assets/images/shop/shop-banner-cat.png'),
+  coin: require('../../../../assets/images/shop/shop-coin.png'),
+  categoryDeco: require('../../../../assets/images/shop/shop-category-deco.png'),
+  categoryPackage: require('../../../../assets/images/shop/shop-category-package.png'),
+  shield1: require('../../../../assets/images/shop/shop-shield-1.png'),
+  shield5: require('../../../../assets/images/shop/shop-shield-5.png'),
+  shield10: require('../../../../assets/images/shop/shop-shield-10.png'),
+  exp1: require('../../../../assets/images/shop/shop-exp-1.png'),
+  exp5: require('../../../../assets/images/shop/shop-exp-5.png'),
+  exp10: require('../../../../assets/images/shop/shop-exp-10.png'),
+  decorate: require('../../../../assets/images/shop/shop-decorate.png'),
 };
 
 type Category = 'recommend' | 'decorate' | 'package';

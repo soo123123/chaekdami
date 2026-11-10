@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { getQuests } from '../../api/rewardApi';
+import { getQuests } from '../api/rewardApi';
 
 type QuestType = 'DDAY' | 'EXP';
 type QuestTab = 'ALL' | QuestType;
@@ -43,19 +43,19 @@ const COLORS = {
 };
 
 const ART = {
-  flag: require('../../../../../assets/images/quest/quest-cat-flag.png'),
-  sleeping: require('../../../../../assets/images/quest/quest-cat-sleep-books.png'),
-  reading: require('../../../../../assets/images/quest/quest-cat-reading.png'),
-  sitting: require('../../../../../assets/images/quest/quest-cat-sitting.png'),
-  stretching: require('../../../../../assets/images/quest/quest-cat-stretch.png'),
-  cushion: require('../../../../../assets/images/quest/quest-cat-cushion.png'),
-  calendar: require('../../../../../assets/images/quest/quest-calendar-cat.png'),
-  bookshelf: require('../../../../../assets/images/quest/quest-bookshelf.png'),
-  books: require('../../../../../assets/images/quest/quest-books-flowers.png'),
-  booksPlant: require('../../../../../assets/images/quest/quest-books-plant.png'),
-  openBook: require('../../../../../assets/images/quest/quest-open-book.png'),
-  flower: require('../../../../../assets/images/quest/quest-flower-pot.png'),
-  window: require('../../../../../assets/images/quest/quest-window.png'),
+  flag: require('../../../../assets/images/quest/quest-cat-flag.png'),
+  sleeping: require('../../../../assets/images/quest/quest-cat-sleep-books.png'),
+  reading: require('../../../../assets/images/quest/quest-cat-reading.png'),
+  sitting: require('../../../../assets/images/quest/quest-cat-sitting.png'),
+  stretching: require('../../../../assets/images/quest/quest-cat-stretch.png'),
+  cushion: require('../../../../assets/images/quest/quest-cat-cushion.png'),
+  calendar: require('../../../../assets/images/quest/quest-calendar-cat.png'),
+  bookshelf: require('../../../../assets/images/quest/quest-bookshelf.png'),
+  books: require('../../../../assets/images/quest/quest-books-flowers.png'),
+  booksPlant: require('../../../../assets/images/quest/quest-books-plant.png'),
+  openBook: require('../../../../assets/images/quest/quest-open-book.png'),
+  flower: require('../../../../assets/images/quest/quest-flower-pot.png'),
+  window: require('../../../../assets/images/quest/quest-window.png'),
 };
 
 const SAMPLE_QUESTS: Quest[] = [

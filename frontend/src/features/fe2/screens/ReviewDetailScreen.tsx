@@ -17,7 +17,7 @@ import {
 
 import {
   getReview,
-} from '../../api/reviewApi';
+} from '../api/reviewApi';
 
 interface Review {
   id?: number;

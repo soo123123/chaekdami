@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
-import HomeScreen from '../features/fe2/screens/Home/HomeScreen';
+import HomeScreen from '../features/fe2/screens/HomeScreen';
 
 import {
   getAccessToken,

@@ -46,10 +46,10 @@ const C = {
 };
 
 const ART = {
-  header: require('../../../../../assets/images/dday/dday-header-cat.png'),
-  success: require('../../../../../assets/images/dday/dday-read-success.png'),
-  shield: require('../../../../../assets/images/dday/dday-shield-used.png'),
-  missed: require('../../../../../assets/images/dday/dday-missed.png'),
+  header: require('../../../../assets/images/dday/dday-header-cat.png'),
+  success: require('../../../../assets/images/dday/dday-read-success.png'),
+  shield: require('../../../../assets/images/dday/dday-shield-used.png'),
+  missed: require('../../../../assets/images/dday/dday-missed.png'),
 };
 
 // 기존 디자인 확인용 2025년 9월 예시 기록

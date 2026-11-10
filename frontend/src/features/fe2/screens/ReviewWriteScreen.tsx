@@ -21,7 +21,7 @@ import {
 import {
   createReview,
   getReview,
-} from '../../api/reviewApi';
+} from '../api/reviewApi';
 
 const ReviewWriteScreen = () => {
   const params = useLocalSearchParams<{

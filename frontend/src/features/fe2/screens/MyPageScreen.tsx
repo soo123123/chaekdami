@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getMyProfile } from '../../api/userApi';
+import { getMyProfile } from '../api/userApi';
 import { BottomTabBar } from '@/components/BottomTabBar';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -47,20 +47,20 @@ const DATA = {
 
 // 이미지 경로: frontend/assets/images/mypage/
 const ART = {
-  profileBanner: require('../../../../../assets/images/mypage/profile-banner.png'),
-  profileCat: require('../../../../../assets/images/mypage/profile-cat.png'),
-  questBanner: require('../../../../../assets/images/mypage/quest-banner.png'),
-  questCat: require('../../../../../assets/images/mypage/quest-cat.png'),
-  bookshelf: require('../../../../../assets/images/mypage/bookshelf.png'),
-  bookPlant: require('../../../../../assets/images/mypage/book-plant.png'),
-  coin: require('../../../../../assets/images/mypage/coin-icon.png'),
-  level: require('../../../../../assets/images/mypage/level-icon.png'),
-  decoration: require('../../../../../assets/images/mypage/decoration-icon.png'),
-  stats: require('../../../../../assets/images/mypage/stats-icon.png'),
-  bell: require('../../../../../assets/images/mypage/notification-bell.png'),
-  settings: require('../../../../../assets/images/mypage/settings-gear.png'),
-  readingCat: require('../../../../../assets/images/mypage/reading-cat.png'),
-  sleepingCat: require('../../../../../assets/images/mypage/sleeping-cat.png'),
+  profileBanner: require('../../../../assets/images/mypage/profile-banner.png'),
+  profileCat: require('../../../../assets/images/mypage/profile-cat.png'),
+  questBanner: require('../../../../assets/images/mypage/quest-banner.png'),
+  questCat: require('../../../../assets/images/mypage/quest-cat.png'),
+  bookshelf: require('../../../../assets/images/mypage/bookshelf.png'),
+  bookPlant: require('../../../../assets/images/mypage/book-plant.png'),
+  coin: require('../../../../assets/images/mypage/coin-icon.png'),
+  level: require('../../../../assets/images/mypage/level-icon.png'),
+  decoration: require('../../../../assets/images/mypage/decoration-icon.png'),
+  stats: require('../../../../assets/images/mypage/stats-icon.png'),
+  bell: require('../../../../assets/images/mypage/notification-bell.png'),
+  settings: require('../../../../assets/images/mypage/settings-gear.png'),
+  readingCat: require('../../../../assets/images/mypage/reading-cat.png'),
+  sleepingCat: require('../../../../assets/images/mypage/sleeping-cat.png'),
 };
 
 function goTo(path: string) {

@@ -21,16 +21,16 @@ const BG = '#FAF7F1';
 
 // 실제 frontend/assets/images 폴더 기준
 const images = {
-  banner: require('../../../../../assets/images/home/햇살 가득한 책 읽는 공간.png'),
-  quest: require('../../../../../assets/images/home/quest-cat.png'),
-  record: require('../../../../../assets/images/home/reading-record.png'),
-  current: require('../../../../../assets/images/books/current-book.png'),
-  recent1: require('../../../../../assets/images/books/recent-book-1.png'),
-  recent2: require('../../../../../assets/images/books/recent-book-2.png'),
-  recent3: require('../../../../../assets/images/books/recent-book-3.png'),
-  recent4: require('../../../../../assets/images/books/recent-book-4.png'),
-  recent5: require('../../../../../assets/images/books/recent-book-5.png'),
-  recent6: require('../../../../../assets/images/books/recent-book-6.png'),
+  banner: require('../../../../assets/images/home/햇살 가득한 책 읽는 공간.png'),
+  quest: require('../../../../assets/images/home/quest-cat.png'),
+  record: require('../../../../assets/images/home/reading-record.png'),
+  current: require('../../../../assets/images/books/current-book.png'),
+  recent1: require('../../../../assets/images/books/recent-book-1.png'),
+  recent2: require('../../../../assets/images/books/recent-book-2.png'),
+  recent3: require('../../../../assets/images/books/recent-book-3.png'),
+  recent4: require('../../../../assets/images/books/recent-book-4.png'),
+  recent5: require('../../../../assets/images/books/recent-book-5.png'),
+  recent6: require('../../../../assets/images/books/recent-book-6.png'),
 };
 
 const recentBooks = [

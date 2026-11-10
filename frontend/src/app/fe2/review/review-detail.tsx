@@ -1,1 +1,1 @@
-export { default } from '@/features/fe2/screens/Review/ReviewDetailScreen';
+export { default } from '@/features/fe2/screens/ReviewDetailScreen';

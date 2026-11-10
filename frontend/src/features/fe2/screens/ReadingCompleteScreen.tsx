@@ -28,17 +28,17 @@ const COLORS = {
 };
 
 const IMAGES = {
-  banner: require('../../../assets/images/reading-complete/complete-banner.png'),
-  questCat: require('../../../assets/images/reading-complete/complete-quest-cat.png'),
-  books: require('../../../assets/images/reading-complete/complete-books.png'),
-  coin: require('../../../assets/images/reading-complete/complete-coin.png'),
-  flame: require('../../../assets/images/reading-complete/complete-flame.png'),
-  sprout: require('../../../assets/images/reading-complete/complete-sprout.png'),
-  clock: require('../../../assets/images/reading-complete/complete-clock.png'),
-  pages: require('../../../assets/images/reading-complete/complete-pages.png'),
-  focus: require('../../../assets/images/reading-complete/complete-focus.png'),
-  check: require('../../../assets/images/reading-complete/complete-check.png'),
-  unchecked: require('../../../assets/images/reading-complete/complete-unchecked.png'),
+  banner: require('../../../../assets/images/reading-complete/complete-banner.png'),
+  questCat: require('../../../../assets/images/reading-complete/complete-quest-cat.png'),
+  books: require('../../../../assets/images/reading-complete/complete-books.png'),
+  coin: require('../../../../assets/images/reading-complete/complete-coin.png'),
+  flame: require('../../../../assets/images/reading-complete/complete-flame.png'),
+  sprout: require('../../../../assets/images/reading-complete/complete-sprout.png'),
+  clock: require('../../../../assets/images/reading-complete/complete-clock.png'),
+  pages: require('../../../../assets/images/reading-complete/complete-pages.png'),
+  focus: require('../../../../assets/images/reading-complete/complete-focus.png'),
+  check: require('../../../../assets/images/reading-complete/complete-check.png'),
+  unchecked: require('../../../../assets/images/reading-complete/complete-unchecked.png'),
 };
 
 type RouteParams = {

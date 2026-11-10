@@ -15,8 +15,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { login, AuthApiError } from '../../api/authApi';
-import { saveTokens } from '../../utils/tokenStorage';
+import { login, AuthApiError } from '../../../api/authApi';
+import { saveTokens } from '../../../utils/tokenStorage';
 
 const GREEN = '#405F4B';
 const DARK_GREEN = '#2E503D';
@@ -24,9 +24,9 @@ const BG = '#FAF7F1';
 const BROWN = '#79654C';
 
 const IMAGES = {
-  cat: require('../../../assets/images/login/login-cat-reading.png'),
-  flowerLeft: require('../../../assets/images/login/login-flower-left.png'),
-  flowerRight: require('../../../assets/images/login/login-flower-right.png'),
+  cat: require('../../../../assets/images/login/login-cat-reading.png'),
+  flowerLeft: require('../../../../assets/images/login/login-flower-left.png'),
+  flowerRight: require('../../../../assets/images/login/login-flower-right.png'),
 };
 
 export default function LoginScreen() {

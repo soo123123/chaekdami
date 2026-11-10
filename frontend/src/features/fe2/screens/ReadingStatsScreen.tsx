@@ -15,7 +15,7 @@ import Svg, { Circle } from 'react-native-svg';
 import {
   getReadingStats,
   type ReadingStats,
-} from '../../api/readingStatsApi';
+} from '../api/readingStatsApi';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -39,10 +39,10 @@ const C = {
 };
 
 const ART = {
-  banner: require('../../../../../assets/images/stats/stats-banner.png'),
-  cat: require('../../../../../assets/images/stats/stats-cat.png'),
-  bookshelf: require('../../../../../assets/images/stats/stats-bookshelf.png'),
-  chart: require('../../../../../assets/images/stats/stats-chart-icon.png'),
+  banner: require('../../../../assets/images/stats/stats-banner.png'),
+  cat: require('../../../../assets/images/stats/stats-cat.png'),
+  bookshelf: require('../../../../assets/images/stats/stats-bookshelf.png'),
+  chart: require('../../../../assets/images/stats/stats-chart-icon.png'),
 };
 
 const SAMPLE_STATS: ReadingStats = {

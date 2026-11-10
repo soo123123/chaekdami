@@ -1,1 +1,1 @@
-export { default } from '@/features/fe2/screens/User/MyPageScreen';
+export { default } from '@/features/fe2/screens/MyPageScreen';
