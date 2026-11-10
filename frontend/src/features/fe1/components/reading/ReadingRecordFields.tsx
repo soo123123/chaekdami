@@ -13,9 +13,14 @@ import { PageInput } from './PageInput';
 /* ReadingTime — 독서 시간 표시 및 수정                                 */
 /* ------------------------------------------------------------------ */
 
-type ReadingTimeProps = { duration: number; onChange: (seconds: number) => void };
+type ReadingTimeProps = {
+  duration: number;
+  /** 수정 가능한 최대 시간(초). 타이머로 측정된 시간이며, 0 이하이면 제한하지 않는다. */
+  maxDuration?: number;
+  onChange: (seconds: number) => void;
+};
 
-export function ReadingTime({ duration, onChange }: ReadingTimeProps) {
+export function ReadingTime({ duration, maxDuration = 0, onChange }: ReadingTimeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -33,6 +38,9 @@ export function ReadingTime({ duration, onChange }: ReadingTimeProps) {
     const m = Number(minutes || '0');
     if (m > 59) return setError('분은 0~59 사이로 입력해주세요.');
     if (h === 0 && m === 0) return setError('독서 시간은 1분 이상이어야 해요.');
+    if (maxDuration > 0 && h * 3600 + m * 60 > maxDuration) {
+      return setError(`측정된 독서 시간(${formatDuration(maxDuration)})까지만 입력할 수 있어요.`);
+    }
     // 수정 시 초 단위는 버리고 분 단위로 저장한다.
     onChange(h * 3600 + m * 60);
     setIsOpen(false);
@@ -46,6 +54,9 @@ export function ReadingTime({ duration, onChange }: ReadingTimeProps) {
           <PageInput value={hours} onChange={setHours} suffix="시간" label="시간" />
           <PageInput value={minutes} onChange={setMinutes} suffix="분" label="분" />
         </View>
+        {maxDuration > 0 ? (
+          <Text style={styles.caption}>{`측정된 독서 시간 ${formatDuration(maxDuration)} 이내로 수정할 수 있어요.`}</Text>
+        ) : null}
         <InlineError message={error} />
         <AppButton size="md" onPress={confirm}>확인</AppButton>
       </BottomSheetModal>
@@ -112,7 +123,7 @@ function FieldCell({ icon, label, editLabel, onEdit, children }: FieldCellProps)
   return (
     <View style={styles.cell}>
       <View style={styles.cellHead}>
-        <Icon name={icon} size={22} color={colors.text} />
+        <Icon name={icon} size={20} color={colors.text} />
         <Text style={styles.cellLabel}>{label}</Text>
         <EditButton label={editLabel} onPress={onEdit} />
       </View>
@@ -132,10 +143,10 @@ function EditButton({ label, onPress }: { label: string; onPress: () => void }) 
 const styles = StyleSheet.create({
   cell: { flex: 1, gap: spacing.sm, paddingVertical: spacing.sm + 6, paddingHorizontal: spacing.sm + 6 },
   cellHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cellLabel: { flex: 1, fontSize: 13, color: colors.secondaryText, ...keepAllWords },
-  value: { fontSize: 17, fontWeight: '800', color: colors.text, ...keepAllWords },
-  caption: { fontSize: 12, color: colors.secondaryText },
+  cellLabel: { flex: 1, fontSize: 12, color: colors.secondaryText, ...keepAllWords },
+  value: { fontSize: 15, fontWeight: '800', color: colors.text, ...keepAllWords },
+  caption: { fontSize: 11, color: colors.secondaryText },
   edit: { minHeight: 32, paddingHorizontal: spacing.sm + 2, borderRadius: radius.input, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface, justifyContent: 'center' },
-  editLabel: { fontSize: 13, color: colors.text },
+  editLabel: { fontSize: 12, color: colors.text },
   modalRow: { flexDirection: 'row', gap: spacing.sm },
 });

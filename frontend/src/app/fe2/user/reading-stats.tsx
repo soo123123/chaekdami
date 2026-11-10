@@ -1,1 +1,1 @@
-export { default } from '@/features/fe2/screens/User/ReadingStatsScreen';
+export { default } from '@/features/fe2/screens/ReadingStatsScreen';

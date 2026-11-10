@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
-import HomeScreen from '../features/fe2/screens/Home/HomeScreen';
+import HomeScreen from '../features/fe2/screens/HomeScreen';
 
 import {
   getAccessToken,
@@ -23,7 +23,7 @@ import {
 // 개발 중 홈 화면 UI 테스트를 위한 설정
 // true: 개발 모드에서 로그인 없이 홈 화면 접근
 // false: 개발 모드에서도 정상 로그인 인증 진행
-const ENABLE_DEV_HOME_PREVIEW = false;
+const ENABLE_DEV_HOME_PREVIEW = true;
 
 export default function HomePage() {
   const devPreviewEnabled =

@@ -1,4 +1,4 @@
 
 /* frontend/src/app/index.tsx */
 
-export { default } from './auth/login';
+export { default } from './home';

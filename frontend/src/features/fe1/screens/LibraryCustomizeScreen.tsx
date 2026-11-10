@@ -10,7 +10,9 @@ import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
 import { CurrentThemePreview } from '../components/library/CurrentThemePreview';
 import { ThemeCard } from '../components/library/ThemeCard';
+import { ThemeRoomPreview } from '../components/library/ThemeRoomPreview';
 import { ThemeCategoryTab } from '../components/library/ThemeCategoryTab';
+import { LIBRARY_ROOMS } from '../constants/libraryRoom';
 import { THEME_CATEGORIES } from '../constants/options';
 import { colors, radius, softShadow, spacing } from '../constants/theme';
 import { themeHeroImage } from '../constants/themeImages';
@@ -23,6 +25,7 @@ export function LibraryCustomizeScreen() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { selectedTheme } = customize;
   const previewImage = themeHeroImage(selectedTheme.themeId);
+  const previewRoom = LIBRARY_ROOMS[selectedTheme.themeId];
 
   const rows: (typeof customize.themes)[] = [];
   for (let i = 0; i < customize.themes.length; i += COLUMNS) rows.push(customize.themes.slice(i, i + COLUMNS));
@@ -89,7 +92,10 @@ export function LibraryCustomizeScreen() {
       ) : null}
 
       <BottomSheetModal visible={isPreviewOpen} title={`${selectedTheme.name} 미리보기`} onClose={() => setIsPreviewOpen(false)}>
-        {previewImage ? (
+        {/* 서재 화면을 책 없이 그대로 축소해서 보여준다 (배경·책장 틀·칸 뒷판) */}
+        {previewRoom ? (
+          <ThemeRoomPreview room={previewRoom} titleColor={selectedTheme.palette.text} />
+        ) : previewImage ? (
           <Image source={previewImage} style={styles.previewImage} contentFit="cover" accessibilityLabel={`${selectedTheme.name} 테마 이미지`} />
         ) : null}
         <Text style={styles.previewDesc}>{selectedTheme.description.replace('\n', ' ')}</Text>

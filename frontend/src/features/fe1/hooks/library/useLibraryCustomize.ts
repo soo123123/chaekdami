@@ -4,6 +4,7 @@ import { DEFAULT_THEME_ID, LIBRARY_THEMES } from '../../constants/options';
 import type { ThemeCategory } from '../../types/reading';
 import { toAppError } from '../../utils/apiError';
 import { useAsyncResource } from '../common/useAsyncResource';
+import { setAppliedThemeId } from './themeStore';
 
 /**
  * 서재 테마 선택/저장 (설계 문서: ThemeCard 선택 → 저장 요청).
@@ -41,7 +42,10 @@ export function useLibraryCustomize() {
     }
     const requestId = ++requestIdRef.current;
     const theme = LIBRARY_THEMES.find(t => t.themeId === themeId);
+    const previousThemeId = appliedThemeId;
     setPickedThemeId(themeId);
+    // 서재 화면에도 바로 반영한다 (저장 실패 시 되돌림)
+    setAppliedThemeId(themeId);
     setIsSaving(true);
     try {
       await readingApi.saveLibraryTheme(themeId);
@@ -53,6 +57,7 @@ export function useLibraryCustomize() {
       if (requestId !== requestIdRef.current) return;
       // 저장 실패 시 기존 테마 유지
       setPickedThemeId(null);
+      setAppliedThemeId(previousThemeId);
       setSaveError(toAppError(e).message);
     } finally {
       if (requestId === requestIdRef.current) setIsSaving(false);

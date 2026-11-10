@@ -1,18 +1,13 @@
+import { ROUTES } from '@/constants/routes';
+
 /**
- * FE1 라우트 경로. 실제 파일은 src/app/fe1/ 아래에 있다.
- * (설계 문서의 /reading/* 경로 대신 현재 브랜치의 /fe1/* 구조를 따른다.)
+ * FE1 라우트 경로. 공용 라우트(src/constants/routes.ts)의 FE1 부분을 그대로 쓴다.
+ * 실제 파일은 src/app/fe1/ 아래에 있다.
  */
-export const FE1_ROUTES = {
-  search: '/fe1/book-search',
-  info: '/fe1/book-info',
-  register: '/fe1/book-register',
-  manualRegister: '/fe1/manual-register',
-  library: '/fe1/library',
-  customize: '/fe1/library-customize',
-  detail: '/fe1/book-detail',
-  readingStart: '/fe1/reading-start',
-  readingEnd: '/fe1/reading-end',
-} as const;
+export const FE1_ROUTES = ROUTES.fe1;
+
+/** 하단 탭바를 띄우는 FE1 화면 (UI 시안 기준: 서재·커뮤니티 화면). 나머지 FE1 화면은 탭바 없이 보여준다. */
+export const FE1_ROUTES_WITH_TAB_BAR: string[] = [FE1_ROUTES.library, FE1_ROUTES.community];
 
 /**
  * 독서 기록 저장 후 이동할 FE2 ReadingCompleteScreen 경로.

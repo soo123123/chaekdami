@@ -91,6 +91,7 @@ function seedBook(entry: CatalogEntry, currentPage: number, daysAgo: number) {
 const seeded = seedBook(DEV_CATALOG[0], 180, 12);
 seedBook(DEV_CATALOG[1], 66, 5);
 seedBook(DEV_CATALOG[3], 232, 30);
+seedBook(DEV_CATALOG[2], 268, 20); // 커뮤니티 화면 확인용 완독 도서
 seedBook(DEV_CATALOG[5], 0, 1);
 sentencesByBook.set(seeded.bookId, [
   { sentenceId: nextSentenceId++, content: '습관은 처음에는 당신을 지배하지만, 나중에는 당신을 자유롭게 한다.', page: 68, createdAt: '2025-10-05' },
