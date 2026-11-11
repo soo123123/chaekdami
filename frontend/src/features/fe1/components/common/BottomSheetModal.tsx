@@ -78,7 +78,7 @@ export function ConfirmModal({
 
 const styles = StyleSheet.create({
   flex: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.overlay },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.card + 4, borderTopRightRadius: radius.card + 4, paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: spacing.md },
   handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border },
   title: { fontSize: 18, fontWeight: '700', color: colors.text },

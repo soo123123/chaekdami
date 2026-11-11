@@ -1,6 +1,6 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, radius, spacing } from '../../constants/theme';
+import { colors, radius, softShadow, spacing } from '../../constants/theme';
 
 type CardProps = PropsWithChildren<{
   title?: string;
@@ -27,9 +27,9 @@ export function Card({ title, subtitle, right, style, children }: CardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.md, gap: spacing.md, borderWidth: 1, borderColor: colors.border },
+  card: { backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.md + 2, gap: spacing.md, borderWidth: 1, borderColor: 'rgba(236, 227, 216, 0.6)', ...softShadow },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: spacing.sm },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', columnGap: spacing.sm + 2, rowGap: 2 },
+  title: { fontSize: 19, fontWeight: '800', color: colors.text, letterSpacing: -0.3 },
   subtitle: { fontSize: 13, color: colors.secondaryText },
 });

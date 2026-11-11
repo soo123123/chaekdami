@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { readingApi } from '@/api/readingApi';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import { toAppError } from '../../utils/apiError';
 import { useAsyncResource } from '../common/useAsyncResource';
 

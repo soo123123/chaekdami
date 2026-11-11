@@ -1,13 +1,20 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ChipTabs } from '../components/common/ChipTabs';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomTabBar } from '@/components/BottomTabBar';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { CatBooksDecor } from '../components/common/Decor';
+import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
-import { SortSelector } from '../components/common/SortSelector';
 import { EmptyView, ErrorView, LoadingView } from '../components/common/StateView';
 import { BookShelfSection } from '../components/library/BookShelfSection';
-import { LIBRARY_FILTERS, LIBRARY_SORTS } from '../constants/options';
+import { LibraryRoom } from '../components/library/LibraryRoom';
+import { LibraryCategoryTab } from '../components/library/LibraryCategoryTab';
+import { LibrarySortSelector } from '../components/library/LibrarySortSelector';
+import { LIBRARY_ROOMS } from '../constants/libraryRoom';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, HIT_SLOP, noWebOutline, radius, softShadow, spacing } from '../constants/theme';
 import { useLibraryBooks } from '../hooks/library/useLibraryBooks';
 import type { BookStatus } from '../types/reading';
 
@@ -20,12 +27,25 @@ const SECTION_TITLES: Record<BookStatus, string> = {
 export function LibraryScreen() {
   const library = useLibraryBooks();
   const { theme } = library;
+  const { palette } = theme;
+  /** 돋보기를 누르면 제목 자리에 서재 내 검색창을 연다 */
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  /** 꾸민 방이 차지할 수 있는 높이 (하단 탭바 위까지) */
+  const [roomHeight, setRoomHeight] = useState<number | undefined>(undefined);
+  const insets = useSafeAreaInsets();
+  // 방 구성(벽·나뭇결·오브젝트 이미지)이 있는 테마는 꾸민 방으로, 없는 테마는 팔레트로 그린 책장으로 보여준다.
+  const room = LIBRARY_ROOMS[theme.themeId];
 
   const handleAddBook = () => router.push(FE1_ROUTES.search);
   const handleBookPress = (bookId: number) => router.push({ pathname: FE1_ROUTES.detail, params: { bookId: String(bookId) } });
   const handleCustomize = () => router.push(FE1_ROUTES.customize);
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    library.setSearchQuery('');
+  };
 
-  const renderContent = () => {
+  /** 로딩·오류·빈 서재일 때 책 대신 보여줄 내용 (없으면 null) */
+  const renderStateView = () => {
     if (library.isLoading && !library.books) return <LoadingView message="서재를 불러오는 중이에요…" />;
     if (library.error && !library.books) return <ErrorView error={library.error} onRetry={library.reload} />;
     if (library.isEmpty) {
@@ -38,50 +58,88 @@ export function LibraryScreen() {
         />
       );
     }
-    return library.sections.map(section => (
-      <BookShelfSection
-        key={section.status}
-        title={SECTION_TITLES[section.status]}
-        books={section.books}
-        theme={theme}
-        onBookPress={handleBookPress}
-        // '책 추가하기' 칸은 읽는 중 책장(전체/읽는 중 필터)에 둔다.
-        onAddBook={section.status === 'READING' ? handleAddBook : undefined}
-        onTitlePress={library.selectedCategory === 'all' ? () => library.setSelectedCategory(section.status) : undefined}
-      />
-    ));
+    if (library.hasNoSearchResult) {
+      return <EmptyView title={`'${library.searchQuery.trim()}'에 맞는 책이 없어요`} message="다른 제목이나 저자 이름으로 찾아보세요." />;
+    }
+    return null;
   };
 
-  return (
-    <ScreenContainer backgroundColor={theme.palette.wall}>
+  const renderContent = () => {
+    const stateView = renderStateView();
+    if (stateView) return stateView;
+    return (
+      <View style={styles.cabinetWrap}>
+        <CatBooksDecor width={108} style={styles.cat} />
+        <View style={[styles.cabinet, { backgroundColor: palette.shelf, borderColor: palette.shelfEdge }]}>
+          <View style={[styles.cabinetTop, { backgroundColor: palette.shelf, borderBottomColor: palette.shelfEdge }]} />
+          {library.sections.map(section => (
+            <BookShelfSection
+              key={section.status}
+              title={SECTION_TITLES[section.status]}
+              books={section.books}
+              theme={theme}
+              onBookPress={handleBookPress}
+              // '책 추가하기' 칸은 읽는 중 책장(전체/읽는 중 필터)에 둔다.
+              onAddBook={section.status === 'READING' ? handleAddBook : undefined}
+              onTitlePress={library.selectedCategory === 'all' ? () => library.setSelectedCategory(section.status) : undefined}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const headerContent = (
+    <>
       <View style={styles.header}>
         <View style={styles.titleWrap}>
-          <Text accessibilityRole="header" style={[styles.title, { color: theme.palette.text }]}>나의 서재</Text>
-          <Text style={[styles.quote, { color: theme.palette.text }]}>“좋은 책이, 좋은 하루를 만든다.”</Text>
+          {isSearchOpen ? (
+            <View style={styles.searchBox}>
+              <Icon name="search" size={20} color={colors.secondaryText} />
+              <TextInput
+                value={library.searchQuery}
+                onChangeText={library.setSearchQuery}
+                placeholder="서재에서 제목·저자 찾기"
+                placeholderTextColor={colors.tertiaryText}
+                returnKeyType="search"
+                autoFocus
+                autoCorrect={false}
+                autoCapitalize="none"
+                style={styles.searchInput}
+                accessibilityLabel="서재 내 책 검색어"
+              />
+              {library.searchQuery.length > 0 ? (
+                <Pressable accessibilityRole="button" accessibilityLabel="검색어 지우기" hitSlop={HIT_SLOP} onPress={() => library.setSearchQuery('')}>
+                  <Icon name="close" size={18} color={colors.secondaryText} />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
+            <Text accessibilityRole="header" style={[styles.title, { color: palette.text }]}>나의 서재</Text>
+          )}
         </View>
         <View style={styles.headerActions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="책 추가하기" onPress={handleAddBook} style={styles.iconButton}>
-            <Text style={styles.iconLabel}>＋</Text>
-          </Pressable>
+          {isSearchOpen ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="서재 검색 닫기" onPress={closeSearch} style={styles.iconButton}>
+              <Icon name="close" size={24} />
+            </Pressable>
+          ) : (
+            <Pressable accessibilityRole="button" accessibilityLabel="서재에서 책 찾기" onPress={() => setIsSearchOpen(true)} style={styles.iconButton}>
+              <Icon name="search" size={24} />
+            </Pressable>
+          )}
           <Pressable accessibilityRole="button" accessibilityLabel="서재 꾸미기" onPress={handleCustomize} style={styles.iconButton}>
-            <Text style={styles.iconLabel}>🎨</Text>
+            <Icon name="palette" size={24} />
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.filters}>
+      {/* 상태 필터와 정렬을 한 줄에 둔다 */}
+      <View style={styles.filterRow}>
         <View style={styles.tabs}>
-          <ChipTabs
-            options={LIBRARY_FILTERS}
-            selected={library.selectedCategory}
-            onChange={library.setSelectedCategory}
-            counts={library.books ? library.counts : undefined}
-            accessibilityLabel="독서 상태 필터"
-          />
+          <LibraryCategoryTab selectedCategory={library.selectedCategory} onCategoryChange={library.setSelectedCategory} />
         </View>
-      </View>
-      <View style={styles.sortRow}>
-        <SortSelector options={LIBRARY_SORTS} value={library.sortType} onChange={library.setSortType} variant="soft" />
+        <LibrarySortSelector sortType={library.sortType} onSortChange={library.setSortType} />
       </View>
 
       {library.error && library.books ? (
@@ -89,23 +147,79 @@ export function LibraryScreen() {
           <Text style={styles.staleError}>최신 정보를 불러오지 못했어요. 눌러서 다시 시도</Text>
         </Pressable>
       ) : null}
+    </>
+  );
 
-      <View style={styles.shelves}>{renderContent()}</View>
-    </ScreenContainer>
+  if (room) {
+    return (
+      <View style={[styles.flex, { backgroundColor: room.wallColor }]}>
+      <View style={styles.flex} onLayout={event => setRoomHeight(event.nativeEvent.layout.height)}>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" bounces={false}>
+          <LibraryRoom
+            room={room}
+            header={<View style={[styles.roomHeader, { paddingTop: insets.top }]}>{headerContent}</View>}
+            sections={library.sections}
+            sectionTitles={SECTION_TITLES}
+            selectedCategory={library.selectedCategory}
+            onBookPress={handleBookPress}
+            onAddBook={handleAddBook}
+            stateView={renderStateView()}
+            availableHeight={roomHeight}
+          />
+        </ScrollView>
+      </View>
+      {/* 탭바는 서재 화면의 일부라 화면 전환 때 같이 밀려나고, 책장 높이는 그대로 유지된다 */}
+      <BottomTabBar active="library" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.flex, { backgroundColor: palette.wall }]}>
+      <ScreenContainer backgroundColor={palette.wall}>
+        <WallLight />
+        {headerContent}
+
+        <View style={styles.shelves}>{renderContent()}</View>
+      </ScreenContainer>
+      <BottomTabBar active="library" />
+    </View>
   );
 }
 
+/** 창가 햇살처럼 왼쪽 위가 밝은 벽 조명 */
+function WallLight() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <RadialGradient id="wall-light" cx="15%" cy="0%" r="75%">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#wall-light)" />
+    </Svg>
+  );
+}
+
+
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: spacing.md, gap: spacing.sm },
-  titleWrap: { flex: 1, gap: spacing.xs },
-  title: { fontSize: 30, fontWeight: '800' },
-  quote: { fontSize: 15, opacity: 0.8 },
+  flex: { flex: 1 },
+  // 꾸민 방의 벽 위에 올리는 헤더 (기존 화면과 같은 좌우 여백)
+  roomHeader: { paddingHorizontal: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: spacing.xs, gap: spacing.sm },
+  titleWrap: { flex: 1, justifyContent: 'center', minHeight: 48 },
+  title: { fontSize: 34, fontWeight: '800', letterSpacing: -0.8 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, height: 48, paddingHorizontal: spacing.sm + 6, borderRadius: radius.button, backgroundColor: 'rgba(255,252,247,0.95)', ...softShadow },
+  searchInput: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: 0, ...noWebOutline },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
-  iconButton: { width: 46, height: 46, borderRadius: radius.button, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  iconLabel: { fontSize: 20, color: colors.text },
-  filters: { flexDirection: 'row' },
+  iconButton: { width: 48, height: 48, borderRadius: radius.button, backgroundColor: 'rgba(255,252,247,0.92)', alignItems: 'center', justifyContent: 'center', ...softShadow },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
   tabs: { flex: 1 },
-  sortRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: -spacing.sm },
   staleError: { fontSize: 13, color: colors.danger },
-  shelves: { gap: spacing.md + 4, flexGrow: 1 },
+  shelves: { flexGrow: 1 },
+  cabinetWrap: { marginHorizontal: -spacing.md, paddingTop: 92, marginTop: -spacing.lg },
+  cat: { right: spacing.lg, top: -4, zIndex: 2 },
+  cabinet: { borderLeftWidth: 12, borderRightWidth: 12, paddingBottom: spacing.md, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  cabinetTop: { height: 14, borderBottomWidth: 4, marginHorizontal: -12, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
 });

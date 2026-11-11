@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, HIT_SLOP, spacing } from '../../constants/theme';
+import { Icon } from '../common/Icon';
 
 const COLLAPSED_LINES = 4;
 
@@ -21,7 +22,8 @@ export function ExpandableText({ text }: { text: string }) {
       </Text>
       {canExpand || isExpanded ? (
         <Pressable accessibilityRole="button" hitSlop={HIT_SLOP} onPress={() => setIsExpanded(v => !v)} style={styles.more}>
-          <Text style={styles.moreLabel}>{isExpanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
+          <Text style={styles.moreLabel}>{isExpanded ? '접기' : '더보기'}</Text>
+          <Icon name={isExpanded ? 'chevronUp' : 'chevronDown'} size={16} color={colors.primary} />
         </Pressable>
       ) : null}
     </View>
@@ -30,7 +32,7 @@ export function ExpandableText({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
-  text: { fontSize: 15, lineHeight: 24, color: colors.secondaryText },
-  more: { alignSelf: 'flex-end' },
+  text: { fontSize: 15, lineHeight: 25, color: '#4E4A46' },
+  more: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 4 },
   moreLabel: { fontSize: 14, color: colors.primary, fontWeight: '600' },
 });

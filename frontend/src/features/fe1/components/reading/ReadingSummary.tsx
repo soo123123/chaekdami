@@ -16,9 +16,9 @@ export function ReadingSummary({ summary, startedAt }: ReadingSummaryProps) {
     <Card>
       <StatRow
         items={[
-          { icon: '🕒', label: '총 독서 시간', value: summary ? formatDuration(summary.totalReadingSeconds) : '-' },
-          { icon: '🗓', label: '독서 기간', value: summary ? `${summary.readingDays}일` : '-', caption: startedAt ? `${formatDate(startedAt)} ~ 현재` : undefined },
-          { icon: '📖', label: '평균 독서 시간', value: summary ? `${formatDuration(summary.averageSecondsPerDay)}/일` : '-' },
+          { icon: 'clock', label: '총 독서 시간', value: summary ? formatDuration(summary.totalReadingSeconds) : '-' },
+          { icon: 'calendarCheck', label: '독서 기간', value: summary ? `${summary.readingDays}일` : '-', caption: startedAt ? `${formatDate(startedAt)} ~ 현재` : undefined },
+          { icon: 'bookOpenOutline', label: '평균 독서 시간', value: summary ? formatDuration(summary.averageSecondsPerDay) : '-', unit: summary ? '/일' : undefined },
         ]}
       />
       {!summary ? <Text style={styles.note}>아직 독서 기록이 없어요. 첫 독서를 시작해보세요!</Text> : null}

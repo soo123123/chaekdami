@@ -1,4 +1,4 @@
-import { readingApi } from '@/api/readingApi';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import type { BookCatalogDetail } from '../../types/reading';
 import { useAsyncResource } from '../common/useAsyncResource';
 

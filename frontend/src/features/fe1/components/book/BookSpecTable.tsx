@@ -20,8 +20,8 @@ export function BookSpecTable({ rows }: { rows: Row[] }) {
 }
 
 const styles = StyleSheet.create({
-  table: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  row: { flexDirection: 'row', minHeight: 46, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingHorizontal: spacing.sm },
-  label: { width: 96, fontSize: 15, color: colors.secondaryText },
+  table: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderStrong },
+  row: { flexDirection: 'row', minHeight: 48, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderStrong, paddingHorizontal: spacing.md },
+  label: { width: 108, fontSize: 15, color: colors.secondaryText },
   value: { flex: 1, fontSize: 15, color: colors.text },
 });
