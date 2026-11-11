@@ -2,14 +2,14 @@ import { Image } from 'expo-image';
 import { StyleSheet, type ImageStyle, type StyleProp } from 'react-native';
 
 const CAT_BOOKS_PLANT = require('../../assets/decor/cat-books-plant.png');
-const CAT_BOOKS_PLANT_RATIO = 332 / 304;
+const CAT_BOOKS_PLANT_RATIO = 450 / 430;
 
 const READING_END_SCENE = require('../../assets/decor/reading-end-scene.png');
 const READING_END_SCENE_RATIO = 543 / 234;
 
 type DecorProps = { width: number; style?: StyleProp<ImageStyle> };
 
-/** 책 더미 위에서 자는 고양이 + 화분 (장식용 일러스트) */
+/** 책 위에서 자는 고양이 + 화분 (장식용 일러스트) */
 export function CatBooksDecor({ width, style }: DecorProps) {
   return (
     <Image

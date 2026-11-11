@@ -17,6 +17,7 @@ import {
 
 import { login, AuthApiError } from '../../../api/authApi';
 import { saveTokens } from '../../../utils/tokenStorage';
+import { Icon } from '@/components/common/Icon';
 
 const GREEN = '#405F4B';
 const DARK_GREEN = '#2E503D';
@@ -172,7 +173,7 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.inputBox}>
-            <Text style={styles.inputIcon}>✉</Text>
+            <Icon name="mail" size={19} color="#8D8478" style={styles.inputIcon} />
 
             <TextInput
               style={styles.input}
@@ -193,7 +194,7 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.inputBox}>
-            <Text style={styles.inputIcon}>♙</Text>
+            <Icon name="person" size={19} color="#8D8478" style={styles.inputIcon} />
 
             <TextInput
               style={styles.input}
@@ -339,8 +340,6 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   inputIcon: {
-    fontSize: 19,
-    color: '#8D8478',
     marginRight: 11,
   },
   input: {

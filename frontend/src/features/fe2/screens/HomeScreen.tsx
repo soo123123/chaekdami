@@ -15,6 +15,7 @@ import {
 import { router } from 'expo-router';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
+import { Icon, type IconName } from '@/components/common/Icon';
 
 const GREEN = '#315E49';
 const BG = '#FAF7F1';
@@ -24,6 +25,8 @@ const images = {
   banner: require('../../../../assets/images/home/햇살 가득한 책 읽는 공간.png'),
   quest: require('../../../../assets/images/home/quest-cat.png'),
   record: require('../../../../assets/images/home/reading-record.png'),
+  // 마이페이지 프로필과 같은 고양이 (이모지 🐱는 기기에 따라 네모로 나와서 이미지로 바꿈)
+  profile: require('../../../../assets/images/mypage/profile-cat.png'),
   current: require('../../../../assets/images/books/current-book.png'),
   recent1: require('../../../../assets/images/books/recent-book-1.png'),
   recent2: require('../../../../assets/images/books/recent-book-2.png'),
@@ -51,11 +54,14 @@ const questItems = [
   { title: '오늘의 감정 기록하기', completed: false },
 ];
 
-const recordItems = [
-  { icon: '◷', value: '30분', label: '독서 시간' },
-  { icon: '▤', value: '25쪽', label: '읽은 페이지' },
-  { icon: '✎', value: '3개', label: '작성한 메모' },
+// 아이콘은 특수문자 대신 공용 Icon을 쓴다 (기기 글꼴에 없으면 네모로 나오기 때문)
+const recordItems: { icon: IconName; value: string; label: string }[] = [
+  { icon: 'clock', value: '30분', label: '독서 시간' },
+  { icon: 'book', value: '25쪽', label: '읽은 페이지' },
+  { icon: 'pencil', value: '3개', label: '작성한 메모' },
 ];
+
+const COIN_COLOR = '#D9A23B';
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
@@ -150,43 +156,56 @@ export default function HomeScreen() {
               style={styles.avatar}
               onPress={goToMyPage}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="마이페이지"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.avatarText}>🐱</Text>
+              <Image
+                source={images.profile}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
             </TouchableOpacity>
           </View>
         </ImageBackground>
 
         {/* D-day / 보유 재화 / 레벨 */}
         <View style={styles.summaryRow}>
-          {[
+          {([
             {
-              icon: '🗓️',
+              icon: 'calendarOutline',
+              iconColor: GREEN,
               value: 'D - 12',
               label: '목표까지 12일 남았어요!',
               onPress: goToDday,
             },
             {
-              icon: '🪙',
+              icon: 'coin',
+              iconColor: COIN_COLOR,
               value: '1,250',
               label: '보유 재화',
               onPress: goToShop,
             },
             {
-              icon: '🌱',
+              icon: 'leaf',
+              iconColor: GREEN,
               value: 'Lv. 5',
               label: '다음 레벨까지 180 XP',
               onPress: goToLevel,
             },
-          ].map((item) => (
+          ] as { icon: IconName; iconColor: string; value: string; label: string; onPress: () => void }[]).map((item) => (
             <TouchableOpacity
               key={item.value}
               style={styles.summaryCard}
               onPress={item.onPress}
               activeOpacity={0.75}
             >
-              <Text style={styles.summaryIcon}>
-                {item.icon}
-              </Text>
+              <Icon
+                name={item.icon}
+                size={25}
+                color={item.iconColor}
+                style={styles.summaryIcon}
+              />
 
               <Text
                 style={styles.summaryValue}
@@ -213,8 +232,9 @@ export default function HomeScreen() {
               현재 읽고 있는 책
             </Text>
 
-            <TouchableOpacity onPress={handleLibrary}>
-              <Text style={styles.more}>더보기 ›</Text>
+            <TouchableOpacity onPress={handleLibrary} style={styles.moreButton}>
+              <Text style={styles.more}>더보기</Text>
+              <Icon name="chevronRight" size={14} color="#55514C" />
             </TouchableOpacity>
           </View>
 
@@ -267,8 +287,9 @@ export default function HomeScreen() {
               최근 읽은 책
             </Text>
 
-            <TouchableOpacity onPress={handleLibrary}>
-              <Text style={styles.more}>더보기 ›</Text>
+            <TouchableOpacity onPress={handleLibrary} style={styles.moreButton}>
+              <Text style={styles.more}>더보기</Text>
+              <Icon name="chevronRight" size={14} color="#55514C" />
             </TouchableOpacity>
           </View>
 
@@ -343,9 +364,7 @@ export default function HomeScreen() {
                       ]}
                     >
                       {item.completed && (
-                        <Text style={styles.questCheck}>
-                          ✓
-                        </Text>
+                        <Icon name="check" size={13} color="#FFFFFF" />
                       )}
                     </View>
 
@@ -391,9 +410,12 @@ export default function HomeScreen() {
                     key={item.label}
                     style={styles.recordStat}
                   >
-                    <Text style={styles.recordIcon}>
-                      {item.icon}
-                    </Text>
+                    <Icon
+                      name={item.icon}
+                      size={25}
+                      color={GREEN}
+                      style={styles.recordIcon}
+                    />
 
                     <Text
                       style={styles.recordValue}
@@ -493,10 +515,12 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
 
-  avatarText: {
-    fontSize: 22,
+  avatarImage: {
+    width: 42,
+    height: 42,
   },
 
   summaryRow: {
@@ -521,7 +545,6 @@ const styles = StyleSheet.create({
   },
 
   summaryIcon: {
-    fontSize: 25,
     marginBottom: 5,
   },
 
@@ -561,6 +584,11 @@ const styles = StyleSheet.create({
     color: '#211B16',
   },
 
+  moreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   more: {
     fontSize: 13,
     color: '#55514C',
@@ -737,12 +765,6 @@ const styles = StyleSheet.create({
     borderColor: '#5E916E',
   },
 
-  questCheck: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    lineHeight: 18,
-  },
 
   questItem: {
     flex: 1,
@@ -790,10 +812,7 @@ const styles = StyleSheet.create({
   },
 
   recordIcon: {
-    fontSize: 25,
-    color: GREEN,
     marginBottom: 9,
-    fontWeight: '600',
   },
 
   recordValue: {

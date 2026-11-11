@@ -1,4 +1,5 @@
-import { ROUTES } from '@/constants/routes';
+import { toReviewWrite } from '@/constants/routes';
+
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -15,276 +16,160 @@ import {
   useLocalSearchParams,
 } from 'expo-router';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Icon } from '@/components/common/Icon';
+
 import {
-  getReview,
+  getReadingReview,
+  type ReadingReviewResponse,
 } from '../api/reviewApi';
 
-interface Review {
-  id?: number;
-  readingRecordId?: number;
-  content: string;
-  rating: number;
-  oneLine: string;
-  createdAt?: string;
+/** "2026-11-09T01:58:43" → "2026.11.09" */
+function formatDate(value: string) {
+  return value.slice(0, 10).replace(/-/g, '.');
 }
 
+/**
+ * 독후감 상세 화면 (회차당 1개).
+ * 별점·한줄평은 FE1 커뮤니티 화면에서 다루므로 여기에는 독후감 본문과 공개 여부만 보여준다.
+ */
 const ReviewDetailScreen = () => {
-  const params =
-    useLocalSearchParams<{
-      readingRecordId?: string;
-    }>();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{
+    readingRecordId?: string;
+  }>();
 
-  // FE1에서 실제 readingRecordId를 전달받게 됨
-  // 현재는 테스트를 위해 1 사용
-  const readingRecordId =
-    Number(params.readingRecordId) || 1;
+  const readingRecordId = Number(params.readingRecordId);
+  const hasRecordId = Number.isInteger(readingRecordId) && readingRecordId > 0;
 
-  const [review, setReview] =
-    useState<Review | null>(null);
+  const [data, setData] = useState<ReadingReviewResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(hasRecordId);
+  const [loadError, setLoadError] = useState(false);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  // 리뷰 상세 정보 불러오기
   useEffect(() => {
-    const loadReview = async () => {
+    if (!hasRecordId) return;
+
+    let active = true;
+
+    const load = async () => {
       try {
-        const data =
-          await getReview(
-            readingRecordId
-          );
-
-        setReview(data);
+        setIsLoading(true);
+        setLoadError(false);
+        const response = await getReadingReview(readingRecordId);
+        if (active) setData(response);
       } catch (error) {
-        console.error(
-          '리뷰 상세 조회 실패:',
-          error
-        );
-
-        // 백엔드 연결 전 테스트용 데이터
-        setReview({
-          id: 1,
-          readingRecordId:
-            readingRecordId,
-          rating: 4,
-          oneLine:
-            '다시 한번 생각하게 만드는 책',
-          content:
-            '책을 읽으면서 여러 가지 생각을 할 수 있었습니다. 기억에 남는 부분도 많았고, 나중에 다시 한번 읽어보고 싶은 책입니다.',
-          createdAt:
-            '2026.09.30',
-        });
+        console.error('독후감 상세 조회 실패:', error);
+        if (active) setLoadError(true);
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
-    loadReview();
-  }, [readingRecordId]);
+    load();
 
-  // 로딩 화면
+    return () => {
+      active = false;
+    };
+  }, [hasRecordId, readingRecordId]);
+
+  const goWrite = () => router.push(toReviewWrite(readingRecordId));
+  const containerPadding = { paddingTop: insets.top + 12 };
+
   if (isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator
-          size="large"
-        />
-
-        <Text style={styles.loadingText}>
-          독후감을 불러오는 중...
-        </Text>
+      <View style={[styles.center, containerPadding]}>
+        <ActivityIndicator size="large" color="#4f7658" />
+        <Text style={styles.loadingText}>독후감을 불러오는 중...</Text>
       </View>
     );
   }
 
-  // 리뷰 데이터가 없는 경우
-  if (!review) {
+  if (!hasRecordId || loadError || !data) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyEmoji}>
-          📖
-        </Text>
-
+      <View style={[styles.center, containerPadding]}>
         <Text style={styles.emptyTitle}>
-          작성된 독후감이 없습니다.
+          {hasRecordId ? '독후감을 불러오지 못했습니다.' : '독서 기록 정보가 없습니다.'}
         </Text>
-
-        <TouchableOpacity
-          style={styles.writeButton}
-          onPress={() =>
-            router.push({
-              pathname:
-                ROUTES.fe2.reviewWrite,
-
-              params: {
-                readingRecordId:
-                  String(
-                    readingRecordId
-                  ),
-              },
-            })
-          }
-        >
-          <Text
-            style={styles.writeButtonText}
-          >
-            독후감 작성하기
-          </Text>
+        <TouchableOpacity style={styles.writeButton} onPress={() => router.back()}>
+          <Text style={styles.writeButtonText}>돌아가기</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const report = data.bookReport;
+
+  // 아직 독후감을 쓰지 않은 회차
+  if (!report) {
+    return (
+      <View style={[styles.center, containerPadding]}>
+        <Icon name="bookOpenOutline" size={44} color="#4f7658" />
+        <Text style={styles.emptyTitle}>작성된 독후감이 없습니다.</Text>
+        {data.canWrite ? (
+          <TouchableOpacity style={styles.writeButton} onPress={goWrite}>
+            <Text style={styles.writeButtonText}>독후감 작성하기</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.loadingText}>완독하면 독후감을 쓸 수 있어요.</Text>
+        )}
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        styles.content
-      }
-    >
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, containerPadding]}>
       {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() =>
-            router.back()
-          }
+          onPress={() => router.back()}
+          style={styles.backTouch}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로 가기"
         >
-          <Text style={styles.backButton}>
-            ‹
-          </Text>
+          <Icon name="back" size={28} color="#333333" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
-          독후감
-        </Text>
+        <Text style={styles.headerTitle}>독후감</Text>
 
-        <View
-          style={styles.headerSpace}
-        />
+        <View style={styles.headerSpace} />
       </View>
 
       {/* 독후감 카드 */}
       <View style={styles.reviewCard}>
-        {/* 별점 */}
-        <Text style={styles.label}>
-          나의 별점
-        </Text>
-
-        <View style={styles.starRow}>
-          {[1, 2, 3, 4, 5].map(
-            star => (
-              <Text
-                key={star}
-                style={styles.star}
-              >
-                {star <= review.rating
-                  ? '★'
-                  : '☆'}
-              </Text>
-            )
-          )}
-
-          <Text
-            style={styles.ratingNumber}
-          >
-            {review.rating} / 5
+        <View style={styles.cardTop}>
+          <Text style={styles.label}>{data.round}회독 독후감</Text>
+          <Text style={[styles.badge, report.isPublic ? styles.badgePublic : styles.badgePrivate]}>
+            {report.isPublic ? '공개' : '비공개'}
           </Text>
         </View>
 
-        <View style={styles.divider} />
+        <Text style={styles.reviewContent}>{report.content}</Text>
 
-        {/* 한줄평 */}
-        <Text style={styles.label}>
-          한줄평
+        <Text style={styles.date}>
+          작성일 {formatDate(report.createdAt)}
+          {report.revision > 1 ? ` · 수정 ${formatDate(report.updatedAt)}` : ''}
         </Text>
-
-        <View
-          style={styles.oneLineCard}
-        >
-          <Text
-            style={styles.oneLineText}
-          >
-            “{review.oneLine}”
-          </Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* 독후감 */}
-        <Text style={styles.label}>
-          독후감
-        </Text>
-
-        <Text
-          style={styles.reviewContent}
-        >
-          {review.content}
-        </Text>
-
-        {/* 작성 날짜 */}
-        {review.createdAt && (
-          <Text style={styles.date}>
-            작성일 {review.createdAt}
-          </Text>
-        )}
       </View>
 
-      {/* 다시 작성/수정 */}
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() =>
-          router.push({
-            pathname:
-              ROUTES.fe2.reviewWrite,
-
-            params: {
-              readingRecordId:
-                String(
-                  readingRecordId
-                ),
-                mode: 'edit',
-            },
-          })
-        }
-      >
-        <Text
-          style={styles.editButtonText}
-        >
-          독후감 수정하기
-        </Text>
+      {/* 수정 */}
+      <TouchableOpacity style={styles.editButton} onPress={goWrite}>
+        <Text style={styles.editButtonText}>독후감 수정하기</Text>
       </TouchableOpacity>
 
       {/* 안내 */}
       <View style={styles.guideCard}>
-        <Text style={styles.guideEmoji}>
-          🌱
-        </Text>
+        <Icon name="leaf" size={28} color="#4f7658" />
 
         <View style={styles.guideContent}>
-          <Text
-            style={styles.guideTitle}
-          >
-            독서의 흔적을 남겨보세요
-          </Text>
+          <Text style={styles.guideTitle}>독서의 흔적을 남겨보세요</Text>
 
-          <Text
-            style={
-              styles.guideDescription
-            }
-          >
-            작성한 독후감은 책을 읽으며
-            느꼈던 생각을 다시 떠올리는 데
-            도움이 됩니다.
+          <Text style={styles.guideDescription}>
+            작성한 독후감은 책을 읽으며 느꼈던 생각을 다시 떠올리는 데 도움이 됩니다.
           </Text>
         </View>
       </View>
-
-      {/* 테스트 안내 */}
-      <Text style={styles.testNotice}>
-        현재 readingRecordId:
-        {' '}
-        {readingRecordId}
-      </Text>
     </ScrollView>
   );
 };
@@ -296,12 +181,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#faf8f3',
   },
-
   content: {
     padding: 20,
     paddingBottom: 50,
   },
-
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -309,94 +192,72 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8f3',
     padding: 20,
   },
-
   loadingText: {
     marginTop: 10,
     color: '#777777',
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
-
-  backButton: {
-    fontSize: 34,
+  backTouch: {
+    width: 36,
+    height: 44,
+    justifyContent: 'center',
   },
-
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: 22,
     fontWeight: 'bold',
   },
-
   headerSpace: {
-    width: 25,
+    width: 36,
   },
-
   reviewCard: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 20,
     marginBottom: 15,
   },
-
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
-
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  star: {
-    fontSize: 27,
-    color: '#d7a940',
-    marginRight: 3,
-  },
-
-  ratingNumber: {
-    fontSize: 12,
-    color: '#777777',
-    marginLeft: 8,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#eeeeee',
-    marginVertical: 20,
-  },
-
-  oneLineCard: {
-    backgroundColor: '#f2eee6',
-    borderRadius: 15,
-    padding: 16,
-  },
-
-  oneLineText: {
-    fontSize: 14,
+  badge: {
+    fontSize: 11,
     fontWeight: 'bold',
-    lineHeight: 21,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
-
+  badgePublic: {
+    color: '#4f7658',
+    backgroundColor: '#e9eee5',
+  },
+  badgePrivate: {
+    color: '#777777',
+    backgroundColor: '#f0eee9',
+  },
   reviewContent: {
     fontSize: 14,
     lineHeight: 24,
     color: '#444444',
   },
-
   date: {
     textAlign: 'right',
     fontSize: 10,
     color: '#999999',
     marginTop: 20,
   },
-
   editButton: {
     borderWidth: 1,
     borderColor: '#4f7658',
@@ -405,12 +266,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-
   editButtonText: {
     color: '#4f7658',
     fontWeight: 'bold',
   },
-
   guideCard: {
     backgroundColor: '#e9eee5',
     borderRadius: 18,
@@ -418,38 +277,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
-  guideEmoji: {
-    fontSize: 30,
-  },
-
   guideContent: {
     flex: 1,
     marginLeft: 14,
   },
-
   guideTitle: {
     fontSize: 14,
     fontWeight: 'bold',
   },
-
   guideDescription: {
     fontSize: 11,
     lineHeight: 17,
     color: '#777777',
     marginTop: 5,
   },
-
-  emptyEmoji: {
-    fontSize: 45,
-  },
-
   emptyTitle: {
     fontSize: 17,
     fontWeight: 'bold',
     marginTop: 15,
   },
-
   writeButton: {
     backgroundColor: '#4f7658',
     borderRadius: 18,
@@ -457,16 +303,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     marginTop: 20,
   },
-
   writeButtonText: {
     color: '#ffffff',
     fontWeight: 'bold',
-  },
-
-  testNotice: {
-    textAlign: 'center',
-    color: '#999999',
-    fontSize: 10,
-    marginTop: 15,
   },
 });

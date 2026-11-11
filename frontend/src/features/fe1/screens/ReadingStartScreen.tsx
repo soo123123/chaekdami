@@ -14,11 +14,13 @@ import { ReadingStage } from '../components/reading/ReadingStage';
 import { ReadingTimeSummary } from '../components/reading/ReadingTimeSummary';
 import { FinishReadingButton, FocusModeButton, PauseButton, ReadingTimer } from '../components/reading/TimerControls';
 import { MIN_READING_SECONDS } from '../constants/config';
+import { toBookDetail } from '@/constants/routes';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, radius, softShadow, spacing } from '../constants/theme';
 import { useBookIdParam } from '../hooks/common/useRouteParams';
 import { useReadingSession } from '../hooks/reading/useReadingSession';
 import { useReadingTimer } from '../hooks/reading/useReadingTimer';
+import { goBackOr } from '../utils/navigation';
 
 export function ReadingStartScreen() {
   const bookId = useBookIdParam();
@@ -69,11 +71,14 @@ export function ReadingStartScreen() {
     router.replace({ pathname: FE1_ROUTES.readingEnd, params: { bookId: String(bookId), elapsedTime: String(elapsedTime) } });
   };
 
+  // 뒤로 갈 화면이 없으면(스택 맨 아래) 책 상세로, 책 정보도 없으면 서재로 간다
+  const goBack = () => goBackOr(bookId !== null ? toBookDetail(bookId) : FE1_ROUTES.library);
+
   const handleLeave = () => {
     allowLeaveRef.current = true;
     setIsLeaveConfirmOpen(false);
     pauseTimer();
-    router.back();
+    goBack();
   };
 
   // 집중 모드: 헤더·상태바·화면 전체를 검정으로 통일하고, 시간과 버튼만 아래쪽에 둔다
@@ -83,7 +88,7 @@ export function ReadingStartScreen() {
   const header = (
     <ScreenHeader
       title="독서 시작"
-      onBack={() => router.back()}
+      onBack={goBack}
       tone={isFocusMode ? 'dark' : 'light'}
       right={book ? <FocusModeButton isFocusMode={session.isFocusMode} onPress={session.toggleFocusMode} /> : undefined}
     />
@@ -92,7 +97,7 @@ export function ReadingStartScreen() {
   if (bookId === null) {
     return (
       <ScreenContainer header={header}>
-        <ErrorView error={{ kind: 'client', message: '독서할 책 정보가 없어요.' }} onBack={() => router.back()} />
+        <ErrorView error={{ kind: 'client', message: '독서할 책 정보가 없어요.' }} onBack={goBack} />
       </ScreenContainer>
     );
   }
@@ -102,7 +107,7 @@ export function ReadingStartScreen() {
       {isFocusMode ? <StatusBar style="light" /> : null}
       {session.isLoading ? <LoadingView /> : null}
       {!session.isLoading && session.error ? (
-        <ErrorView error={session.error} onRetry={session.reload} onBack={() => router.back()} />
+        <ErrorView error={session.error} onRetry={session.reload} onBack={goBack} />
       ) : null}
       {book && isFocusMode ? (
         <FocusModeView
@@ -117,7 +122,7 @@ export function ReadingStartScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${book.title} 상세 보기`}
-            onPress={() => router.back()}
+            onPress={goBack}
             style={styles.bookCard}
           >
             <View style={styles.bookInfo}>

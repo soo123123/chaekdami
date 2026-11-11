@@ -8,12 +8,13 @@ import { useAsyncResource } from '../common/useAsyncResource';
 export type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
 /** 저장 결과. 실패 시 화면에 띄울 안내 문구를 함께 돌려준다. */
-export type SaveResult = { ok: true } | { ok: false; message: string };
+export type SaveResult = ({ ok: true } & ReadingRecordResult) | { ok: false; message: string };
 
 /**
  * 독서 종료 기록.
  * - readingTime은 전달받은 elapsedTime(초)으로 초기화한다.
  * - startPage/endPage는 조회한 책의 currentPage로 초기화한다.
+ *   완독한 책을 다시 읽는 경우(새 회차)는 0쪽부터 시작한다.
  * - 저장 성공 응답을 받은 뒤에만 status가 success가 된다.
  * - 책 사진(1장 이상)과 인상 깊었던 문장은 필수다.
  */
@@ -39,8 +40,9 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   useEffect(() => {
     if (!book || initializedRef.current) return;
     initializedRef.current = true;
-    setStartPage(book.currentPage);
-    setEndPage(book.currentPage);
+    const startFrom = book.status === 'COMPLETED' ? 0 : book.currentPage;
+    setStartPage(startFrom);
+    setEndPage(startFrom);
   }, [book]);
 
   const setPageRange = ({ startPage: s, endPage: e }: { startPage: number; endPage: number }) => {
@@ -75,7 +77,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
       });
       setResult(saved);
       setStatus('success');
-      return { ok: true };
+      return { ok: true, ...saved };
     } catch (e) {
       return fail(toAppError(e).message, 'error');
     }

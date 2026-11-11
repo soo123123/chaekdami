@@ -13,6 +13,7 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRewardStatus } from '../api/rewardApi';
+import { Icon } from '@/components/common/Icon';
 type RewardStatus = {
   level?: number;
   xp?: number;
@@ -525,8 +526,9 @@ export default function RewardScreen() {
             color={COLORS.green}
           />
           <Text style={styles.shopButtonText}>
-            재화 상점 가기 ›
+            재화 상점 가기
           </Text>
+          <Icon name="chevronRight" size={16} color={COLORS.green} />
         </TouchableOpacity>
       </ScrollView>
     </View>

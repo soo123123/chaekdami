@@ -18,6 +18,7 @@ import { colors, HIT_SLOP, spacing } from '../constants/theme';
 import { useBookDetail } from '../hooks/book/useBookDetail';
 import { useBookDetailModeParam, useBookIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
+import { goBackOr } from '../utils/navigation';
 
 export function BookDetailScreen() {
   const bookId = useBookIdParam();
@@ -29,11 +30,13 @@ export function BookDetailScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRereadConfirmOpen, setIsRereadConfirmOpen] = useState(false);
   const { book } = detail;
+  // 뒤로 갈 화면이 없으면(스택 맨 아래) 서재로 간다
+  const goBackToLibrary = () => goBackOr(FE1_ROUTES.library);
 
   const header = (
     <ScreenHeader
       title={isRecordsMode ? '독서 기록' : undefined}
-      onBack={() => router.back()}
+      onBack={goBackToLibrary}
       right={book && !isRecordsMode ? (
         <Pressable accessibilityRole="button" accessibilityLabel="더보기" hitSlop={HIT_SLOP} onPress={() => setIsMenuOpen(true)}>
           <Icon name="more" size={28} />
@@ -45,7 +48,7 @@ export function BookDetailScreen() {
   if (bookId === null) {
     return (
       <ScreenContainer header={header}>
-        <ErrorView error={{ kind: 'client', message: '책 정보를 찾을 수 없어요.' }} onBack={() => router.back()} />
+        <ErrorView error={{ kind: 'client', message: '책 정보를 찾을 수 없어요.' }} onBack={goBackToLibrary} />
       </ScreenContainer>
     );
   }
@@ -56,7 +59,7 @@ export function BookDetailScreen() {
     const removed = await detail.removeBook();
     // 서버 삭제 성공 후에만 화면을 닫는다. 서재는 포커스 시 다시 조회한다.
     setIsConfirmOpen(false);
-    if (removed) router.back();
+    if (removed) goBackToLibrary();
   };
 
   const openBookInfo = () => {
@@ -91,7 +94,7 @@ export function BookDetailScreen() {
     >
       {detail.isLoading && !book ? <LoadingView /> : null}
       {!detail.isLoading && detail.error && !book ? (
-        <ErrorView error={detail.error} onRetry={detail.reload} onBack={() => router.back()} />
+        <ErrorView error={detail.error} onRetry={detail.reload} onBack={goBackToLibrary} />
       ) : null}
       {book ? (
         <>
@@ -163,7 +166,7 @@ function MenuItem({ icon, label, danger, onPress }: { icon: 'book' | 'trash'; la
 
 const styles = StyleSheet.create({
   hero: { paddingBottom: spacing.sm },
-  heroDecor: { right: -spacing.md - 4, bottom: -4 },
+  heroDecor: { right: spacing.sm, bottom: -4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
   meta: { fontSize: 15, color: colors.secondaryText },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, minHeight: 54, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

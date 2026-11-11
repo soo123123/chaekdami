@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { getQuests } from '../api/rewardApi';
+import { Icon } from '@/components/common/Icon';
 
 type QuestType = 'DDAY' | 'EXP';
 type QuestTab = 'ALL' | QuestType;
@@ -228,8 +229,9 @@ function QuestCard({
           </View>
 
           <View style={styles.coinBadge}>
+            <Icon name="coin" size={12} color={COLORS.gold} />
             <Text style={styles.coinBadgeText}>
-              🪙 +{quest.rewardCurrency ?? 0}
+              +{quest.rewardCurrency ?? 0}
             </Text>
           </View>
         </View>
@@ -530,9 +532,12 @@ export default function QuestScreen() {
               XP {totalXp}
             </Text>
 
-            <Text style={styles.rewardCoin}>
-              🪙 {totalCoins}
-            </Text>
+            <View style={styles.rewardCoinRow}>
+              <Icon name="coin" size={14} color={COLORS.gold} />
+              <Text style={styles.rewardCoin}>
+                {totalCoins}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -976,6 +981,11 @@ const styles = StyleSheet.create({
     color: COLORS.green,
   },
 
+  rewardCoinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   rewardCoin: {
     fontSize: 12,
     fontWeight: '800',
@@ -1134,6 +1144,9 @@ const styles = StyleSheet.create({
   },
 
   coinBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: '#FAF0D8',
     paddingHorizontal: 9,
     paddingVertical: 6,

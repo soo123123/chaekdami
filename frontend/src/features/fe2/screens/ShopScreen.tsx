@@ -15,6 +15,7 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRewardStatus } from '../api/rewardApi';
+import { Icon } from '@/components/common/Icon';
 const COLORS = {
   background: '#FBF7F2',
   white: '#FFFCF9',
@@ -346,8 +347,9 @@ export default function ShopScreen() {
             onPress={() => router.push('/fe2/reward/quest')}
           >
             <Text style={styles.questLinkText}>
-              재화 얻기 ›
+              재화 얻기
             </Text>
+            <Icon name="chevronRight" size={15} color={COLORS.green} />
           </TouchableOpacity>
         </View>
 
@@ -711,6 +713,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   questLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     alignSelf: 'flex-start',
     marginTop: 14,
     paddingVertical: 8,

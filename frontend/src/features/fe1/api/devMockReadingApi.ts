@@ -67,6 +67,16 @@ let nextBookId = 1;
 let nextSentenceId = 1;
 let nextRecordId = 1;
 
+/** 책마다 현재 회차 (백엔드 reading_records: UNIQUE(book_id, round)) */
+type MockRound = { readingRecordId: number; round: number; status: 'IN_PROGRESS' | 'COMPLETED' };
+const currentRoundByBook = new Map<number, MockRound>();
+
+function startRound(bookId: number, round: number): MockRound {
+  const created: MockRound = { readingRecordId: nextRecordId++, round, status: 'IN_PROGRESS' };
+  currentRoundByBook.set(bookId, created);
+  return created;
+}
+
 const library: RegisteredBook[] = [];
 const sentencesByBook = new Map<number, Sentence[]>();
 const secondsByBook = new Map<number, number>();
@@ -84,6 +94,11 @@ function seedBook(entry: CatalogEntry, currentPage: number, daysAgo: number) {
     startedAt: currentPage > 0 ? created : undefined, createdAt: created,
   };
   library.push(book);
+  // 읽기 시작한 책은 1회차를 가진다 (완독 도서는 1회차 완독)
+  if (currentPage > 0) {
+    const round = startRound(book.bookId, 1);
+    if (book.status === 'COMPLETED') round.status = 'COMPLETED';
+  }
   return book;
 }
 
@@ -197,12 +212,19 @@ export const devMockReadingApi: ReadingApi = {
     if (index < 0) throw new MockHttpError(404, '서재에서 책을 찾을 수 없어요.');
     library.splice(index, 1);
     sentencesByBook.delete(bookId);
+    currentRoundByBook.delete(bookId);
   },
 
   async saveReadingRecord(request) {
     await wait(700);
     const book = findBook(request.bookId);
     if (request.endPage < request.startPage) throw new MockHttpError(400, '종료 페이지는 시작 페이지보다 작을 수 없어요.');
+    // 회차 결정: 처음 읽으면 1회차, 읽는 중이면 같은 회차, 완독한 회차 뒤에 저장하면(다시 읽기) 다음 회차
+    const previous = currentRoundByBook.get(book.bookId);
+    const round =
+      !previous ? startRound(book.bookId, 1)
+      : previous.status === 'COMPLETED' ? startRound(book.bookId, previous.round + 1)
+      : previous;
     book.currentPage = request.endPage;
     book.status = statusOf(book.currentPage, book.totalPages);
     book.startedAt = book.startedAt ?? new Date().toISOString();
@@ -215,7 +237,8 @@ export const devMockReadingApi: ReadingApi = {
       list.push({ sentenceId: nextSentenceId++, content: request.sentence, page: request.endPage, createdAt: todayIso() });
       sentencesByBook.set(book.bookId, list);
     }
-    return { readingRecordId: nextRecordId++ };
+    if (book.status === 'COMPLETED') round.status = 'COMPLETED';
+    return { readingRecordId: round.readingRecordId, round: round.round, isCompleted: round.status === 'COMPLETED' };
   },
 
   async getReadingTimeSummary() {

@@ -56,7 +56,7 @@ features/fe1/
 2. **인증** — Authorization 헤더 vs 로그인 전 임시 `X-User-Id` 헤더. `apiClient` 인터셉터에서 처리 예정.
 3. **이미지 업로드** — 수동 등록 표지, 독서 기록 사진. 업로드 방식·형식·크기 미정이며 `expo-image-picker`도 아직 설치되지 않아 버튼은 안내 문구만 표시한다.
 4. **독서 시간 단위** — 현재 `readingTime`/`elapsedTime`은 **초** 단위로 다룬다.
-5. **FE2 완료 화면** — `ReadingCompleteScreen` 경로·전달 데이터 미합의. `READING_COMPLETE_ROUTE = null`이며, 그동안은 저장 성공 후 완료 상태를 이 화면에서 표시한다.
+5. **FE2 완료 화면** — 저장 성공 시 `toReadingComplete({ readingRecordId, bookId, durationMinutes, pagesRead })`로 `/fe2/reading/reading-complete`에 이동한다(replace). 집중도·코인·레벨·D-day 등 나머지 전달 데이터는 FE2와 협의 필요. 완료 화면 이미지(`assets/images/reading-complete/`)는 FE2 원본이 오기 전까지 FE2 다른 화면 이미지로 임시 대체.
 6. **통계(readingSummary, readingTimeSummary)** — FE2 담당. 제공 방식 확정 전까지 `null`이면 `-`로 표시한다.
 7. **서재 테마** — 테마 목록 출처(서버/클라이언트), 저장 API, 테마 이미지 에셋. 에셋이 없어 팔레트로 그린 책장으로 미리보기를 제공한다.
 8. **검증 규칙** — 목표 날짜(오늘 이후)·목표 페이지(현재 페이지 초과 ~ 전체 이하)·인상 깊은 문장(최대 500자)은 임시 규칙. 백엔드와 확정 필요.

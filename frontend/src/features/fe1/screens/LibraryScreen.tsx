@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   staleError: { fontSize: 13, color: colors.danger },
   shelves: { flexGrow: 1 },
   cabinetWrap: { marginHorizontal: -spacing.md, paddingTop: 92, marginTop: -spacing.lg },
-  cat: { right: spacing.lg, top: 0, zIndex: 2 },
+  cat: { right: spacing.lg, top: -4, zIndex: 2 },
   cabinet: { borderLeftWidth: 12, borderRightWidth: 12, paddingBottom: spacing.md, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   cabinetTop: { height: 14, borderBottomWidth: 4, marginHorizontal: -12, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
 });
