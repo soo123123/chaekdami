@@ -97,6 +97,23 @@ public class ReadingRecord {
         }
     }
 
+    // 독서 세션 반영: 읽기 전이면 "읽는 중"으로, 종료 페이지가 더 나아갔으면 현재 페이지 갱신 (뒤로 가지는 않음)
+    public void applySession(int endPage, LocalDateTime now) {
+        if (isCompleted()) {
+            throw new IllegalArgumentException("완독한 기록에는 독서 시간을 추가할 수 없습니다. 새 회차를 시작해주세요.");
+        }
+        if (status == ReadingStatus.NOT_STARTED) {
+            this.status = ReadingStatus.IN_PROGRESS;
+            this.startedAt = now;
+        }
+        if (endPage > currentPage) {
+            this.currentPage = endPage;
+            if (endPage == getTotalPages()) {
+                complete(now);
+            }
+        }
+    }
+
     // 완독 처리 (이미 완독이면 아무것도 바꾸지 않음)
     public void complete(LocalDateTime now) {
         if (isCompleted()) {
