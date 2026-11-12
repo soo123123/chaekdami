@@ -1,0 +1,496 @@
+@baseUrl = http://localhost:8080
+@email = tester@chaekdami.local
+@password = password123
+@nickname = tester
+
+### 1. 회원가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "nickname": "{{nickname}}"
+}
+
+### 2. 로그인 (accessToken 저장)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 3. 내 정보 조회
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+
+### 4. 예전 경로 /api/auth/me — 404
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 5. 토큰 없이 조회
+GET {{baseUrl}}/api/me
+
+### 6. 잘못된 토큰으로 조회
+GET {{baseUrl}}/api/me
+Authorization: Bearer invalid.token.value
+
+### 7. 짧은 비밀번호 — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "short-pw@chaekdami.local",
+  "password": "ab12",
+  "nickname": "short"
+}
+
+### 8. 문자 종류 1개 — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "one-class@chaekdami.local",
+  "password": "abcdefgh",
+  "nickname": "oneclass"
+}
+
+### 9. 이메일 254자 초과 — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@chaekdami.local",
+  "password": "password123",
+  "nickname": "longmail"
+}
+
+### 10. 닉네임 1자 — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "nick@chaekdami.local",
+  "password": "password123",
+  "nickname": "a"
+}
+
+### 11. 이미 가입된 이메일 — 409 EMAIL_ALREADY_EXISTS
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "nickname": "{{nickname}}"
+}
+
+### 12. 틀린 비밀번호 — 401 INVALID_CREDENTIALS
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrong-password"
+}
+
+### 13. 비밀번호 공백 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "space@chaekdami.local",
+  "password": "Pass word1",
+  "nickname": "spaceuser"
+}
+
+### 14. 비밀번호 한글 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "hangul-pw@chaekdami.local",
+  "password": "비밀번호abc1",
+  "nickname": "한글유저"
+}
+
+### 15. 사용 불가 특수문자 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "quote@chaekdami.local",
+  "password": "Pass'word1",
+  "nickname": "quoteuser"
+}
+
+### 16. 비밀번호가 닉네임과 같음 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "same-nick@chaekdami.local",
+  "password": "password1",
+  "nickname": "password1"
+}
+
+### 17. 비밀번호가 이메일 아이디와 같음 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "password1@chaekdami.local",
+  "password": "password1",
+  "nickname": "othername"
+}
+
+### 18. 닉네임 특수문자 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "nick-char@chaekdami.local",
+  "password": "password123",
+  "nickname": "nick_name"
+}
+
+### 18-1. 닉네임 17자 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "nick-long@chaekdami.local",
+  "password": "password123",
+  "nickname": "가나다라마바사아자차카타파하거너더"
+}
+
+### 18-2. 이메일 형식 오류 — 400
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "password123",
+  "nickname": "bademail"
+}
+
+### 19. 대소문자만 다른 닉네임 — 409 NICKNAME_ALREADY_EXISTS
+# 1번 가입(nickname=tester) 이후 실행
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "other@chaekdami.local",
+  "password": "password123",
+  "nickname": "Tester"
+}
+
+### 20. 만료되었거나 서명이 틀린 Access Token — 401
+GET {{baseUrl}}/api/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxfQ.invalid
+
+### 21. Access Token 재발급
+# 2번 로그인 이후 실행. 이전 Refresh Token은 폐기된다.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+  client.global.set("previousRefreshToken", client.global.get("refreshToken"));
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 22. 이미 쓴 Refresh Token 재사용 — 401, 해당 사용자 토큰 전부 폐기
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{previousRefreshToken}}"
+}
+
+### 23. 재사용 감지로 폐기된 새 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 24. 다시 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 25. 로그아웃 — 204
+POST {{baseUrl}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 26. 로그아웃한 Refresh Token으로 재발급 — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 27. 비밀번호 변경용 가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123",
+  "nickname": "pwchange"
+}
+
+### 28. 비밀번호 변경용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 28-1. 현재 비밀번호가 틀림 — 400
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "wrong-password",
+  "newPassword": "Password123"
+}
+
+### 28-2. 새 비밀번호가 현재 비밀번호와 같음 — 400
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "password123"
+}
+
+### 28-3. 로그인 없이 비밀번호 변경 — 401
+POST {{baseUrl}}/api/auth/password
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "Password123"
+}
+
+### 29. 비밀번호 변경 — 204, Access·Refresh Token 전부 무효
+POST {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "Password123"
+}
+
+### 29-1. 비밀번호 변경 후 기존 Access Token으로 내 정보 — 401
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+
+### 30. 비밀번호 변경 후 기존 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 31. 이전 비밀번호로 로그인 — 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "password123"
+}
+
+### 32. 새 비밀번호로 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "Password123"
+}
+
+### 33. 전체 로그아웃용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local",
+  "password": "Password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 34. 전체 로그아웃 — 204
+POST {{baseUrl}}/api/auth/logout-all
+Authorization: Bearer {{accessToken}}
+
+### 35. 전체 로그아웃 후 기존 Access Token — 401
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+
+### 36. 전체 로그아웃 후 Refresh Token — 401
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 37. 비밀번호 재설정 요청 — 가입 여부와 상관없이 204
+# 가입된 테스트 메일이면 재설정 링크를 발송한다.
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: application/json
+
+{
+  "email": "password-change@chaekdami.local"
+}
+
+### 38. 없는 이메일로 재설정 요청 — 같은 204
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: application/json
+
+{
+  "email": "nobody@chaekdami.local"
+}
+
+### 39. 비밀번호 재설정 — 204, 토큰은 한 번만 사용
+# 메일의 링크를 열어도 된다. API로 확인할 때는 링크의 token 값을 넣는다.
+POST {{baseUrl}}/api/auth/password/reset
+Content-Type: application/json
+
+{
+  "token": "로그에-출력된-토큰",
+  "newPassword": "Resetpass123"
+}
+
+### 40. 같은 재설정 토큰 재사용 — 400
+POST {{baseUrl}}/api/auth/password/reset
+Content-Type: application/json
+
+{
+  "token": "로그에-출력된-토큰",
+  "newPassword": "Resetpass456"
+}
+
+### 41. 로그인 5회 연속 실패 후 — 429
+# 같은 이메일과 주소로 틀린 비밀번호를 5번째 보내면 TOO_MANY_ATTEMPTS.
+# 1~4번째는 401 INVALID_CREDENTIALS, 15분이 지나면 다시 시도할 수 있다.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "lockout@chaekdami.local",
+  "password": "wrong-password"
+}
+
+### 42. 재설정 요청 6회째 — 429
+# 같은 이메일과 주소로 6번째 보내면 TOO_MANY_ATTEMPTS. 1~5번째는 204.
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: application/json
+
+{
+  "email": "reset-limit@chaekdami.local"
+}
+
+### 43. 로그인 없이 전체 로그아웃 — 401
+POST {{baseUrl}}/api/auth/logout-all
+
+### 44. 비밀번호 재설정 페이지
+# 토큰은 메일의 링크 값을 넣는다. 화면은 HTML이다.
+GET {{baseUrl}}/email/reset?token=메일의-토큰
+
+### 45. 탈퇴용 가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123",
+  "nickname": "withdrawer"
+}
+
+### 46. 탈퇴용 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### 47. 틀린 비밀번호로 탈퇴 — 400
+DELETE {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "wrong-password"
+}
+
+### 48. 회원 탈퇴 — 204
+DELETE {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123"
+}
+
+### 49. 탈퇴한 계정 로그인 — 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "withdraw@chaekdami.local",
+  "password": "password123"
+}
+
