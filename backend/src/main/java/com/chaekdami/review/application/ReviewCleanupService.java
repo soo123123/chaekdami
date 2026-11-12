@@ -4,7 +4,6 @@ import com.chaekdami.review.infrastructure.BookReportRepository;
 import com.chaekdami.review.infrastructure.ReviewLikeRepository;
 import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
-import com.chaekdami.review.infrastructure.SentenceCollectionSettingRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ public class ReviewCleanupService {
     private final ReviewReportRepository reviewReportRepository;
     private final BookReportRepository bookReportRepository;
     private final SentenceRepository sentenceRepository;
-    private final SentenceCollectionSettingRepository settingRepository;
 
     public void deleteAllOfUser(Long userId) {
         reviewRepository.decrementLikesGivenBy(userId);
@@ -36,11 +34,10 @@ public class ReviewCleanupService {
         reviewRepository.deleteAllByUserId(userId);
         bookReportRepository.deleteAllByUserId(userId);
         sentenceRepository.deleteAllByUserId(userId);
-        settingRepository.deleteAllByUserId(userId);
     }
 
     /**
-     * BE1이 서재에서 책을 지울 때 같은 트랜잭션에서 호출한다.
+     * BE1 {@code BookService.deleteBook}이 책을 지우기 전에 같은 트랜잭션에서 호출한다.
      */
     public void deleteAllOfBook(Long bookId) {
         reviewLikeRepository.deleteAllOnBook(bookId);
@@ -48,6 +45,5 @@ public class ReviewCleanupService {
         reviewRepository.deleteAllByBookId(bookId);
         bookReportRepository.deleteAllByBookId(bookId);
         sentenceRepository.deleteAllByBookId(bookId);
-        settingRepository.deleteAllByBookId(bookId);
     }
 }

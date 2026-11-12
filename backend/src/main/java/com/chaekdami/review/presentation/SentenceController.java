@@ -10,8 +10,6 @@ import com.chaekdami.review.presentation.dto.SentenceCollectionResponse;
 import com.chaekdami.review.presentation.dto.SentenceCreateRequest;
 import com.chaekdami.review.presentation.dto.SentenceResponse;
 import com.chaekdami.review.presentation.dto.SentenceUpdateRequest;
-import com.chaekdami.review.presentation.dto.VisibilityRequest;
-import com.chaekdami.review.presentation.dto.VisibilityResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,13 +64,6 @@ public class SentenceController {
     @GetMapping("/api/reading-records/{readingRecordId}/sentence-collection")
     public ResponseEntity<SentenceCollectionResponse> collection(@PathVariable Long readingRecordId) {
         return ResponseEntity.ok(SentenceCollectionResponse.from(sentenceCollectionService.get(readingRecordId)));
-    }
-
-    @PutMapping("/api/reading-records/{readingRecordId}/sentence-collection/visibility")
-    public ResponseEntity<VisibilityResponse> changeVisibility(@PathVariable Long readingRecordId,
-                                                               @RequestBody @Valid VisibilityRequest request) {
-        boolean isPublic = sentenceCollectionService.changeVisibility(readingRecordId, request.getIsPublic());
-        return ResponseEntity.ok(new VisibilityResponse(readingRecordId, isPublic));
     }
 
     @GetMapping("/api/me/sentence-collections")

@@ -23,7 +23,7 @@ import java.util.Optional;
 public class JdbcReadingRecordReader implements ReadingRecordReader {
 
     private static final String SELECT = """
-            select id, user_id, book_id, round, status, started_at, completed_at
+            select id, user_id, book_id, round, status, is_public, started_at, completed_at
             from reading_records
             """;
 
@@ -33,6 +33,7 @@ public class JdbcReadingRecordReader implements ReadingRecordReader {
             rs.getLong("book_id"),
             rs.getInt("round"),
             rs.getString("status"),
+            rs.getBoolean("is_public"),
             toLocalDateTime(rs.getTimestamp("started_at")),
             toLocalDateTime(rs.getTimestamp("completed_at")));
 

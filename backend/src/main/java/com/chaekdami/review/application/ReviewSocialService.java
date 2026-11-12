@@ -30,6 +30,7 @@ import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -167,10 +168,10 @@ public class ReviewSocialService {
     }
 
     /**
-     * BE1이 저장하는 형식(하이픈과 공백 제거)에 맞춘다.
+     * BE1 {@code BookService.normalizeIsbn}과 같은 규칙이어야 저장된 books.isbn과 맞는다.
      */
     static String normalizeIsbn(String isbn) {
-        String normalized = isbn == null ? "" : isbn.replaceAll("[\\s-]", "");
+        String normalized = isbn == null ? "" : isbn.replaceAll("[^0-9Xx]", "").toUpperCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             throw new InvalidRequestException("isbn", "ISBN을 입력해야 합니다.");
         }

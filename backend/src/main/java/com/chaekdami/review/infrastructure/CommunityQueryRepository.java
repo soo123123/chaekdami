@@ -32,20 +32,19 @@ public class CommunityQueryRepository {
             from reading_records rr
             join books b on b.id = rr.book_id
             join users u on u.id = rr.user_id
-            left join sentence_collection_settings scs on scs.reading_record_id = rr.id
             left join lateral (
                 select count(*) as cnt from sentences s where s.reading_record_id = rr.id
             ) sc on true
             left join book_reports br on br.reading_record_id = rr.id and br.is_public
             where b.isbn = :isbn
               and rr.status = 'COMPLETED'
-              and ((scs.is_public and sc.cnt > 0) or br.id is not null)
+              and ((rr.is_public and sc.cnt > 0) or br.id is not null)
             """;
 
     private static final String ENTRY_SELECT = """
             select rr.id as reading_record_id, rr.round, rr.started_at, rr.completed_at,
                    rr.user_id, u.nickname,
-                   case when scs.is_public and sc.cnt > 0 then sc.cnt end as sentence_count,
+                   case when rr.is_public and sc.cnt > 0 then sc.cnt end as sentence_count,
                    br.id as book_report_id,
                    left(br.content, :previewLength) as book_report_preview,
                    char_length(br.content) as book_report_length
@@ -68,11 +67,10 @@ public class CommunityQueryRepository {
     public Counts counts(String isbn) {
         return jdbc.queryForObject("""
                 select count(distinct rr.user_id) as completer_count,
-                       count(*) filter (where scs.is_public and sc.cnt > 0) as public_collection_count,
+                       count(*) filter (where rr.is_public and sc.cnt > 0) as public_collection_count,
                        count(br.id) as public_book_report_count
                 from reading_records rr
                 join books b on b.id = rr.book_id
-                left join sentence_collection_settings scs on scs.reading_record_id = rr.id
                 left join lateral (
                     select count(*) as cnt from sentences s where s.reading_record_id = rr.id
                 ) sc on true

@@ -1,12 +1,13 @@
 package com.chaekdami.global.error;
 
-import org.springframework.http.HttpStatus;
-
+/**
+ * 도메인별 오류 코드 enum이 구현한다. Lombok {@code @Getter}로 code, status, message 필드를 두면 그대로 맞는다.
+ */
 public interface ErrorCode {
 
-    HttpStatus status();
+    String getCode();
 
-    String code();
+    int getStatus();
 
-    String message();
+    String getMessage();
 }

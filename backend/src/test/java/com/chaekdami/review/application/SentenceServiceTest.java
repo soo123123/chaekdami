@@ -35,6 +35,7 @@ import static com.chaekdami.review.ReviewFixtures.signIn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -142,6 +143,32 @@ class SentenceServiceTest {
         sentenceService.update(12L, new SentenceUpdateCommand(null, true, null));
         assertEquals("고친 문장", stored.getContent());
         assertNull(stored.getPageNumber());
+    }
+
+    @Test
+    void sessionSentenceIsSavedForTheGivenUserWithoutSignIn() {
+        SecurityContextHolder.clearContext();
+        when(readingRecordReader.find(3L)).thenReturn(Optional.of(record(3L, 1L, 7L, "COMPLETED")));
+
+        Optional<SentenceResult> saved = sentenceService.recordFromSession(1L, 3L, " 마지막 날의 문장 ", 400);
+        Optional<SentenceResult> zeroPage = sentenceService.recordFromSession(1L, 3L, "첫 페이지 전", 0);
+
+        assertEquals("마지막 날의 문장", saved.orElseThrow().content());
+        assertEquals(400, saved.orElseThrow().pageNumber());
+        assertNull(zeroPage.orElseThrow().pageNumber());
+    }
+
+    @Test
+    void blankSessionSentenceIsSkippedAndTooLongOneNamesTheSessionField() {
+        when(readingRecordReader.find(3L)).thenReturn(Optional.of(record(3L, 1L, 7L, "IN_PROGRESS")));
+
+        assertTrue(sentenceService.recordFromSession(1L, 3L, "  ", 10).isEmpty());
+        assertTrue(sentenceService.recordFromSession(1L, 3L, null, 10).isEmpty());
+        InvalidRequestException tooLong = assertThrows(InvalidRequestException.class,
+                () -> sentenceService.recordFromSession(1L, 3L, "가".repeat(501), 10));
+
+        assertEquals("sentence", tooLong.getField());
+        verify(sentenceRepository, never()).save(any());
     }
 
     @Test

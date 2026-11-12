@@ -13,6 +13,7 @@ import com.chaekdami.user.presentation.dto.ApiErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
@@ -109,8 +111,35 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusiness(BusinessException exception) {
         ErrorCode errorCode = exception.getErrorCode();
-        return ResponseEntity.status(errorCode.status())
-                .body(ApiErrorResponse.of(errorCode.code(), errorCode.message()));
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiErrorResponse.of(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    /**
+     * 독서 도메인은 엔티티 규칙 위반을 IllegalArgumentException으로 던진다.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiErrorResponse.of("VALIDATION_ERROR", exception.getMessage()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException exception) {
+        HttpStatusCode status = exception.getStatusCode();
+        String message = exception.getReason() != null ? exception.getReason() : "요청을 처리하지 못했습니다.";
+        return ResponseEntity.status(status).body(ApiErrorResponse.of(codeOf(status), message));
+    }
+
+    private static String codeOf(HttpStatusCode status) {
+        return switch (status.value()) {
+            case 400 -> "VALIDATION_ERROR";
+            case 401 -> "UNAUTHORIZED";
+            case 403 -> "FORBIDDEN";
+            case 404 -> "NOT_FOUND";
+            case 409 -> "CONFLICT";
+            default -> status.is5xxServerError() ? "INTERNAL_ERROR" : "REQUEST_FAILED";
+        };
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -9,8 +9,6 @@ import com.chaekdami.review.application.result.BookSummary;
 import com.chaekdami.review.application.result.SentenceCollectionCard;
 import com.chaekdami.review.application.result.SentenceCollectionResult;
 import com.chaekdami.review.domain.Sentence;
-import com.chaekdami.review.domain.SentenceCollectionSetting;
-import com.chaekdami.review.infrastructure.SentenceCollectionSettingRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository.CollectionStats;
 import com.chaekdami.user.application.CurrentUser;
@@ -32,7 +30,6 @@ import java.util.stream.Collectors;
 public class SentenceCollectionService {
 
     private final SentenceRepository sentenceRepository;
-    private final SentenceCollectionSettingRepository settingRepository;
     private final ReadingRecordReader readingRecordReader;
     private final BookReader bookReader;
     private final OwnedResources ownedResources;
@@ -46,12 +43,9 @@ public class SentenceCollectionService {
         Long userId = currentUser.requireId();
         ReadingRecordView record = ownedResources.requireRecord(readingRecordId, userId);
         BookView book = ownedResources.requireBook(record.bookId(), userId);
-        boolean isPublic = settingRepository.findByReadingRecordId(readingRecordId)
-                .map(SentenceCollectionSetting::isPublic)
-                .orElse(false);
         return new SentenceCollectionResult(
                 record.readingRecordId(), record.round(), record.status(), BookSummary.from(book),
-                record.startedAt(), record.completedAt(), isPublic,
+                record.startedAt(), record.completedAt(), record.isPublic(),
                 SentenceCollectionAssembler.assemble(sentenceRepository.findAllByReadingRecordId(readingRecordId),
                         record.startedAt(), record.completedAt(), koreanTime.today()));
     }
@@ -88,13 +82,5 @@ public class SentenceCollectionService {
                 .toList();
         return new PageResponse<>(cards, stats.getNumber(), stats.getSize(), stats.getTotalElements(),
                 stats.hasNext());
-    }
-
-    @Transactional
-    public boolean changeVisibility(Long readingRecordId, boolean isPublic) {
-        Long userId = currentUser.requireId();
-        ReadingRecordView record = ownedResources.requireRecord(readingRecordId, userId);
-        settingRepository.upsertVisibility(readingRecordId, userId, record.bookId(), isPublic, koreanTime.now());
-        return isPublic;
     }
 }

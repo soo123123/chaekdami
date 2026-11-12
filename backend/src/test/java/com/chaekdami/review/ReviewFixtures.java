@@ -23,8 +23,12 @@ public final class ReviewFixtures {
     }
 
     public static ReadingRecordView record(Long id, Long userId, Long bookId, String status) {
+        return record(id, userId, bookId, status, false);
+    }
+
+    public static ReadingRecordView record(Long id, Long userId, Long bookId, String status, boolean isPublic) {
         LocalDateTime completedAt = "COMPLETED".equals(status) ? LocalDateTime.of(2026, 10, 20, 22, 0) : null;
-        return new ReadingRecordView(id, userId, bookId, 1, status,
+        return new ReadingRecordView(id, userId, bookId, 1, status, isPublic,
                 LocalDateTime.of(2026, 10, 1, 20, 0), completedAt);
     }
 
