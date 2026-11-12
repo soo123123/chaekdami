@@ -10,7 +10,7 @@ export const getSentences = async (
   readingRecordId: number
 ) => {
   const response = await apiClient.get(
-    `/reading-records/${readingRecordId}/sentences`
+    `/api/reading-records/${readingRecordId}/sentences`
   );
 
   return response.data;
@@ -23,7 +23,7 @@ export const createSentence = async (
   pageNumber: number
 ) => {
   const response = await apiClient.post(
-    `/reading-records/${readingRecordId}/sentences`,
+    `/api/reading-records/${readingRecordId}/sentences`,
     {
       content,
       pageNumber,
@@ -38,7 +38,7 @@ export const deleteSentence = async (
   sentenceId: number
 ) => {
   await apiClient.delete(
-    `/sentences/${sentenceId}`
+    `/api/sentences/${sentenceId}`
   );
 };
 
@@ -99,7 +99,7 @@ export const getReadingReview = async (
   if (REVIEW_USE_DEV_MOCK) return devMockReview.get(readingRecordId);
 
   const response = await apiClient.get<ReadingReviewResponse>(
-    `/reading-records/${readingRecordId}/review`
+    `/api/reading-records/${readingRecordId}/review`
   );
 
   return response.data;
@@ -113,7 +113,7 @@ export const saveBookReport = async (
   if (REVIEW_USE_DEV_MOCK) return devMockReview.put(readingRecordId, input);
 
   const response = await apiClient.put<ReadingReviewResponse>(
-    `/reading-records/${readingRecordId}/review`,
+    `/api/reading-records/${readingRecordId}/review`,
     { bookReport: input }
   );
 
