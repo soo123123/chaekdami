@@ -7,7 +7,6 @@ import com.chaekdami.review.application.port.ReadingRecordReader;
 import com.chaekdami.review.application.result.SentenceCollectionCard;
 import com.chaekdami.review.application.result.SentenceCollectionResult;
 import com.chaekdami.review.domain.ReviewErrorCode;
-import com.chaekdami.review.infrastructure.SentenceCollectionSettingRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository.CollectionStats;
 import com.chaekdami.user.application.CurrentUser;
@@ -33,10 +32,10 @@ import static com.chaekdami.review.ReviewFixtures.signIn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SentenceCollectionServiceTest {
@@ -44,14 +43,13 @@ class SentenceCollectionServiceTest {
     private static final LocalDate OCT_1 = LocalDate.of(2026, 10, 1);
 
     private final SentenceRepository sentenceRepository = mock(SentenceRepository.class);
-    private final SentenceCollectionSettingRepository settingRepository = mock(SentenceCollectionSettingRepository.class);
     private final ReadingRecordReader readingRecordReader = mock(ReadingRecordReader.class);
     private final BookReader bookReader = mock(BookReader.class);
     private SentenceCollectionService service;
 
     @BeforeEach
     void setUp() {
-        service = new SentenceCollectionService(sentenceRepository, settingRepository, readingRecordReader,
+        service = new SentenceCollectionService(sentenceRepository, readingRecordReader,
                 bookReader, new OwnedResources(readingRecordReader, bookReader), new CurrentUser(),
                 new KoreanTime(Clock.fixed(Instant.parse("2026-10-05T03:00:00Z"), ZoneOffset.UTC)));
         signIn(1L);
@@ -66,7 +64,6 @@ class SentenceCollectionServiceTest {
     @Test
     void ownerSeesTheCollectionWhileStillReading() {
         when(readingRecordReader.find(3L)).thenReturn(Optional.of(record(3L, 1L, 7L, "IN_PROGRESS")));
-        when(settingRepository.findByReadingRecordId(3L)).thenReturn(Optional.empty());
         when(sentenceRepository.findAllByReadingRecordId(3L))
                 .thenReturn(List.of(sentence(1L, 1L, 3L, OCT_1, 12, "문장")));
 
@@ -110,11 +107,10 @@ class SentenceCollectionServiceTest {
     }
 
     @Test
-    void visibilityIsStoredPerRound() {
-        when(readingRecordReader.find(3L)).thenReturn(Optional.of(record(3L, 1L, 7L, "IN_PROGRESS")));
+    void visibilityComesFromTheReadingRecord() {
+        when(readingRecordReader.find(3L)).thenReturn(Optional.of(record(3L, 1L, 7L, "COMPLETED", true)));
+        when(sentenceRepository.findAllByReadingRecordId(3L)).thenReturn(List.of());
 
-        service.changeVisibility(3L, true);
-
-        verify(settingRepository).upsertVisibility(eq(3L), eq(1L), eq(7L), eq(true), any());
+        assertTrue(service.get(3L).isPublic());
     }
 }

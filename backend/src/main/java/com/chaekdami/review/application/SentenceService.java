@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,13 +40,34 @@ public class SentenceService {
     public SentenceResult create(Long readingRecordId, SentenceCreateCommand command) {
         Long userId = currentUser.requireId();
         ReadingRecordView record = ownedResources.requireRecord(readingRecordId, userId);
+        return save(userId, record, normalizeContent(command.content(), "content"),
+                validPageNumber(command.pageNumber(), record.bookId()));
+    }
+
+    /**
+     * BE1 독서 세션 저장({@code POST /api/reading-sessions})이 같은 트랜잭션에서 요청의 {@code sentence}로 호출한다.
+     * 문장이 비어 있으면 저장하지 않고, 1쪽 미만의 쪽 번호는 쪽 번호 없이 저장한다.
+     */
+    @Transactional
+    public Optional<SentenceResult> recordFromSession(Long userId, Long readingRecordId,
+                                                      String sentence, Integer pageNumber) {
+        if (sentence == null || sentence.isBlank()) {
+            return Optional.empty();
+        }
+        ReadingRecordView record = ownedResources.requireRecord(readingRecordId, userId);
+        Integer page = pageNumber != null && pageNumber >= 1 ? pageNumber : null;
+        return Optional.of(save(userId, record, normalizeContent(sentence, "sentence"),
+                validPageNumber(page, record.bookId())));
+    }
+
+    private SentenceResult save(Long userId, ReadingRecordView record, String content, Integer pageNumber) {
         Sentence sentence = sentenceRepository.save(Sentence.builder()
                 .userId(userId)
                 .readingRecordId(record.readingRecordId())
                 .bookId(record.bookId())
                 .readDate(koreanTime.today())
-                .pageNumber(validPageNumber(command.pageNumber(), record.bookId()))
-                .content(normalizeContent(command.content()))
+                .pageNumber(pageNumber)
+                .content(content)
                 .build());
         eventPublisher.publishEvent(new SentenceCreatedEvent(
                 userId, record.readingRecordId(), sentence.getId(), sentence.getReadDate()));
@@ -64,7 +86,7 @@ public class SentenceService {
     public SentenceResult update(Long sentenceId, SentenceUpdateCommand command) {
         Sentence sentence = requireOwnSentence(sentenceId);
         if (command.content() != null) {
-            sentence.changeContent(normalizeContent(command.content()));
+            sentence.changeContent(normalizeContent(command.content(), "content"));
         }
         if (command.pageNumberPresent()) {
             sentence.changePageNumber(validPageNumber(command.pageNumber(), sentence.getBookId()));
@@ -85,13 +107,13 @@ public class SentenceService {
                 .orElseThrow(() -> new BusinessException(ReviewErrorCode.SENTENCE_NOT_FOUND));
     }
 
-    private static String normalizeContent(String content) {
+    private static String normalizeContent(String content, String field) {
         String trimmed = content == null ? "" : content.strip();
         if (trimmed.isEmpty()) {
-            throw new InvalidRequestException("content", "문장을 입력해야 합니다.");
+            throw new InvalidRequestException(field, "문장을 입력해야 합니다.");
         }
         if (trimmed.length() > Sentence.MAX_CONTENT_LENGTH) {
-            throw new InvalidRequestException("content",
+            throw new InvalidRequestException(field,
                     "문장은 " + Sentence.MAX_CONTENT_LENGTH + "자 이하여야 합니다.");
         }
         return trimmed;

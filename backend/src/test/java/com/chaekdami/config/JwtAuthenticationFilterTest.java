@@ -2,6 +2,7 @@ package com.chaekdami.config;
 
 import com.chaekdami.user.application.TokenVersionChecker;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -9,8 +10,12 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -50,6 +55,35 @@ class JwtAuthenticationFilterTest {
                 .doFilter(request, new MockHttpServletResponse(), mock(FilterChain.class));
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    @Test
+    void userIdHeaderIsReplacedWithTheTokenUser() throws Exception {
+        TokenVersionChecker checker = mock(TokenVersionChecker.class);
+        when(checker.matches(7L, 2L)).thenReturn(true);
+        JwtTokenProvider provider = new JwtTokenProvider(SECRET);
+        MockHttpServletRequest request = requestWith(provider.createAccessToken(7L, "USER", 2L));
+        request.addHeader("X-User-Id", "99");
+        AtomicReference<HttpServletRequest> forwarded = new AtomicReference<>();
+
+        new JwtAuthenticationFilter(provider, checker).doFilter(request, new MockHttpServletResponse(),
+                (req, res) -> forwarded.set((HttpServletRequest) req));
+
+        assertEquals("7", forwarded.get().getHeader("x-user-id"));
+        assertEquals(List.of("7"), Collections.list(forwarded.get().getHeaders("X-User-Id")));
+    }
+
+    @Test
+    void userIdHeaderIsDroppedWithoutAuthentication() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/books");
+        request.addHeader("X-User-Id", "99");
+        AtomicReference<HttpServletRequest> forwarded = new AtomicReference<>();
+
+        new JwtAuthenticationFilter(new JwtTokenProvider(SECRET), mock(TokenVersionChecker.class))
+                .doFilter(request, new MockHttpServletResponse(), (req, res) -> forwarded.set((HttpServletRequest) req));
+
+        assertNull(forwarded.get().getHeader("X-User-Id"));
+        assertFalse(Collections.list(forwarded.get().getHeaderNames()).contains("X-User-Id"));
     }
 
     private static MockHttpServletRequest requestWith(String token) {

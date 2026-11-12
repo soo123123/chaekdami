@@ -5,6 +5,10 @@
 @bookId = 1
 @readingRecordId = 1
 @isbn = 9791162540640
+# 1번, 10번, 14번을 실행하면 응답의 id로 바뀐다. 그 전에 실행할 때 쓰는 기본값이다.
+@sentenceId = 1
+@reviewId = 1
+@bookReportId = 1
 
 ### 0. 로그인 (accessToken 저장)
 POST {{baseUrl}}/api/auth/login
@@ -74,8 +78,8 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentence-collection
 Authorization: Bearer {{accessToken}}
 
-### 8. 모음집 공개 설정
-PUT {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentence-collection/visibility
+### 8. 모음집 공개 설정 (BE1 회차 수정의 isPublic)
+PATCH {{baseUrl}}/api/reading-records/{{readingRecordId}}
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 

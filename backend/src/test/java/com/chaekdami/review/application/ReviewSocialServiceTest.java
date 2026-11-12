@@ -129,6 +129,13 @@ class ReviewSocialServiceTest {
         assertEquals(6L, summary.distribution().get("5"));
     }
 
+    @Test
+    void isbnFollowsTheLibraryNormalization() {
+        assertEquals("9791162540640", ReviewSocialService.normalizeIsbn(" 979-11-6254-064-0 "));
+        assertEquals("890123456X", ReviewSocialService.normalizeIsbn("89-0123-456-x"));
+        assertThrows(InvalidRequestException.class, () -> ReviewSocialService.normalizeIsbn("--"));
+    }
+
     private static Review review(Long userId, String oneLine, boolean isPublic) {
         Review review = Review.builder()
                 .userId(userId).bookId(7L).isbn("9791162540640").rating(4).oneLine(oneLine).isPublic(isPublic)
