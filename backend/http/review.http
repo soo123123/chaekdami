@@ -1,0 +1,218 @@
+@baseUrl = http://localhost:8080
+@email = tester@chaekdami.local
+@password = password123
+# 서재 책과 회차는 BE1 API로 만든 뒤 아래 값을 바꾼다.
+@bookId = 1
+@readingRecordId = 1
+@isbn = 9791162540640
+# 1번, 10번, 14번을 실행하면 응답의 id로 바뀐다. 그 전에 실행할 때 쓰는 기본값이다.
+@sentenceId = 1
+@reviewId = 1
+@bookReportId = 1
+
+### 0. 로그인 (accessToken 저장)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+%}
+
+### 1. 문장 기록 (read_date는 서버의 한국 날짜)
+POST {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentences
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "우리는 모두 각자의 속도로 자란다.",
+  "pageNumber": 42
+}
+
+> {%
+  client.global.set("sentenceId", response.body.sentenceId);
+%}
+
+### 2. 쪽 번호 없이 기록
+POST {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentences
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "쪽 번호를 모르는 문장"
+}
+
+### 3. 쪽 번호가 책 전체 쪽수보다 크면 400
+POST {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentences
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "범위를 벗어난 문장",
+  "pageNumber": 100000
+}
+
+### 4. 회차 문장 목록 (최신순)
+GET {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentences
+Authorization: Bearer {{accessToken}}
+
+### 5. 문장 수정 (보낸 필드만 바뀐다. pageNumber: null은 쪽 번호 삭제)
+PATCH {{baseUrl}}/api/sentences/{{sentenceId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "우리는 모두 각자의 속도로 자란다. (수정)",
+  "pageNumber": null
+}
+
+### 6. 문장 삭제
+DELETE {{baseUrl}}/api/sentences/{{sentenceId}}
+Authorization: Bearer {{accessToken}}
+
+### 7. 회차 문장 모음집 (날짜별, 날짜 안은 쪽 번호순)
+GET {{baseUrl}}/api/reading-records/{{readingRecordId}}/sentence-collection
+Authorization: Bearer {{accessToken}}
+
+### 8. 모음집 공개 설정 (BE1 회차 수정의 isPublic)
+PATCH {{baseUrl}}/api/reading-records/{{readingRecordId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "isPublic": true
+}
+
+### 9. 내 모음집 목록 (bookId는 선택)
+GET {{baseUrl}}/api/me/sentence-collections?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 10. 책 리뷰 작성 (완독 회차가 있어야 한다. 책당 1개)
+POST {{baseUrl}}/api/books/{{bookId}}/review
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "oneLine": "다시 읽고 싶은 책",
+  "isSpoiler": false,
+  "isPublic": true
+}
+
+> {%
+  client.global.set("reviewId", response.body.reviewId);
+%}
+
+### 11. 내 책 리뷰 조회
+GET {{baseUrl}}/api/books/{{bookId}}/review
+Authorization: Bearer {{accessToken}}
+
+### 12. 리뷰 수정 (oneLine: ""는 한줄평 삭제)
+PATCH {{baseUrl}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "rating": 4
+}
+
+### 13. 회차 독후활동 화면 조회 (리뷰와 독후감, 없으면 null)
+GET {{baseUrl}}/api/reading-records/{{readingRecordId}}/review
+Authorization: Bearer {{accessToken}}
+
+### 14. 회차 독후활동 저장 (review, bookReport 중 보낸 것만 반영)
+PUT {{baseUrl}}/api/reading-records/{{readingRecordId}}/review
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "review": {
+    "rating": 5,
+    "oneLine": "두 번째 읽으니 더 좋았다"
+  },
+  "bookReport": {
+    "content": "처음 읽었을 때와 달리 주인공의 선택이 이해되었다.",
+    "isPublic": true
+  }
+}
+
+> {%
+  client.global.set("bookReportId", response.body.bookReport.bookReportId);
+%}
+
+### 15. 독후감 조회
+GET {{baseUrl}}/api/book-reports/{{bookReportId}}
+Authorization: Bearer {{accessToken}}
+
+### 16. 독후감 수정 (내용이 바뀌면 revision 증가)
+PATCH {{baseUrl}}/api/book-reports/{{bookReportId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "고쳐 쓴 독후감",
+  "isPublic": false
+}
+
+### 17. 독후감 삭제
+DELETE {{baseUrl}}/api/book-reports/{{bookReportId}}
+Authorization: Bearer {{accessToken}}
+
+### 18. 완독자 커뮤니티 요약 (잠겨 있어도 200)
+GET {{baseUrl}}/api/books/{{bookId}}/community
+Authorization: Bearer {{accessToken}}
+
+### 19. 커뮤니티 항목 목록 (완독자가 아니면 403 COMMUNITY_LOCKED)
+GET {{baseUrl}}/api/books/{{bookId}}/community/entries?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 20. 커뮤니티 항목 상세
+GET {{baseUrl}}/api/books/{{bookId}}/community/entries/{{readingRecordId}}
+Authorization: Bearer {{accessToken}}
+
+### 21. ISBN 공개 한줄평 목록 (완독 여부와 무관)
+GET {{baseUrl}}/api/reviews?isbn={{isbn}}&sort=latest&page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 22. 좋아요순
+GET {{baseUrl}}/api/reviews?isbn={{isbn}}&sort=likes
+Authorization: Bearer {{accessToken}}
+
+### 23. 별점 통계
+GET {{baseUrl}}/api/reviews/rating-summary?isbn={{isbn}}
+Authorization: Bearer {{accessToken}}
+
+### 24. 좋아요 (여러 번 보내도 한 번만 센다. 내 리뷰는 400)
+PUT {{baseUrl}}/api/reviews/{{reviewId}}/like
+Authorization: Bearer {{accessToken}}
+
+### 25. 좋아요 취소
+DELETE {{baseUrl}}/api/reviews/{{reviewId}}/like
+Authorization: Bearer {{accessToken}}
+
+### 26. 신고 (OTHER는 detail 필수, 같은 리뷰 재신고는 409)
+POST {{baseUrl}}/api/reviews/{{reviewId}}/reports
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "OTHER",
+  "detail": "책과 관계없는 내용"
+}
+
+### 27. [관리자] 신고된 리뷰 목록 (blinded는 선택)
+GET {{baseUrl}}/api/admin/reviews/reported?blinded=true&page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 28. [관리자] 블라인드 해제 (신고 수 0으로 초기화)
+PATCH {{baseUrl}}/api/admin/reviews/{{reviewId}}/blind
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "blinded": false
+}
