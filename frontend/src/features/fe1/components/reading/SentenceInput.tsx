@@ -5,7 +5,7 @@ import { colors, radius, spacing } from '../../constants/theme';
 type SentenceInputProps = { value: string; onChange: (value: string) => void };
 
 /**
- * 인상 깊었던 문장 입력 (선택 항목).
+ * 인상 깊었던 문장 입력 (필수 항목).
  * 검증 규칙(설계 문서 '검증로직 포함 논의할 것'): 현재는 최대 길이만 제한하고 앞뒤 공백은 저장 시 제거한다.
  */
 export function SentenceInput({ value, onChange }: SentenceInputProps) {

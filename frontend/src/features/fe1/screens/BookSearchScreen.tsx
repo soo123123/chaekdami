@@ -1,30 +1,30 @@
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { BookCard } from '../components/book/BookCard';
+import { BookCategoryTab } from '../components/book/BookCategoryTab';
+import { ManualRegisterButton } from '../components/book/ManualRegisterButton';
 import { RecentSearchList } from '../components/book/RecentSearchList';
 import { SearchBar } from '../components/book/SearchBar';
-import { ChipTabs } from '../components/common/ChipTabs';
+import { SearchSortSelector } from '../components/book/SearchSortSelector';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
-import { SortSelector } from '../components/common/SortSelector';
 import { EmptyView, ErrorView, LoadingView } from '../components/common/StateView';
-import { SEARCH_CATEGORIES, SEARCH_SORTS } from '../constants/options';
+import { SEARCH_CATEGORIES } from '../constants/options';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, radius, spacing } from '../constants/theme';
+import { colors, spacing } from '../constants/theme';
 import { useBookSearch } from '../hooks/book/useBookSearch';
 
 export function BookSearchScreen() {
   const search = useBookSearch();
+  // 바코드 스캔은 카메라 의존성(expo-camera) 도입 후 연결한다.
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
 
   const handleOpenInfo = (itemId: string) => router.push({ pathname: FE1_ROUTES.info, params: { itemId } });
   const handleRegister = (itemId: string) => router.push({ pathname: FE1_ROUTES.register, params: { itemId } });
   const handleManualRegister = () => router.push(FE1_ROUTES.manualRegister);
 
-  const manualButton = (
-    <Pressable accessibilityRole="button" onPress={handleManualRegister} style={styles.manual}>
-      <Text style={styles.manualLabel}>+ 수동등록</Text>
-    </Pressable>
-  );
+  const manualButton = <ManualRegisterButton onPress={handleManualRegister} />;
 
   const renderBody = () => {
     switch (search.status) {
@@ -55,12 +55,17 @@ export function BookSearchScreen() {
 
   const header = (
     <View style={styles.top}>
-      <SearchBar value={search.searchKeyword} onChange={search.setSearchKeyword} onSearch={search.searchBooks} />
-      <ChipTabs
-        options={SEARCH_CATEGORIES}
-        selected={search.selectedCategory}
+      <SearchBar
+        value={search.searchKeyword}
+        onChange={search.setSearchKeyword}
+        onSearch={search.searchBooks}
+        onPressScan={() => setScanNotice('바코드 스캔은 준비 중이에요. ISBN을 직접 입력해 검색해주세요.')}
+      />
+      {scanNotice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{scanNotice}</Text> : null}
+      <BookCategoryTab
+        categories={SEARCH_CATEGORIES}
+        selectedCategory={search.selectedCategory}
         onChange={search.setSelectedCategory}
-        accessibilityLabel="도서 카테고리"
       />
       <RecentSearchList
         keywords={search.recentSearches}
@@ -74,7 +79,7 @@ export function BookSearchScreen() {
           </Text>
           <View style={styles.resultActions}>
             {manualButton}
-            <SortSelector options={SEARCH_SORTS} value={search.sort} onChange={search.setSort} />
+            <SearchSortSelector sort={search.sort} onChange={search.setSort} />
           </View>
         </View>
       ) : null}
@@ -101,11 +106,10 @@ export function BookSearchScreen() {
 const styles = StyleSheet.create({
   list: { paddingBottom: spacing.xl },
   top: { gap: spacing.md + 4, paddingBottom: spacing.xs },
+  notice: { fontSize: 13, color: colors.secondaryText, marginTop: -spacing.sm },
   resultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, flexWrap: 'wrap', marginTop: spacing.sm },
-  resultTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
+  resultTitle: { fontSize: 21, fontWeight: '800', color: colors.text },
   resultActions: { flexDirection: 'row', gap: spacing.sm },
-  manual: { minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },
-  manualLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
   hint: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.md },
   hintText: { fontSize: 14, color: colors.secondaryText },
   hintAction: { flexDirection: 'row' },

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, radius, spacing } from '../../constants/theme';
+import { colors, noWebOutline, radius, spacing } from '../../constants/theme';
 import { calcProgress, digitsOnly } from '../../utils/format';
 import { InlineError } from '../common/StateView';
 import { ReadingProgress } from './ReadingProgress';
@@ -76,18 +76,18 @@ export function ReadingStatusInput({ currentPage, totalPages, onChange, isTotalE
 }
 
 const styles = StyleSheet.create({
-  box: { backgroundColor: colors.surfaceMuted, borderRadius: radius.card - 4, padding: spacing.md, gap: spacing.md },
+  box: { backgroundColor: '#F7F1E9', borderRadius: radius.card - 4, padding: spacing.md, gap: spacing.md },
   header: { gap: spacing.xs },
-  title: { fontSize: 16, fontWeight: '700', color: colors.text },
-  desc: { fontSize: 13, color: colors.secondaryText },
+  title: { fontSize: 17, fontWeight: '800', color: colors.text },
+  desc: { fontSize: 14, color: colors.secondaryText },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFE5D8', borderRadius: radius.input, minHeight: 52, flexGrow: 1, flexBasis: 170, maxWidth: 260 },
-  stepButton: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-  stepGlyph: { fontSize: 26, color: colors.primary, fontWeight: '500' },
+  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceSunken, borderRadius: radius.input, minHeight: 56, flexGrow: 1, flexBasis: 150, maxWidth: 260 },
+  stepButton: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+  stepGlyph: { fontSize: 30, color: colors.primary, fontWeight: '400' },
   dim: { opacity: 0.3 },
-  pageInput: { flex: 1, textAlign: 'center', fontSize: 22, fontWeight: '700', color: colors.text, paddingVertical: spacing.xs },
-  total: { fontSize: 15, color: colors.secondaryText },
-  totalEdit: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexGrow: 1 },
-  totalInput: { flex: 1, minWidth: 110, minHeight: 52, borderRadius: radius.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.sm, fontSize: 15, textAlign: 'center', color: colors.text },
+  pageInput: { flex: 1, minWidth: 40, textAlign: 'center', fontSize: 26, fontWeight: '800', ...noWebOutline, color: colors.text, paddingVertical: spacing.xs },
+  total: { fontSize: 17, color: colors.secondaryText, marginLeft: spacing.sm },
+  totalEdit: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexGrow: 1, flexBasis: 140 },
+  totalInput: { flex: 1, minWidth: 0, maxWidth: 140, minHeight: 56, borderRadius: radius.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.sm, fontSize: 15, textAlign: 'center', color: colors.text },
   slash: { fontSize: 16, color: colors.secondaryText },
 });

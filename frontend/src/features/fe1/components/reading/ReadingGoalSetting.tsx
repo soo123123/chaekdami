@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
 import { digitsOnly, formatDate, todayIso } from '../../utils/format';
 import { DatePickerModal } from '../common/DatePickerModal';
+import { Icon, type IconName } from '../common/Icon';
 import { TextInputModal } from '../common/TextInputModal';
 
 type ReadingGoalSettingProps = {
@@ -35,13 +36,15 @@ export function ReadingGoalSetting({ goalDate, goalPage, currentPage, totalPages
       <Text style={styles.title}>독서 목표 (선택)</Text>
       <View style={styles.row}>
         <GoalButton
-          icon="📅"
+          icon="calendarGoal"
+          iconColor={colors.primaryLight}
           label={goalDate ? `${formatDate(goalDate)}까지` : '목표 날짜 설정'}
           isSet={!!goalDate}
           onPress={() => setIsDateOpen(true)}
         />
         <GoalButton
-          icon="🚩"
+          icon="flag"
+          iconColor={colors.flag}
           label={goalPage ? `${goalPage}쪽까지` : '목표 페이지 설정'}
           isSet={!!goalPage}
           onPress={() => setIsPageOpen(true)}
@@ -73,10 +76,12 @@ export function ReadingGoalSetting({ goalDate, goalPage, currentPage, totalPages
   );
 }
 
-function GoalButton({ icon, label, isSet, onPress }: { icon: string; label: string; isSet: boolean; onPress: () => void }) {
+type GoalButtonProps = { icon: IconName; iconColor: string; label: string; isSet: boolean; onPress: () => void };
+
+function GoalButton({ icon, iconColor, label, isSet, onPress }: GoalButtonProps) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={[styles.button, isSet && styles.buttonSet]}>
-      <Text style={styles.icon}>{icon}</Text>
+      <Icon name={icon} size={22} color={iconColor} />
       <Text style={[styles.label, isSet && styles.labelSet]} numberOfLines={1}>{label}</Text>
     </Pressable>
   );
@@ -84,11 +89,10 @@ function GoalButton({ icon, label, isSet, onPress }: { icon: string; label: stri
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm + 4 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
+  title: { fontSize: 19, fontWeight: '800', color: colors.text },
   row: { flexDirection: 'row', gap: spacing.sm + 4 },
   button: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, borderRadius: radius.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: spacing.sm },
   buttonSet: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  icon: { fontSize: 17 },
   label: { fontSize: 15, color: colors.text, flexShrink: 1 },
   labelSet: { color: colors.primary, fontWeight: '700' },
 });

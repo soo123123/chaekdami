@@ -1,1 +1,4 @@
-export { default } from '../screens/Home/HomeScreen';
+
+/* frontend/src/app/index.tsx */
+
+export { default } from './home';

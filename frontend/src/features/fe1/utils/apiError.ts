@@ -56,9 +56,11 @@ export function toAppError(error: unknown): AppError {
   }
   if (error instanceof Error && 'status' in error) {
     const status = Number((error as { status: unknown }).status);
+    const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
     return {
       kind: status >= 500 ? 'server' : 'client',
       status,
+      code,
       message: error.message || STATUS_MESSAGES[status] || '요청을 처리하지 못했어요.',
     };
   }
