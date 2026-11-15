@@ -93,6 +93,6 @@ export function BookRegisterScreen() {
 const styles = StyleSheet.create({
   bookCardWrap: { marginTop: 88 },
   bookCard: { paddingTop: spacing.lg },
-  decor: { right: -spacing.xs, top: -92 },
+  decor: { right: -spacing.xs, top: -97 },
   meta: { fontSize: 15, color: colors.secondaryText },
 });

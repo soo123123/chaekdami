@@ -3,10 +3,11 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { colors, serifFont, softShadow, spacing } from '../../constants/theme';
-import { CatWheel } from './CatWheel';
+import { ReadingCat } from './ReadingCat';
 
-const ROOM = require('../../assets/decor/reading-room.jpg');
-/** 배경 이미지 원본 크기. 쳇바퀴·말풍선 위치를 이 비율로 맞춘다. */
+// 카페 배경(원본 1086x1448)을 무대 비율 798x834로 잘라낸 이미지. 고양이가 의자에 앉아 테이블 위 책을 읽는 구도.
+const ROOM = require('../../assets/decor/reading-cafe.jpg');
+/** 배경 이미지 원본 크기. 고양이·말풍선 위치를 이 비율로 맞춘다. */
 const ROOM_W = 798;
 const ROOM_H = 834;
 const MAX_STAGE_WIDTH = 520;
@@ -19,14 +20,15 @@ type ReadingStageProps = {
   backgroundColor?: string;
 };
 
-/** 독서 시작 화면의 방 일러스트 + 쳇바퀴 고양이 + 타이머 영역 */
+/** 독서 시작 화면의 방 일러스트 + 독서하는 고양이 + 타이머 영역 */
 export function ReadingStage({ isRunning, bubbleText, children, backgroundColor = colors.background }: ReadingStageProps) {
   const [width, setWidth] = useState(0);
   const stageWidth = Math.min(width, MAX_STAGE_WIDTH);
   const stageHeight = (stageWidth * ROOM_H) / ROOM_W;
   const px = (x: number) => (x / ROOM_W) * stageWidth;
   const py = (y: number) => (y / ROOM_H) * stageHeight;
-  const wheelSize = px(404);
+  // 기존 쳇바퀴(x 203~607, y 96~500) 자리에 고양이를 가운데·아래 정렬로 둔다
+  const catWidth = px(404);
 
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
@@ -38,8 +40,8 @@ export function ReadingStage({ isRunning, bubbleText, children, backgroundColor 
           <EdgeFade color={backgroundColor} height={py(70)} position="top" />
           <EdgeFade color={backgroundColor} height={py(60)} position="bottom" />
 
-          <View style={[styles.abs, { left: px(203), top: py(96) }]}>
-            <CatWheel size={wheelSize} isRunning={isRunning} />
+          <View style={[styles.abs, { left: px(203), top: py(140) }]}>
+            <ReadingCat width={catWidth} isRunning={isRunning} />
           </View>
 
           <View style={[styles.bubbleWrap, { top: py(14) }]}>

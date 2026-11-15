@@ -15,7 +15,7 @@ type BookPhotoUploaderProps = {
   errorMessage?: string | null;
 };
 
-/** 책 사진 첨부 (선택 항목) */
+/** 책 사진 첨부 (필수 항목, 1장 이상) */
 export function BookPhotoUploader({ photos, onChange, onTakePhoto, onPickFromGallery, errorMessage }: BookPhotoUploaderProps) {
   return (
     <View style={styles.container}>

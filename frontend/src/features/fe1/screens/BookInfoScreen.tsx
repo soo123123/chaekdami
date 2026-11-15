@@ -15,11 +15,13 @@ import { ErrorView, LoadingView } from '../components/common/StateView';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, HIT_SLOP, keepAllWords, radius, serifFont, spacing } from '../constants/theme';
 import { useBookInfo } from '../hooks/book/useBookInfo';
-import { useItemIdParam } from '../hooks/common/useRouteParams';
+import { useItemIdParam, useRegisteredParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
 
 export function BookInfoScreen() {
   const itemId = useItemIdParam();
+  // 서재 → 책 상세에서 들어온 경우 (이미 등록된 책)
+  const isRegistered = useRegisteredParam();
   const { book, isLoading, error, reload } = useBookInfo(itemId);
   // 찜하기 API가 아직 없어 화면 안에서만 유지되는 상태다.
   const [isLiked, setIsLiked] = useState(false);
@@ -55,7 +57,7 @@ export function BookInfoScreen() {
   return (
     <ScreenContainer
       header={header}
-      footer={book ? <RegisterBookButton onPress={handleRegister} /> : undefined}
+      footer={book ? <RegisterBookButton onPress={handleRegister} registered={isRegistered} /> : undefined}
     >
       {isLoading ? <LoadingView /> : null}
       {!isLoading && error ? <ErrorView error={error} onRetry={reload} onBack={() => router.back()} /> : null}

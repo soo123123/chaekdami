@@ -1,1 +1,1 @@
-export { default } from '@/features/fe2/screens/Reward/QuestScreen';
+export { default } from '@/features/fe2/screens/QuestScreen';

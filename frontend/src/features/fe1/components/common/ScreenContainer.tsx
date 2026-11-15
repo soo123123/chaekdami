@@ -1,6 +1,8 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FE1_ROUTES_WITH_TAB_BAR } from '../../constants/routes';
 import { colors, spacing } from '../../constants/theme';
 
 type Props = PropsWithChildren<{
@@ -13,8 +15,10 @@ type Props = PropsWithChildren<{
 }>;
 
 export function ScreenContainer({ children, scrollable = true, header, footer, backgroundColor = colors.background }: Props) {
+  // 아래 안전 영역(홈 인디케이터)은 보통 하단 탭바가 처리하고, 탭바가 없는 화면만 여기서 비운다
+  const hasTabBar = FE1_ROUTES_WITH_TAB_BAR.includes(usePathname());
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor }]} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor }]} edges={hasTabBar ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {header}
         {scrollable ? (

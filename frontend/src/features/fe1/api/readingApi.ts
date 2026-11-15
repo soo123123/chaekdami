@@ -43,7 +43,11 @@ export interface ReadingApi {
   getBookDetail(bookId: BookId): Promise<BookDetail>;
   /** 등록 도서 삭제 */
   removeBook(bookId: BookId): Promise<void>;
-  /** 독서 기록 저장 */
+  /**
+   * 독서 기록 저장.
+   * 응답의 readingRecordId는 회차 ID(백엔드 reading_records.id), round는 회독 수, isCompleted는 이번 저장 후 완독 여부.
+   * BE1 명세 예정: POST /api/reading-records/{readingRecordId}/sessions (회차 ID를 먼저 알아야 하므로 확정 시 요청 형식이 바뀔 수 있음)
+   */
   saveReadingRecord(request: ReadingRecordRequest): Promise<ReadingRecordResult>;
   /** 오늘/이번 책/이번 주 독서 시간 (FE2 통계 담당 — 제공 방식 미확정) */
   getReadingTimeSummary(bookId: BookId): Promise<ReadingTimeSummary | null>;

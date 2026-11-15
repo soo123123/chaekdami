@@ -11,21 +11,24 @@ type ScreenHeaderProps = {
   align?: 'left' | 'center';
   /** 제목 아래 보조 문구 (가운데 정렬 헤더에서 사용) */
   subtitle?: string;
+  /** 'dark'면 어두운 배경 위에 쓰도록 글자·아이콘을 흰색으로 바꾼다 (독서 집중 모드) */
+  tone?: 'light' | 'dark';
 };
 
-export function ScreenHeader({ title, onBack, right, align = 'left', subtitle }: ScreenHeaderProps) {
+export function ScreenHeader({ title, onBack, right, align = 'left', subtitle, tone = 'light' }: ScreenHeaderProps) {
   const isCenter = align === 'center';
+  const isDark = tone === 'dark';
   return (
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={[styles.side, isCenter && styles.sideCenter]}>
           {onBack ? (
             <Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" hitSlop={HIT_SLOP} onPress={onBack} style={styles.back}>
-              <Icon name="back" size={28} />
+              <Icon name="back" size={28} color={isDark ? DARK_TEXT : colors.text} />
             </Pressable>
           ) : null}
         </View>
-        <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, isCenter ? styles.center : styles.left]}>
+        <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, isCenter ? styles.center : styles.left, isDark && { color: DARK_TEXT }]}>
           {title}
         </Text>
         <View style={[styles.side, styles.right, isCenter && styles.sideCenter]}>{right}</View>
@@ -34,6 +37,8 @@ export function ScreenHeader({ title, onBack, right, align = 'left', subtitle }:
     </View>
   );
 }
+
+const DARK_TEXT = '#F2F2F2';
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.sm, gap: 2 },

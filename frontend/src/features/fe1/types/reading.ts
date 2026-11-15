@@ -160,8 +160,18 @@ export type ReadingRecordRequest = {
   photos: ReadingPhoto[];
 };
 
+/**
+ * 독서 기록 저장 결과.
+ * readingRecordId는 저장 1건의 ID가 아니라 '회차'(1회독, 2회독) ID다 (백엔드 reading_records.id).
+ * 같은 회차를 여러 번 나눠 읽으면 같은 ID가 오고, 완독 후 다시 읽으면 새 회차 ID가 온다.
+ * 독후감(FE2)은 이 회차 ID 기준으로 1개씩 쓴다.
+ */
 export type ReadingRecordResult = {
   readingRecordId: number;
+  /** 몇 회독인지 (1부터) */
+  round: number;
+  /** 이번 저장으로 이 회차가 완독 상태인지 */
+  isCompleted: boolean;
 };
 
 /* ------------------------------------------------------------------ */

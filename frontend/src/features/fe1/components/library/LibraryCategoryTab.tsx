@@ -18,6 +18,7 @@ export function LibraryCategoryTab({ selectedCategory, onCategoryChange, counts 
       onChange={onCategoryChange}
       counts={counts}
       accessibilityLabel="독서 상태 필터"
+      size="sm"
     />
   );
 }
