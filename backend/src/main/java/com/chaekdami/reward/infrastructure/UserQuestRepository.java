@@ -2,6 +2,7 @@ package com.chaekdami.reward.infrastructure;
 
 import com.chaekdami.reward.domain.UserQuest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +24,8 @@ public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
 
     @Query("select uq from UserQuest uq join fetch uq.quest where uq.id = :id and uq.userId = :userId")
     Optional<UserQuest> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from UserQuest uq where uq.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

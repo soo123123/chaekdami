@@ -2,6 +2,7 @@ package com.chaekdami.reward.infrastructure;
 
 import com.chaekdami.reward.domain.UserBuff;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,4 +20,8 @@ public interface UserBuffRepository extends JpaRepository<UserBuff, Long> {
             + " and ub.buffStartAt <= :now and ub.buffEndAt > :now"
             + " order by ub.buffEndAt desc")
     List<UserBuff> findActiveBuffs(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from UserBuff ub where ub.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }
