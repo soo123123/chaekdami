@@ -3,6 +3,7 @@ package com.chaekdami.reward.application;
 import com.chaekdami.reward.domain.DailyQuest;
 import com.chaekdami.reward.domain.DailyQuestPicker;
 import com.chaekdami.reward.domain.Quest;
+import com.chaekdami.reward.domain.QuestStatus;
 import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -48,17 +50,19 @@ public class QuestService {
 
     /**
      * 독서 세션 1회 완료를 오늘의 퀘스트 진행도에 반영한다. 퀘스트마다 DailyQuest 의 진행 기준으로 더할 값을 정한다.
-     * 독서 시간은 30초 이상이면 1분으로 반올림한다. 독서 완료 유스케이스(CompleteReadingService)가 검증된 독서 시간으로 호출한다.
+     * 독서 시간은 30초 이상이면 1분으로 반올림한다.
+     * 이번 세션으로 목표에 도달한 퀘스트는 수령 요청 없이 바로 보상 재화와 경험치를 지급한다. (COMPLETED -> REWARDED)
      */
     @Transactional
-    public List<QuestResult> recordReadingSession(Long userId, int durationSeconds) {
+    public QuestSessionResult recordReadingSession(Long userId, int durationSeconds) {
         if (durationSeconds < 0) {
             throw new IllegalArgumentException("독서 시간은 0 이상이어야 합니다. (입력: " + durationSeconds + ")");
         }
-        rewardLedger.lockAccount(userId);
+        RewardAccount account = rewardLedger.lockAccount(userId);
         int readingMinutes = (durationSeconds + SECONDS_PER_MINUTE / 2) / SECONDS_PER_MINUTE;
 
         List<UserQuest> todayQuests = getOrCreateTodayQuests(userId);
+        List<QuestRewardResult> rewarded = new ArrayList<>();
         for (UserQuest userQuest : todayQuests) {
             int progress = DailyQuest.fromCode(userQuest.getQuest().getCode())
                     .map(dailyQuest -> switch (dailyQuest.getProgressUnit()) {
@@ -69,20 +73,32 @@ public class QuestService {
             if (progress > 0) {
                 userQuest.updateProgress(progress);
             }
+            if (userQuest.getStatus() == QuestStatus.COMPLETED) {
+                rewarded.add(grantReward(account, userQuest));
+            }
         }
-        return todayQuests.stream()
+        List<QuestResult> quests = todayQuests.stream()
                 .map(QuestResult::from)
                 .toList();
+        return new QuestSessionResult(quests, rewarded);
     }
 
     /**
      * 완료된 퀘스트의 보상 재화와 경험치를 지급한다.
+     * 달성 시 자동 지급으로 바뀌어 보통은 이미 수령된 상태(QUEST_002)다. 자동 지급 전에 완료된 퀘스트를 위해 남겨 둔다.
      */
     @Transactional
     public QuestRewardResult claimReward(Long userId, Long userQuestId) {
         RewardAccount account = rewardLedger.lockAccount(userId);
         UserQuest userQuest = userQuestRepository.findByIdAndUserId(userQuestId, userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.QUEST_NOT_FOUND));
+        return grantReward(account, userQuest);
+    }
+
+    /**
+     * 퀘스트를 수령 처리하고 보상 재화와 경험치를 지급한다. 경험치로 레벨업하면 승급 보상도 함께 지급된다.
+     */
+    private QuestRewardResult grantReward(RewardAccount account, UserQuest userQuest) {
         userQuest.claimReward();
 
         Quest quest = userQuest.getQuest();
@@ -93,7 +109,7 @@ public class QuestService {
         if (quest.getRewardExperience() > 0) {
             promotionReward = rewardLedger.addExperience(account, quest.getRewardExperience(), TransactionReason.DAILY_QUEST);
         }
-        return new QuestRewardResult(userQuestId, quest.getRewardCurrency(), quest.getRewardExperience(),
+        return new QuestRewardResult(userQuest.getId(), quest.getRewardCurrency(), quest.getRewardExperience(),
                 promotionReward, account.getCurrency(), account.getLevel());
     }
 
