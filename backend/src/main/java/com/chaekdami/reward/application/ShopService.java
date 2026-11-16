@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 상점 상품 조회와 구매
@@ -29,8 +31,12 @@ public class ShopService {
     private final RewardLedger rewardLedger;
 
     @Transactional(readOnly = true)
-    public List<ShopItem> getActiveItems() {
-        return shopItemRepository.findAllByActiveTrueOrderByIdAsc();
+    public List<ShopItemView> getActiveItems(Long userId) {
+        Map<Long, Integer> owned = userItemRepository.findAllByUserId(userId).stream()
+                .collect(Collectors.toMap(item -> item.getShopItemId(), item -> item.getQuantity(), Integer::sum));
+        return shopItemRepository.findAllByActiveTrueOrderByIdAsc().stream()
+                .map(item -> ShopItemView.of(item, owned.getOrDefault(item.getId(), 0)))
+                .toList();
     }
 
     /**

@@ -9,7 +9,6 @@ import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
-import { BookPhotoUploader } from '../components/reading/BookPhotoUploader';
 import { ReadingPageRange, ReadingTime } from '../components/reading/ReadingRecordFields';
 import { ReadingResult } from '../components/reading/ReadingResult';
 import { SaveReadingRecordButton } from '../components/reading/SaveReadingRecordButton';
@@ -18,7 +17,6 @@ import { showToast } from '@/components/Toast';
 import { ROUTES, toBookDetail, toReadingComplete } from '@/constants/routes';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, HIT_SLOP, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
-import { useImagePicker } from '../hooks/common/useImagePicker';
 import { useReadingEndParams } from '../hooks/common/useRouteParams';
 import { useReadingEnd } from '../hooks/reading/useReadingEnd';
 import { formatDuration, todayIso } from '../utils/format';
@@ -29,7 +27,6 @@ export function ReadingEndScreen() {
   const record = useReadingEnd(bookId, elapsedTime);
   const { book } = record;
   const [today] = useState(todayIso);
-  const picker = useImagePicker();
   const { width: windowWidth } = useWindowDimensions();
   const sceneWidth = Math.min(windowWidth, 560) * 0.66;
   const navigation = useNavigation();
@@ -81,15 +78,6 @@ export function ReadingEndScreen() {
   };
 
   const goHome = () => router.dismissTo(ROUTES.home);
-
-  /** 선택한 사진을 기존 목록 뒤에 붙인다 (같은 사진은 한 번만) */
-  const addPhotos = (uris: string[]) => {
-    if (uris.length === 0) return;
-    record.setPhotos(prev => {
-      const known = new Set(prev.map(photo => photo.uri));
-      return [...prev, ...uris.filter(uri => !known.has(uri)).map(uri => ({ uri }))];
-    });
-  };
 
   // 이번 기록 입력 내용은 유지한 채 책 상세(지난 기록·문장)를 조회 전용으로 연다.
   const openRecords = () => {
@@ -177,16 +165,6 @@ export function ReadingEndScreen() {
             {elapsedTime === 0 ? (
               <Text style={styles.hint}>측정된 독서 시간이 없어요. ‘수정’을 눌러 독서 시간을 입력해주세요.</Text>
             ) : null}
-          </Card>
-
-          <Card title="책 사진 첨부하기" subtitle="책 표지나 인상 깊었던 페이지를 사진으로 남겨보세요." right={<RequiredMark />}>
-            <BookPhotoUploader
-              photos={record.photos}
-              onChange={record.setPhotos}
-              onTakePhoto={async () => addPhotos(await picker.takePhoto())}
-              onPickFromGallery={async () => addPhotos(await picker.pickFromLibrary({ multiple: true }))}
-              errorMessage={picker.error}
-            />
           </Card>
 
           <Card title="인상 깊었던 문장" subtitle="가장 기억에 남는 문장을 적어보세요." right={<RequiredMark />}>

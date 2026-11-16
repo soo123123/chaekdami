@@ -3,6 +3,7 @@ package com.chaekdami.reward.application;
 import com.chaekdami.reward.domain.DailyQuest;
 import com.chaekdami.reward.domain.DailyQuestPicker;
 import com.chaekdami.reward.domain.Quest;
+import com.chaekdami.reward.domain.QuestStatus;
 import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
@@ -55,7 +56,7 @@ public class QuestService {
         if (durationSeconds < 0) {
             throw new IllegalArgumentException("독서 시간은 0 이상이어야 합니다. (입력: " + durationSeconds + ")");
         }
-        rewardLedger.lockAccount(userId);
+        RewardAccount account = rewardLedger.lockAccount(userId);
         int readingMinutes = (durationSeconds + SECONDS_PER_MINUTE / 2) / SECONDS_PER_MINUTE;
 
         List<UserQuest> todayQuests = getOrCreateTodayQuests(userId);
@@ -68,6 +69,9 @@ public class QuestService {
                     .orElse(0);
             if (progress > 0) {
                 userQuest.updateProgress(progress);
+            }
+            if (userQuest.getStatus() == QuestStatus.COMPLETED) {
+                pay(account, userQuest);
             }
         }
         return todayQuests.stream()
@@ -83,18 +87,26 @@ public class QuestService {
         RewardAccount account = rewardLedger.lockAccount(userId);
         UserQuest userQuest = userQuestRepository.findByIdAndUserId(userQuestId, userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.QUEST_NOT_FOUND));
-        userQuest.claimReward();
+        int promotionReward = pay(account, userQuest);
+        Quest quest = userQuest.getQuest();
+        return new QuestRewardResult(userQuestId, quest.getRewardCurrency(), quest.getRewardExperience(),
+                promotionReward, account.getCurrency(), account.getLevel());
+    }
 
+    /**
+     * 완료된 퀘스트의 재화와 경험치를 지급하고 수령 완료로 바꾼다.
+     * 독서 세션으로 목표에 닿으면 바로 호출한다. 수령 API 도 같은 지급을 쓴다.
+     */
+    private int pay(RewardAccount account, UserQuest userQuest) {
+        userQuest.claimReward();
         Quest quest = userQuest.getQuest();
         if (quest.getRewardCurrency() > 0) {
             rewardLedger.addCurrency(account, quest.getRewardCurrency(), TransactionReason.DAILY_QUEST);
         }
-        int promotionReward = 0;
         if (quest.getRewardExperience() > 0) {
-            promotionReward = rewardLedger.addExperience(account, quest.getRewardExperience(), TransactionReason.DAILY_QUEST);
+            return rewardLedger.addExperience(account, quest.getRewardExperience(), TransactionReason.DAILY_QUEST);
         }
-        return new QuestRewardResult(userQuestId, quest.getRewardCurrency(), quest.getRewardExperience(),
-                promotionReward, account.getCurrency(), account.getLevel());
+        return 0;
     }
 
     /**

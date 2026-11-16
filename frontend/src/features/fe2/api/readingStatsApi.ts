@@ -18,6 +18,7 @@ export interface ReadingStats {
 
   weekly: ReadingStatItem[];
   monthly: ReadingStatItem[];
+  daily: ReadingStatItem[];
 }
 
 // 독서 통계 조회
@@ -27,7 +28,7 @@ export const getReadingStats = async (): Promise<ReadingStats> => {
     console.log('[ReadingStats API] 독서 통계 요청 시작');
 
     const response = await apiClient.get<ReadingStats>(
-      '/reading-stats'
+      '/api/me/reading-stats'
     );
 
     console.log(

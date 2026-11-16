@@ -16,7 +16,7 @@ export type SaveResult = ({ ok: true } & ReadingRecordResult) | { ok: false; mes
  * - startPage/endPage는 조회한 책의 currentPage로 초기화한다.
  *   완독한 책을 다시 읽는 경우(새 회차)는 0쪽부터 시작한다.
  * - 저장 성공 응답을 받은 뒤에만 status가 success가 된다.
- * - 책 사진(1장 이상)과 인상 깊었던 문장은 필수다.
+ * - 인상 깊었던 문장은 필수다. 책 사진은 아직 저장하지 않는다.
  */
 export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   const { data, error: loadError, isLoading: isBookLoading, reload } = useAsyncResource(
@@ -61,7 +61,6 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     const rangeError = validatePageRange(startPage, endPage, book.totalPages);
     if (rangeError) return fail(rangeError);
     if (readingTime <= 0) return fail('독서 시간을 확인해주세요.');
-    if (photos.length === 0) return fail('책 사진을 1장 이상 첨부해주세요.');
     if (!sentence.trim()) return fail('인상 깊었던 문장을 입력해주세요.');
 
     setStatus('saving');

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -10,8 +10,11 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
+import { getReadingStats } from '../api/readingStatsApi';
 import { getRewardStatus } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
 type RewardStatus = {
@@ -19,7 +22,16 @@ type RewardStatus = {
   xp?: number;
   requiredXp?: number;
   currency?: number;
+  dday?: number;
 };
+
+function formatReadingTime(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes}분`;
+  if (minutes === 0) return `${hours}시간`;
+  return `${hours}시간 ${minutes}분`;
+}
 
 type LevelInfo = {
   level: number;
@@ -234,38 +246,57 @@ export default function RewardScreen() {
 
   const [reward, setReward] =
     useState<RewardStatus>(TEST_REWARD);
+  const [activity, setActivity] = useState({
+    completedBooks: 0,
+    totalMinutes: 0,
+    streak: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [demo, setDemo] = useState(false);
 
-  useEffect(() => {
+  const loadReward = useCallback(() => {
     let active = true;
 
     async function load() {
-      try {
-        const data = await getRewardStatus();
+      const [rewardResult, statsResult, ddayResult] = await Promise.allSettled([
+        getRewardStatus(),
+        getReadingStats(),
+        getDday(),
+      ]);
 
-        if (active) {
-          setReward(data);
-          setDemo(false);
-        }
-      } catch (error) {
-        console.warn('레벨 정보 조회 실패:', error);
+      if (!active) return;
 
-        if (active) {
-          setReward(TEST_REWARD);
-          setDemo(true);
-        }
-      } finally {
-        if (active) setLoading(false);
+      if (rewardResult.status === 'fulfilled') {
+        setReward(rewardResult.value);
+        setDemo(false);
+      } else {
+        console.warn('레벨 정보 조회 실패:', rewardResult.reason);
+        setReward(TEST_REWARD);
+        setDemo(true);
       }
+
+      const records = ddayResult.status === 'fulfilled' ? ddayResult.value.records ?? {} : {};
+      setActivity((previous) => ({
+        completedBooks: statsResult.status === 'fulfilled'
+          ? statsResult.value.completedBooks
+          : previous.completedBooks,
+        totalMinutes: statsResult.status === 'fulfilled'
+          ? statsResult.value.totalMinutes
+          : previous.totalMinutes,
+        streak: summarizeDday(records).currentStreak,
+      }));
+
+      setLoading(false);
     }
 
-    load();
+    void load();
 
     return () => {
       active = false;
     };
   }, []);
+
+  useFocusEffect(loadReward);
 
   const goBack = () => {
     if (router.canGoBack()) {
@@ -413,7 +444,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.book}
             label="읽은 책"
-            value="12권"
+            value={`${activity.completedBooks}권`}
           />
 
           <View style={styles.statDivider} />
@@ -421,7 +452,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.clock}
             label="독서 시간"
-            value="18시간 40분"
+            value={formatReadingTime(activity.totalMinutes)}
           />
 
           <View style={styles.statDivider} />
@@ -429,7 +460,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.calendar}
             label="연속 독서"
-            value="12일"
+            value={`${activity.streak}일`}
           />
         </View>
 

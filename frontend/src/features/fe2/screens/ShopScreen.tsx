@@ -14,7 +14,13 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getRewardStatus } from '../api/rewardApi';
+import axios from 'axios';
+import {
+  getRewardStatus,
+  getShopItems,
+  purchaseItem,
+  type ShopItemResult,
+} from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
 const COLORS = {
   background: '#FBF7F2',
@@ -53,62 +59,42 @@ type Product = {
   image: any;
 };
 
-const PRODUCTS: Product[] = [
-  {
-    id: 'shield-1',
-    type: 'shield',
-    name: 'D-day 방어권 1개',
-    description: 'D-day를 하루 보호해요.',
-    quantity: 1,
-    price: 200,
-    image: ART.shield1,
-  },
-  {
-    id: 'shield-5',
-    type: 'shield',
-    name: 'D-day 방어권 5개',
-    description: '더 든든하게 보호해요.',
-    quantity: 5,
-    price: 200,
-    image: ART.shield5,
-  },
-  {
-    id: 'shield-10',
-    type: 'shield',
-    name: 'D-day 방어권 10개',
-    description: '넉넉하게 준비하세요.',
-    quantity: 10,
-    price: 200,
-    image: ART.shield10,
-  },
-  {
-    id: 'exp-1',
-    type: 'exp',
-    name: 'EXP 부스터 1개',
-    description: '30분 동안 경험치 2배!',
-    quantity: 1,
-    price: 200,
-    image: ART.exp1,
-  },
-  {
-    id: 'exp-5',
-    type: 'exp',
-    name: 'EXP 부스터 5개',
-    description: '2배 효과를 더 오래!',
-    quantity: 5,
-    price: 200,
-    image: ART.exp5,
-  },
-  {
-    id: 'exp-10',
-    type: 'exp',
-    name: 'EXP 부스터 10개',
-    description: '꾸준한 성장의 지름길!',
-    quantity: 10,
-    price: 200,
-    image: ART.exp10,
-  },
-];
+function imageFor(type: ProductType, bundle: number) {
+  if (type === 'shield') {
+    if (bundle >= 10) return ART.shield10;
+    if (bundle >= 5) return ART.shield5;
+    return ART.shield1;
+  }
+  if (bundle >= 10) return ART.exp10;
+  if (bundle >= 5) return ART.exp5;
+  return ART.exp1;
+}
+
+function toProduct(item: ShopItemResult): Product {
+  const type: ProductType = item.type === 'SHIELD' ? 'shield' : 'exp';
+  return {
+    id: String(item.id),
+    type,
+    name: item.name,
+    description:
+      type === 'shield'
+        ? `D-day를 ${item.bundle}일 보호해요.`
+        : `경험치 2배 ${item.bundle}회를 받아요.`,
+    quantity: item.bundle,
+    price: item.price,
+    image: imageFor(type, item.bundle),
+  };
+}
+
+function errorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+  return '구매에 실패했어요.';
+}
 
 function CoinIcon({ size = 24 }: { size?: number }) {
   return (
@@ -207,7 +193,8 @@ export default function ShopScreen() {
 
   const [category, setCategory] =
     useState<Category>('recommend');
-  const [coins, setCoins] = useState(1250);
+  const [coins, setCoins] = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] =
     useState<Product | null>(null);
   const [inventory, setInventory] =
@@ -218,22 +205,33 @@ export default function ShopScreen() {
   useEffect(() => {
     let active = true;
 
-    async function loadCoins() {
+    async function loadShop() {
       try {
-        const result = await getRewardStatus();
+        const [reward, items] = await Promise.all([
+          getRewardStatus(),
+          getShopItems(),
+        ]);
 
-        if (
-          active &&
-          typeof result?.currency === 'number'
-        ) {
-          setCoins(result.currency);
+        if (!active) return;
+
+        if (typeof reward?.currency === 'number') {
+          setCoins(reward.currency);
         }
+
+        setProducts(items.map(toProduct));
+        const owned: Record<string, number> = {};
+        for (const item of items) {
+          if (item.ownedQuantity > 0) {
+            owned[String(item.id)] = item.ownedQuantity;
+          }
+        }
+        setInventory(owned);
       } catch (error) {
-        console.warn('재화 조회 실패:', error);
+        console.warn('상점 조회 실패:', error);
       }
     }
 
-    loadCoins();
+    loadShop();
 
     return () => {
       active = false;
@@ -256,7 +254,7 @@ export default function ShopScreen() {
     }
   };
 
-  const purchaseProduct = () => {
+  const purchaseProduct = async () => {
     if (!selectedProduct) return;
 
     const product = selectedProduct;
@@ -267,20 +265,19 @@ export default function ShopScreen() {
       return;
     }
 
-    setCoins((current) => current - product.price);
-
-    setInventory((current) => ({
-      ...current,
-      [product.id]:
-        (current[product.id] ?? 0) + product.quantity,
-    }));
-
-    setSelectedProduct(null);
-
-    showMessage(
-      `${product.name} 구매가 완료됐어요!\n\n` +
-        '현재는 화면 테스트용 구매이며 서버에는 저장되지 않아요.'
-    );
+    try {
+      const result = await purchaseItem(Number(product.id), 1);
+      setCoins(result.remainingCurrency);
+      setInventory((current) => ({
+        ...current,
+        [product.id]: result.updatedInventoryQuantity,
+      }));
+      setSelectedProduct(null);
+      showMessage(`${product.name} 구매가 완료됐어요.`);
+    } catch (error) {
+      setSelectedProduct(null);
+      showMessage(errorMessage(error));
+    }
   };
 
   return (
@@ -428,7 +425,7 @@ export default function ShopScreen() {
               title="D-day 방어권"
               description="D-day 갱신을 하지 않아도 하루를 막아주는 아이템이에요."
               icon="shield-checkmark-outline"
-              products={PRODUCTS.filter(
+              products={products.filter(
                 (p) => p.type === 'shield'
               )}
               onProductPress={setSelectedProduct}
@@ -438,7 +435,7 @@ export default function ShopScreen() {
               title="EXP 부스터"
               description="사용하는 동안 레벨 경험치가 2배로 증가해요!"
               icon="flask-outline"
-              products={PRODUCTS.filter(
+              products={products.filter(
                 (p) => p.type === 'exp'
               )}
               onProductPress={setSelectedProduct}
@@ -514,7 +511,7 @@ export default function ShopScreen() {
               아직 구매한 아이템이 없어요.
             </Text>
           ) : (
-            PRODUCTS.filter(
+            products.filter(
               (product) => (inventory[product.id] ?? 0) > 0
             ).map((product) => (
               <Text key={product.id} style={styles.inventoryText}>

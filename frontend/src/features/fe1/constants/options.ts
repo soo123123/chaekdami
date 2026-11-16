@@ -20,7 +20,6 @@ export const SEARCH_CATEGORIES: Option<SearchCategory>[] = [
 export const SEARCH_SORTS: Option<SearchSort>[] = [
   { value: 'accuracy', label: '정확도순' },
   { value: 'latest', label: '최신순' },
-  { value: 'rating', label: '평점순' },
 ];
 
 export const LIBRARY_FILTERS: Option<LibraryFilter>[] = [

@@ -3,7 +3,7 @@
  *
  * - 백엔드 계약은 be/feat/sentence-review 브랜치 docs/review-api-for-frontend.md 기준으로 확정되어 있어
  *   HTTP 구현(httpCommunityApi)은 실제 Endpoint로 작성한다.
- * - 해당 브랜치가 main에 병합되기 전까지 개발 중(__DEV__)에는 FE1_USE_DEV_MOCK 플래그로 Mock을 사용한다.
+ * - FE1_USE_DEV_MOCK이 꺼져 있으면 한줄평·별점·좋아요·신고를 서버로 보낸다.
  *
  * 화면/Hook은 반드시 이 파일의 communityApi만 사용한다.
  */

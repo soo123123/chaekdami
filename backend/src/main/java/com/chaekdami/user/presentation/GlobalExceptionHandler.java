@@ -2,6 +2,8 @@ package com.chaekdami.user.presentation;
 
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.global.error.ErrorCode;
+import com.chaekdami.reward.domain.RewardErrorCode;
+import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.ForbiddenException;
@@ -106,6 +108,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleDuplicateNickname(DuplicateNicknameException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiErrorResponse.of("NICKNAME_ALREADY_EXISTS", exception.getMessage()));
+    }
+
+    @ExceptionHandler(RewardException.class)
+    public ResponseEntity<ApiErrorResponse> handleReward(RewardException exception) {
+        RewardErrorCode errorCode = exception.getErrorCode();
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiErrorResponse.of(errorCode.getCode(), errorCode.getMessage()));
     }
 
     @ExceptionHandler(BusinessException.class)

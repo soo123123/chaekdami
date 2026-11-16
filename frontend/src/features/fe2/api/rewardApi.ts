@@ -1,27 +1,106 @@
 import apiClient from '@/api/apiClient';
 
-export const getRewardStatus = async () => {
-  const response = await apiClient.get(
-    '/rewards'
-  );
+type QuestType = 'DAILY' | 'WEEKLY';
+type QuestStatus = 'IN_PROGRESS' | 'COMPLETED' | 'REWARDED';
 
-  return response.data;
+interface QuestResult {
+  userQuestId: number;
+  questId: number;
+  title: string;
+  type: QuestType;
+  targetValue: number;
+  currentProgress: number;
+  status: QuestStatus;
+  rewardCurrency: number;
+  rewardExperience: number;
+}
+
+interface RewardStatusResult {
+  level: number;
+  currentExperience: number;
+  nextLevelExperience: number;
+  experiencePercentage: number;
+  currency: number;
+  currentStreak: number;
+}
+
+export interface QuestView {
+  id: number;
+  title: string;
+  progress: number;
+  target: number;
+  rewardXp: number;
+  rewardCurrency: number;
+  completed: boolean;
+  type: 'DDAY' | 'EXP';
+}
+
+export interface RewardStatusView {
+  level: number;
+  xp: number;
+  requiredXp: number;
+  currency: number;
+  dday: number;
+}
+
+function toQuestView(quest: QuestResult): QuestView {
+  return {
+    id: quest.userQuestId,
+    title: quest.title,
+    progress: quest.currentProgress,
+    target: quest.targetValue,
+    rewardXp: quest.rewardExperience,
+    rewardCurrency: quest.rewardCurrency,
+    completed: quest.status === 'COMPLETED' || quest.status === 'REWARDED',
+    type: quest.type === 'DAILY' ? 'DDAY' : 'EXP',
+  };
+}
+
+export const getRewardStatus = async (): Promise<RewardStatusView> => {
+  const response = await apiClient.get<RewardStatusResult>('/api/rewards');
+  const data = response.data;
+
+  return {
+    level: data.level,
+    xp: data.currentExperience,
+    requiredXp: Math.max(1, data.nextLevelExperience),
+    currency: data.currency,
+    dday: data.currentStreak,
+  };
 };
 
-export const getQuests = async () => {
-  const response = await apiClient.get(
-    '/quests'
-  );
+export const getQuests = async (): Promise<QuestView[]> => {
+  const response = await apiClient.get<QuestResult[]>('/api/quests');
+  return response.data.map(toQuestView);
+};
 
+export interface ShopItemResult {
+  id: number;
+  name: string;
+  price: number;
+  type: 'SHIELD' | 'EXPERIENCE_BOOSTER';
+  effectValue: number | null;
+  bundle: number;
+  ownedQuantity: number;
+}
+
+export interface PurchaseResult {
+  remainingCurrency: number;
+  updatedInventoryQuantity: number;
+}
+
+export const getShopItems = async (): Promise<ShopItemResult[]> => {
+  const response = await apiClient.get<ShopItemResult[]>('/api/shop/items');
   return response.data;
 };
 
 export const purchaseItem = async (
-  itemId: number
-) => {
-  const response = await apiClient.post(
-    `/shop/items/${itemId}/purchase`
+  itemId: number,
+  purchaseQuantity = 1
+): Promise<PurchaseResult> => {
+  const response = await apiClient.post<PurchaseResult>(
+    `/api/shop/items/${itemId}/purchase`,
+    { purchaseQuantity }
   );
-
   return response.data;
 };

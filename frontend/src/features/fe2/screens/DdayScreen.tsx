@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -13,9 +13,41 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { getDday, saveDday, type DdayGoalInput } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
+
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.alert(message ? `${title}\n${message}` : title);
+    return;
+  }
+
+  Alert.alert(title, message);
+}
+
+function failureMessage(error: unknown, fallback: string) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
+function toGoalInput(goal: Goal): DdayGoalInput {
+  return {
+    ...(goal.id > 0 && goal.id < 1_000_000_000_000 ? { id: goal.id } : {}),
+    title: goal.title,
+    targetDate: goal.targetDate,
+    targetBooks: goal.targetBooks,
+    completedBooks: goal.completedBooks,
+  };
+}
 
 type Goal = {
   id: number;
@@ -28,9 +60,6 @@ type Goal = {
 type Status = 'read' | 'protected' | 'missed' | 'future';
 
 type ReadingRecords = Record<string, 'read' | 'protected'>;
-
-const STORAGE_GOALS = '@chaekdami_dday_goals';
-const STORAGE_RECORDS = '@chaekdami_dday_records';
 
 const C = {
   bg: '#FAF6F0',
@@ -51,35 +80,6 @@ const ART = {
   shield: require('../../../../assets/images/dday/dday-shield-used.png'),
   missed: require('../../../../assets/images/dday/dday-missed.png'),
 };
-
-// 기존 디자인 확인용 2025년 9월 예시 기록
-// 실제 백엔드 연결 시 이 데이터를 API 결과로 교체하면 됩니다.
-const DEMO_RECORDS: ReadingRecords = {};
-
-for (let day = 1; day <= 20; day++) {
-  const key = `2025-09-${String(day).padStart(2, '0')}`;
-  DEMO_RECORDS[key] = 'read';
-}
-
-DEMO_RECORDS['2025-09-09'] = 'protected';
-DEMO_RECORDS['2025-09-17'] = 'protected';
-
-const INITIAL_GOALS: Goal[] = [
-  {
-    id: 1,
-    title: '현재 읽는 책 완독하기',
-    targetDate: '2026-10-30',
-    targetBooks: 1,
-    completedBooks: 0,
-  },
-  {
-    id: 2,
-    title: '이번 달 독서 목표 달성',
-    targetDate: '2026-10-31',
-    targetBooks: 5,
-    completedBooks: 3,
-  },
-];
 
 function dateString(date: Date): string {
   const year = date.getFullYear();
@@ -137,49 +137,6 @@ function progress(goal: Goal): number {
   );
 }
 
-function calculateStreak(records: ReadingRecords) {
-  const dates = Object.keys(records)
-    .filter((date) => records[date] === 'read' || records[date] === 'protected')
-    .sort();
-
-  let totalRead = 0;
-  let totalProtected = 0;
-  let longestStreak = 0;
-  let currentStreak = 0;
-  let previousDate: string | null = null;
-
-  for (const date of dates) {
-    if (records[date] === 'read') {
-      totalRead++;
-    } else {
-      totalProtected++;
-    }
-
-    if (previousDate) {
-      const previous = parseDate(previousDate);
-      previous.setDate(previous.getDate() + 1);
-
-      if (dateString(previous) === date) {
-        currentStreak++;
-      } else {
-        currentStreak = 1;
-      }
-    } else {
-      currentStreak = 1;
-    }
-
-    longestStreak = Math.max(longestStreak, currentStreak);
-    previousDate = date;
-  }
-
-  return {
-    totalRead,
-    totalProtected,
-    totalMaintained: totalRead + totalProtected,
-    longestStreak,
-  };
-}
-
 export default function DdayScreen() {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
@@ -190,10 +147,10 @@ export default function DdayScreen() {
     dateString(new Date())
   );
 
-  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
-  const [records, setRecords] = useState<ReadingRecords>(DEMO_RECORDS);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [records, setRecords] = useState<ReadingRecords>({});
 
-  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -203,72 +160,57 @@ export default function DdayScreen() {
   const [targetBooks, setTargetBooks] = useState('1');
   const [completedBooks, setCompletedBooks] = useState('0');
   const [error, setError] = useState('');
+  const modalOpenRef = useRef(false);
+  modalOpenRef.current = modalOpen;
 
   const today = dateString(new Date());
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  // 저장된 목표 및 기록 불러오기
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [savedGoals, savedRecords] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_GOALS),
-          AsyncStorage.getItem(STORAGE_RECORDS),
-        ]);
+  useFocusEffect(
+    useCallback(() => {
+      if (modalOpenRef.current) return undefined;
 
-        if (savedGoals !== null) {
-          const parsedGoals = JSON.parse(savedGoals);
+      let active = true;
 
-          if (Array.isArray(parsedGoals)) {
-            setGoals(parsedGoals);
-          }
+      async function loadData() {
+        try {
+          const data = await getDday();
+          if (!active) return;
+
+          setGoals(data.goals ?? []);
+          setRecords(data.records ?? {});
+        } catch (e) {
+          notify('불러오기 실패', failureMessage(e, 'D-day 기록을 불러오지 못했습니다.'));
         }
-
-        if (savedRecords !== null) {
-          const parsedRecords = JSON.parse(savedRecords);
-
-          if (
-            parsedRecords &&
-            typeof parsedRecords === 'object' &&
-            !Array.isArray(parsedRecords)
-          ) {
-            setRecords(parsedRecords);
-          }
-        }
-      } catch (e) {
-        console.warn('D-day 데이터 불러오기 실패:', e);
-      } finally {
-        setLoaded(true);
       }
+
+      void loadData();
+
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
+  const persist = async (nextGoals: Goal[], nextRecords: ReadingRecords) => {
+    setSaving(true);
+
+    try {
+      const data = await saveDday({
+        goals: nextGoals.map(toGoalInput),
+        records: nextRecords,
+      });
+      setGoals(data.goals ?? []);
+      setRecords(data.records ?? {});
+      return true;
+    } catch (e) {
+      notify('저장 실패', failureMessage(e, 'D-day 기록을 저장하지 못했습니다.'));
+      return false;
+    } finally {
+      setSaving(false);
     }
-
-    loadData();
-  }, []);
-
-  // 목표 변경 시 자동 저장
-  useEffect(() => {
-    if (!loaded) return;
-
-    AsyncStorage.setItem(
-      STORAGE_GOALS,
-      JSON.stringify(goals)
-    ).catch((e) => {
-      console.warn('목표 저장 실패:', e);
-    });
-  }, [goals, loaded]);
-
-  // 독서 기록 변경 시 자동 저장
-  useEffect(() => {
-    if (!loaded) return;
-
-    AsyncStorage.setItem(
-      STORAGE_RECORDS,
-      JSON.stringify(records)
-    ).catch((e) => {
-      console.warn('독서 기록 저장 실패:', e);
-    });
-  }, [records, loaded]);
+  };
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay();
@@ -330,8 +272,8 @@ export default function DdayScreen() {
   }, [year, month, records, today]);
 
   const summary = useMemo(
-    () => calculateStreak(records),
-    [records]
+    () => summarizeDday(records, today),
+    [records, today]
   );
 
   const sortedGoals = useMemo(() => {
@@ -386,7 +328,7 @@ export default function DdayScreen() {
     setModalOpen(true);
   };
 
-  const saveGoal = () => {
+  const saveGoal = async () => {
     const target = Number(targetBooks);
     const completed = Number(completedBooks);
 
@@ -412,22 +354,20 @@ export default function DdayScreen() {
     }
 
     const nextGoal: Goal = {
-      id: editingId ?? Date.now(),
+      id: editingId ?? 0,
       title: title.trim(),
       targetDate,
       targetBooks: target,
       completedBooks: completed,
     };
 
-    setGoals((previous) => {
-      if (editingId === null) {
-        return [...previous, nextGoal];
-      }
+    const nextGoals =
+      editingId === null
+        ? [...goals, nextGoal]
+        : goals.map((goal) => (goal.id === editingId ? nextGoal : goal));
 
-      return previous.map((goal) =>
-        goal.id === editingId ? nextGoal : goal
-      );
-    });
+    const saved = await persist(nextGoals, records);
+    if (!saved) return;
 
     const date = parseDate(targetDate);
 
@@ -443,11 +383,12 @@ export default function DdayScreen() {
     if (editingId === null) return;
 
     const remove = () => {
-      setGoals((previous) =>
-        previous.filter((goal) => goal.id !== editingId)
-      );
-
-      setModalOpen(false);
+      void persist(
+        goals.filter((goal) => goal.id !== editingId),
+        records
+      ).then((saved) => {
+        if (saved) setModalOpen(false);
+      });
     };
 
     if (Platform.OS === 'web') {
@@ -475,20 +416,18 @@ export default function DdayScreen() {
 
     setSelectedDate(date);
 
-    setRecords((previous) => {
-      const next = { ...previous };
-      const current = next[date];
+    const next = { ...records };
+    const current = next[date];
 
-      if (!current) {
-        next[date] = 'read';
-      } else if (current === 'read') {
-        next[date] = 'protected';
-      } else {
-        delete next[date];
-      }
+    if (!current) {
+      next[date] = 'read';
+    } else if (current === 'read') {
+      next[date] = 'protected';
+    } else {
+      delete next[date];
+    }
 
-      return next;
-    });
+    void persist(goals, next);
   };
 
   const renderDay = (day: number | null, index: number) => {
@@ -608,7 +547,7 @@ export default function DdayScreen() {
             </View>
 
             <Text style={styles.heroQuote}>
-              {'“조금씩, 꾸준히.\n그게 큰 변화를 만들어요.”'}
+              {`최대 연속 ${summary.longestStreak}일`}
             </Text>
           </View>
 
@@ -639,8 +578,8 @@ export default function DdayScreen() {
             },
             {
               icon: 'calendar-outline',
-              label: '최대 연속',
-              value: `${summary.longestStreak}일`,
+              label: '현재 연속',
+              value: `${summary.currentStreak}일`,
             },
           ].map((item, index) => (
             <View
@@ -754,7 +693,7 @@ export default function DdayScreen() {
         {/* 이번 달 기록 */}
         <View style={styles.monthRecordCard}>
           <Text style={styles.sectionTitle}>
-            이번 달 기록
+            {year}년 {month + 1}월 기록
           </Text>
 
           <View style={styles.monthStats}>
@@ -815,7 +754,9 @@ export default function DdayScreen() {
               </Text>
 
               <Text style={styles.cheerDescription}>
-                이번 달도 좋은 흐름이에요. 🔥
+                {monthlyStats.read === 0
+                  ? '이 달의 독서 기록이 아직 없어요.'
+                  : `이 달에 ${monthlyStats.read}일 읽었어요.`}
               </Text>
             </View>
           </View>
@@ -996,11 +937,14 @@ export default function DdayScreen() {
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={saveGoal}
+                disabled={saving}
               >
                 <Text style={styles.saveButtonText}>
-                  {editingId === null
-                    ? '목표 등록하기'
-                    : '수정 내용 저장'}
+                  {saving
+                    ? '저장 중'
+                    : editingId === null
+                      ? '목표 등록하기'
+                      : '수정 내용 저장'}
                 </Text>
               </TouchableOpacity>
 

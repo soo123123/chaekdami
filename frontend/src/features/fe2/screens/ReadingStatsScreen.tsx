@@ -16,6 +16,8 @@ import {
   getReadingStats,
   type ReadingStats,
 } from '../api/readingStatsApi';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -45,6 +47,15 @@ const ART = {
   chart: require('../../../../assets/images/stats/stats-chart-icon.png'),
 };
 
+const SAMPLE_DAILY: ChartItem[] = [
+  { label: '06시', minutes: 10 },
+  { label: '09시', minutes: 20 },
+  { label: '12시', minutes: 40 },
+  { label: '15시', minutes: 15 },
+  { label: '18시', minutes: 60 },
+  { label: '21시', minutes: 35 },
+];
+
 const SAMPLE_STATS: ReadingStats = {
   totalMinutes: 750,
   averageMinutes: 25,
@@ -68,16 +79,8 @@ const SAMPLE_STATS: ReadingStats = {
     { label: '3주', minutes: 150 },
     { label: '4주', minutes: 180 },
   ],
+  daily: SAMPLE_DAILY,
 };
-
-const SAMPLE_DAILY: ChartItem[] = [
-  { label: '06시', minutes: 10 },
-  { label: '09시', minutes: 20 },
-  { label: '12시', minutes: 40 },
-  { label: '15시', minutes: 15 },
-  { label: '18시', minutes: 60 },
-  { label: '21시', minutes: 35 },
-];
 
 const SAMPLE_MONTH_DAYS = [
   20, 50, 60, 115, 25, 55, 70, 160, 120, 80,
@@ -300,6 +303,7 @@ export default function ReadingStatsScreen() {
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [usingSample, setUsingSample] = useState(false);
+  const [streakDays, setStreakDays] = useState(0);
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
 
   useEffect(() => {
@@ -307,10 +311,14 @@ export default function ReadingStatsScreen() {
 
     const load = async () => {
       try {
-        const result = await getReadingStats();
+        const [result, dday] = await Promise.all([
+          getReadingStats(),
+          getDday().catch(() => null),
+        ]);
 
         if (active) {
           setStats(result);
+          setStreakDays(summarizeDday(dday?.records ?? {}).currentStreak);
           setUsingSample(false);
         }
       } catch (error) {
@@ -336,7 +344,7 @@ export default function ReadingStatsScreen() {
     if (!stats || offset !== 0) return [];
 
     if (period === 'day') {
-      return SAMPLE_DAILY;
+      return usingSample ? SAMPLE_DAILY : stats.daily;
     }
 
     if (period === 'week') {
@@ -364,11 +372,7 @@ export default function ReadingStatsScreen() {
     return stats.monthly;
   }, [period, offset, stats, usingSample]);
 
-  const totalMinutes = stats
-    ? period === 'month' && offset === 0
-      ? stats.totalMinutes
-      : chartData.reduce((sum, item) => sum + item.minutes, 0)
-    : 0;
+  const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
 
   const selected =
     selectedBar === null
@@ -558,10 +562,9 @@ export default function ReadingStatsScreen() {
             </Text>
           )}
 
-          {(period === 'day' ||
-            (usingSample &&
-              period === 'month' &&
-              offset === 0)) && (
+          {usingSample &&
+            (period === 'day' ||
+              (period === 'month' && offset === 0)) && (
             <Text style={styles.exampleNote}>
               * 날짜별 세부 기록은 화면 확인용 예시입니다.
             </Text>
@@ -648,7 +651,7 @@ export default function ReadingStatsScreen() {
             </View>
 
             <Text style={styles.infoValue}>
-              {stats.readingDays}일
+              {usingSample ? stats.readingDays : streakDays}일
             </Text>
 
             <Text style={styles.infoDescription}>
