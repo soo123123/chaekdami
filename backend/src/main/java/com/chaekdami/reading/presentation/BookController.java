@@ -24,14 +24,15 @@ public class BookController {
     private final BookSearchService bookSearchService;
     private final BookService bookService;
 
-    // ① 도서 검색 — GET /api/books/search?query=...&category=BOOK&page=1&pageSize=20
+    // ① 도서 검색 — GET /api/books/search?query=...&category=BOOK&sort=RELATION&page=1&pageSize=20
     @GetMapping("/search")
     public BookSearchResponse searchBooks(
             @RequestParam String query,
             @RequestParam(defaultValue = "BOOK") String category,   // ALL, BOOK(국내), FOREIGN(해외), EBOOK(전자책)
+            @RequestParam(defaultValue = "RELATION") String sort,   // DEFAULT, RELATION, RECENT, REG_DTS
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return bookSearchService.search(query, category, page, pageSize);
+        return bookSearchService.search(query, category, sort, page, pageSize);
     }
 
     // ② 고른 책 상세 (등록 화면 채우기용) — GET /api/books/search/{itemId}

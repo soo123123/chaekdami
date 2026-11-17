@@ -14,11 +14,12 @@ import { ReadingSummary } from '../components/reading/ReadingSummary';
 import { RereadingNotice } from '../components/reading/RereadingNotice';
 import { SentenceList } from '../components/reading/SentenceList';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, HIT_SLOP, spacing } from '../constants/theme';
+import { colors, spacing } from '../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { useBookDetail } from '../hooks/book/useBookDetail';
 import { useBookDetailModeParam, useBookIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
-import { goBackOr } from '../utils/navigation';
+import { goBackOr } from '@/utils/navigation';
 
 export function BookDetailScreen() {
   const bookId = useBookIdParam();

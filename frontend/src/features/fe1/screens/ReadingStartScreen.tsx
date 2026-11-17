@@ -20,7 +20,7 @@ import { colors, radius, softShadow, spacing } from '../constants/theme';
 import { useBookIdParam } from '../hooks/common/useRouteParams';
 import { useReadingSession } from '../hooks/reading/useReadingSession';
 import { useReadingTimer } from '../hooks/reading/useReadingTimer';
-import { goBackOr } from '../utils/navigation';
+import { goBackOr } from '@/utils/navigation';
 
 export function ReadingStartScreen() {
   const bookId = useBookIdParam();

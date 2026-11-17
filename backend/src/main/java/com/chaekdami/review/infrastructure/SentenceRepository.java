@@ -16,6 +16,8 @@ public interface SentenceRepository extends JpaRepository<Sentence, Long> {
 
     List<Sentence> findAllByReadingRecordIdOrderByCreatedAtDescIdDesc(Long readingRecordId);
 
+    long countByUserIdAndReadDate(Long userId, LocalDate readDate);
+
     List<Sentence> findAllByReadingRecordId(Long readingRecordId);
 
     List<Sentence> findAllByReadingRecordIdIn(Collection<Long> readingRecordIds);

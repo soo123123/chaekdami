@@ -14,7 +14,8 @@ import { LibraryCategoryTab } from '../components/library/LibraryCategoryTab';
 import { LibrarySortSelector } from '../components/library/LibrarySortSelector';
 import { LIBRARY_ROOMS } from '../constants/libraryRoom';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, HIT_SLOP, noWebOutline, radius, softShadow, spacing } from '../constants/theme';
+import { colors, noWebOutline, radius, softShadow, spacing } from '../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { useLibraryBooks } from '../hooks/library/useLibraryBooks';
 import type { BookStatus } from '../types/reading';
 

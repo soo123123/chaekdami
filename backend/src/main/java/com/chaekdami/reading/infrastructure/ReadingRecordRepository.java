@@ -3,6 +3,8 @@ package com.chaekdami.reading.infrastructure;
 import com.chaekdami.reading.domain.ReadingRecord;
 import com.chaekdami.reading.domain.ReadingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +13,12 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
 
     // 내 모든 기록 (서재 목록에서 책별 최근 회차를 고를 때 사용)
     List<ReadingRecord> findAllByUserId(Long userId);
+
+    @Query("""
+            select count(distinct r.book.id) from ReadingRecord r
+            where r.userId = :userId and r.status = :status
+            """)
+    long countDistinctBooksByUserIdAndStatus(@Param("userId") Long userId, @Param("status") ReadingStatus status);
 
     // 내 기록만 조회 (남의 기록이면 결과 없음 → 404)
     Optional<ReadingRecord> findByIdAndUserId(Long id, Long userId);

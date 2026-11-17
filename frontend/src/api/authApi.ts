@@ -170,3 +170,80 @@ export async function getMyInfo(
 
   return result as UserInfo;
 }
+
+export interface SignUpRequest {
+  email: string;
+  password: string;
+  nickname: string;
+}
+
+async function postAuth(
+  path: string,
+  body: unknown
+): Promise<Response> {
+  try {
+    return await fetch(`${API_BASE_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new AuthApiError(
+      '서버에 연결할 수 없습니다. 서버 실행 상태와 주소를 확인해주세요.',
+      0,
+      'NETWORK_ERROR'
+    );
+  }
+}
+
+async function readAuthResponse(
+  response: Response
+): Promise<unknown> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  return parseResponse(response);
+}
+
+export async function signup(
+  data: SignUpRequest
+): Promise<UserInfo> {
+  const response = await postAuth('/api/auth/signup', {
+    email: data.email.trim(),
+    password: data.password,
+    nickname: data.nickname.trim(),
+  });
+  const result = await readAuthResponse(response);
+
+  if (!result || typeof result !== 'object') {
+    throw new AuthApiError(
+      '회원가입 응답 형식이 올바르지 않습니다.',
+      response.status,
+      'INVALID_RESPONSE'
+    );
+  }
+
+  return result as UserInfo;
+}
+
+export async function requestPasswordReset(
+  email: string
+): Promise<void> {
+  const response = await postAuth(
+    '/api/auth/password/reset-request',
+    { email: email.trim() }
+  );
+  await readAuthResponse(response);
+}
+
+export async function logout(
+  refreshToken: string
+): Promise<void> {
+  const response = await postAuth('/api/auth/logout', {
+    refreshToken,
+  });
+  await readAuthResponse(response);
+}

@@ -57,6 +57,3 @@ export const keepAllWords = (Platform.OS === 'web' ? { wordBreak: 'keep-all' } :
 
 /** 웹에서 입력창 포커스 테두리 제거 */
 export const noWebOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as object;
-
-/** 터치 영역 최소 크기 */
-export const HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 } as const;

@@ -9,6 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ROUTES } from '@/constants/routes';
+import { goBackOr } from '@/utils/navigation';
+import { HIT_SLOP } from '@/constants/layout';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
@@ -16,6 +20,8 @@ import {
   getReadingStats,
   type ReadingStats,
 } from '../api/readingStatsApi';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -45,6 +51,15 @@ const ART = {
   chart: require('../../../../assets/images/stats/stats-chart-icon.png'),
 };
 
+const SAMPLE_DAILY: ChartItem[] = [
+  { label: '06시', minutes: 10 },
+  { label: '09시', minutes: 20 },
+  { label: '12시', minutes: 40 },
+  { label: '15시', minutes: 15 },
+  { label: '18시', minutes: 60 },
+  { label: '21시', minutes: 35 },
+];
+
 const SAMPLE_STATS: ReadingStats = {
   totalMinutes: 750,
   averageMinutes: 25,
@@ -68,16 +83,8 @@ const SAMPLE_STATS: ReadingStats = {
     { label: '3주', minutes: 150 },
     { label: '4주', minutes: 180 },
   ],
+  daily: SAMPLE_DAILY,
 };
-
-const SAMPLE_DAILY: ChartItem[] = [
-  { label: '06시', minutes: 10 },
-  { label: '09시', minutes: 20 },
-  { label: '12시', minutes: 40 },
-  { label: '15시', minutes: 15 },
-  { label: '18시', minutes: 60 },
-  { label: '21시', minutes: 35 },
-];
 
 const SAMPLE_MONTH_DAYS = [
   20, 50, 60, 115, 25, 55, 70, 160, 120, 80,
@@ -300,6 +307,7 @@ export default function ReadingStatsScreen() {
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [usingSample, setUsingSample] = useState(false);
+  const [streakDays, setStreakDays] = useState(0);
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
 
   useEffect(() => {
@@ -307,10 +315,14 @@ export default function ReadingStatsScreen() {
 
     const load = async () => {
       try {
-        const result = await getReadingStats();
+        const [result, dday] = await Promise.all([
+          getReadingStats(),
+          getDday().catch(() => null),
+        ]);
 
         if (active) {
           setStats(result);
+          setStreakDays(summarizeDday(dday?.records ?? {}).currentStreak);
           setUsingSample(false);
         }
       } catch (error) {
@@ -336,7 +348,7 @@ export default function ReadingStatsScreen() {
     if (!stats || offset !== 0) return [];
 
     if (period === 'day') {
-      return SAMPLE_DAILY;
+      return usingSample ? SAMPLE_DAILY : stats.daily;
     }
 
     if (period === 'week') {
@@ -364,11 +376,7 @@ export default function ReadingStatsScreen() {
     return stats.monthly;
   }, [period, offset, stats, usingSample]);
 
-  const totalMinutes = stats
-    ? period === 'month' && offset === 0
-      ? stats.totalMinutes
-      : chartData.reduce((sum, item) => sum + item.minutes, 0)
-    : 0;
+  const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
 
   const selected =
     selectedBar === null
@@ -386,13 +394,7 @@ export default function ReadingStatsScreen() {
     setSelectedBar(null);
   };
 
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/fe2/user/mypage');
-    }
-  };
+  const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
   if (loading || !stats) {
     return (
@@ -406,7 +408,7 @@ export default function ReadingStatsScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -426,6 +428,9 @@ export default function ReadingStatsScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={goBack}
+                hitSlop={HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="뒤로 가기"
               >
                 <Ionicons
                   name="chevron-back"
@@ -558,10 +563,9 @@ export default function ReadingStatsScreen() {
             </Text>
           )}
 
-          {(period === 'day' ||
-            (usingSample &&
-              period === 'month' &&
-              offset === 0)) && (
+          {usingSample &&
+            (period === 'day' ||
+              (period === 'month' && offset === 0)) && (
             <Text style={styles.exampleNote}>
               * 날짜별 세부 기록은 화면 확인용 예시입니다.
             </Text>
@@ -648,7 +652,7 @@ export default function ReadingStatsScreen() {
             </View>
 
             <Text style={styles.infoValue}>
-              {stats.readingDays}일
+              {usingSample ? stats.readingDays : streakDays}일
             </Text>
 
             <Text style={styles.infoDescription}>
@@ -677,18 +681,8 @@ export default function ReadingStatsScreen() {
             현재 서버 연결 대신 예시 통계를 표시하고 있습니다.
           </Text>
         )}
-
-        {/* 마이페이지 이동 */}
-        <TouchableOpacity
-          style={styles.myPageButton}
-          onPress={() => router.push('/fe2/user/mypage')}
-        >
-          <Text style={styles.myPageText}>
-            마이페이지로 돌아가기
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -753,7 +747,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginRight: 5,
-    paddingVertical: 3,
+    height: 44,
+    justifyContent: 'center',
   },
   heroTitle: {
     fontSize: 23,
@@ -1064,19 +1059,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     color: C.muted,
-  },
-  myPageButton: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#C9D6CB',
-    borderRadius: 15,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: C.white,
-  },
-  myPageText: {
-    color: C.green,
-    fontWeight: '800',
-    fontSize: 14,
   },
 });

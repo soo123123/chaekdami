@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,21 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  Platform,
   useWindowDimensions,
+  type ImageSourcePropType,
 } from 'react-native';
-import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { Icon, type IconName } from '@/components/common/Icon';
+import { ROUTES, toReadingStart } from '@/constants/routes';
+import { readingApi } from '@/features/fe1/api/readingApi';
+import type { RegisteredBook } from '@/features/fe1/types/reading';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
+import { getQuests, getRewardStatus } from '../api/rewardApi';
+import { getTodayReading } from '../api/todayReadingApi';
 
 const GREEN = '#315E49';
 const BG = '#FAF7F1';
@@ -36,61 +43,134 @@ const images = {
   recent6: require('../../../../assets/images/books/recent-book-6.png'),
 };
 
-const recentBooks = [
-  { title: '불편한 편의점', image: images.recent1 },
-  { title: '작은 것들의 힘', image: images.recent2 },
-  { title: '달의 조각', image: images.recent3 },
-  {
-    title: '우리가 빛의 속도로 갈 수 없다면',
-    image: images.recent4,
-  },
-  { title: '내일도, 괜찮아', image: images.recent5 },
-  { title: '하루의 온도', image: images.recent6 },
-];
-
-const questItems = [
-  { title: '30분 이상 독서하기', completed: true },
-  { title: '한 줄 독서 메모 작성하기', completed: false },
-  { title: '오늘의 감정 기록하기', completed: false },
-];
-
-// 아이콘은 특수문자 대신 공용 Icon을 쓴다 (기기 글꼴에 없으면 네모로 나오기 때문)
-const recordItems: { icon: IconName; value: string; label: string }[] = [
-  { icon: 'clock', value: '30분', label: '독서 시간' },
-  { icon: 'book', value: '25쪽', label: '읽은 페이지' },
-  { icon: 'pencil', value: '3개', label: '작성한 메모' },
+const recentFallbacks = [
+  images.recent1,
+  images.recent2,
+  images.recent3,
+  images.recent4,
+  images.recent5,
+  images.recent6,
 ];
 
 const COIN_COLOR = '#D9A23B';
 
+function progressOf(book: RegisteredBook) {
+  if (!book.totalPages || book.totalPages <= 0) return 0;
+  return Math.min(100, Math.round((book.currentPage / book.totalPages) * 100));
+}
+
+function coverOf(url: string | undefined, fallback: ImageSourcePropType) {
+  return url ? { uri: url } : fallback;
+}
+
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 600;
+  const [questItems, setQuestItems] = useState<
+    { title: string; completed: boolean }[]
+  >([]);
+  const [todayReading, setTodayReading] = useState({
+    readingMinutes: 0,
+    pagesRead: 0,
+    memoCount: 0,
+  });
+  const [summaryCards, setSummaryCards] = useState({
+    ddayValue: '0일',
+    ddayLabel: '연속 독서',
+    currency: '0',
+    level: 'Lv. 1',
+    levelLabel: '다음 레벨까지 0 XP',
+  });
+  const [currentBook, setCurrentBook] = useState<RegisteredBook | null>(null);
+  const [recentBooks, setRecentBooks] = useState<RegisteredBook[]>([]);
 
-  const showMessage = (
-    title: string,
-    message: string
-  ) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${title}\n${message}`);
-    } else {
-      Alert.alert(title, message);
+  const loadToday = useCallback(() => {
+    let active = true;
+
+    async function load() {
+      const [todayResult, questResult, rewardResult, ddayResult, booksResult] =
+        await Promise.allSettled([
+          getTodayReading(),
+          getQuests(),
+          getRewardStatus(),
+          getDday(),
+          readingApi.getLibraryBooks(),
+        ]);
+
+      if (!active) return;
+
+      if (todayResult.status === 'fulfilled') {
+        setTodayReading(todayResult.value);
+      }
+
+      if (questResult.status === 'fulfilled') {
+        const quests = questResult.value;
+        setQuestItems(
+          quests.slice(0, 3).map((quest) => ({
+            title: quest.title,
+            completed: quest.completed,
+          }))
+        );
+      }
+
+      const reward = rewardResult.status === 'fulfilled' ? rewardResult.value : null;
+      const records = ddayResult.status === 'fulfilled' ? ddayResult.value.records ?? {} : {};
+      const remainingXp = reward
+        ? Math.max(0, reward.requiredXp - reward.xp)
+        : 0;
+
+      setSummaryCards({
+        ddayValue: `${summarizeDday(records).currentStreak}일`,
+        ddayLabel: '연속 독서',
+        currency: (reward?.currency ?? 0).toLocaleString(),
+        level: `Lv. ${reward?.level ?? 1}`,
+        levelLabel: `다음 레벨까지 ${remainingXp.toLocaleString()} XP`,
+      });
+
+      if (booksResult.status === 'fulfilled') {
+        const books = booksResult.value;
+        const reading = books.find((book) => book.status === 'READING');
+        setCurrentBook(reading ?? null);
+        setRecentBooks(
+          books
+            .filter(
+              (book) =>
+                book.bookId !== reading?.bookId &&
+                (book.status === 'COMPLETED' ||
+                  book.status === 'READING' ||
+                  book.currentPage > 0)
+            )
+            .slice(0, 6)
+        );
+      }
     }
-  };
 
-  // FE1 기능은 추후 연결
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useFocusEffect(loadToday);
+
+  const recordItems: { icon: IconName; value: string; label: string }[] = [
+    { icon: 'clock', value: `${todayReading.readingMinutes}분`, label: '독서 시간' },
+    { icon: 'book', value: `${todayReading.pagesRead}쪽`, label: '읽은 페이지' },
+    { icon: 'pencil', value: `${todayReading.memoCount}개`, label: '작성한 메모' },
+  ];
+
   const handleStartReading = () => {
-    showMessage(
-      '독서 시작',
-      'FE1 담당 독서 시작 화면과 연결할 예정입니다.'
-    );
+    if (currentBook) {
+      router.push(toReadingStart(currentBook.bookId));
+      return;
+    }
+
+    router.push(ROUTES.fe1.library);
   };
 
   const handleLibrary = () => {
-    showMessage(
-      '나의 서재',
-      'FE1 담당 나의 서재 화면과 연결할 예정입니다.'
-    );
+    router.push(ROUTES.fe1.library);
   };
 
   // FE2 화면 이동
@@ -115,7 +195,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -175,27 +255,27 @@ export default function HomeScreen() {
             {
               icon: 'calendarOutline',
               iconColor: GREEN,
-              value: 'D - 12',
-              label: '목표까지 12일 남았어요!',
+              value: summaryCards.ddayValue,
+              label: summaryCards.ddayLabel,
               onPress: goToDday,
             },
             {
               icon: 'coin',
               iconColor: COIN_COLOR,
-              value: '1,250',
+              value: summaryCards.currency,
               label: '보유 재화',
               onPress: goToShop,
             },
             {
               icon: 'leaf',
               iconColor: GREEN,
-              value: 'Lv. 5',
-              label: '다음 레벨까지 180 XP',
+              value: summaryCards.level,
+              label: summaryCards.levelLabel,
               onPress: goToLevel,
             },
           ] as { icon: IconName; iconColor: string; value: string; label: string; onPress: () => void }[]).map((item) => (
             <TouchableOpacity
-              key={item.value}
+              key={item.label}
               style={styles.summaryCard}
               onPress={item.onPress}
               activeOpacity={0.75}
@@ -238,46 +318,70 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.currentBookRow}>
-            <Image
-              source={images.current}
-              style={
-                compact
-                  ? styles.currentCoverCompact
-                  : styles.currentCover
-              }
-              resizeMode="cover"
-            />
+          {currentBook ? (
+            <View style={styles.currentBookRow}>
+              <Image
+                source={coverOf(currentBook.coverImageUrl, images.current)}
+                style={
+                  compact
+                    ? styles.currentCoverCompact
+                    : styles.currentCover
+                }
+                resizeMode="cover"
+              />
 
-            <View style={styles.currentInfo}>
-              <Text style={styles.currentTitle}>
-                여름의 빌라
-              </Text>
+              <View style={styles.currentInfo}>
+                <Text style={styles.currentTitle} numberOfLines={2}>
+                  {currentBook.title}
+                </Text>
 
-              <Text style={styles.author}>
-                백수린
-              </Text>
+                <Text style={styles.author}>
+                  {currentBook.author || '저자 미상'}
+                </Text>
 
-              <View style={styles.progressRow}>
-                <View style={styles.progressTrack}>
-                  <View style={styles.progressFill} />
+                <View style={styles.progressRow}>
+                  <View style={styles.progressTrack}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${progressOf(currentBook)}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <Text style={styles.progressText}>
+                    {progressOf(currentBook)}%
+                  </Text>
                 </View>
 
-                <Text style={styles.progressText}>
-                  45%
-                </Text>
+                <TouchableOpacity
+                  style={styles.continueButton}
+                  onPress={handleStartReading}
+                >
+                  <Text style={styles.continueText}>
+                    이어읽기
+                  </Text>
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={styles.continueButton}
-                onPress={handleStartReading}
-              >
-                <Text style={styles.continueText}>
-                  이어읽기
-                </Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          ) : (
+            <View style={styles.currentBookRow}>
+              <View style={styles.currentInfo}>
+                <Text style={styles.author}>
+                  아직 읽고 있는 책이 없어요.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.continueButton}
+                  onPress={handleLibrary}
+                >
+                  <Text style={styles.continueText}>
+                    서재로 가기
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* 최근 읽은 책 */}
@@ -297,15 +401,20 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
           >
-            {recentBooks.map((book, index) => (
+            {recentBooks.length === 0 ? (
+              <Text style={styles.author}>최근 읽은 책이 없어요.</Text>
+            ) : recentBooks.map((book, index) => (
               <TouchableOpacity
-                key={index}
+                key={book.bookId}
                 style={styles.recentBook}
-                onPress={handleLibrary}
+                onPress={() => router.push(toReadingStart(book.bookId))}
                 activeOpacity={0.8}
               >
                 <Image
-                  source={book.image}
+                  source={coverOf(
+                    book.coverImageUrl,
+                    recentFallbacks[index % recentFallbacks.length]
+                  )}
                   style={styles.recentCover}
                   resizeMode="cover"
                 />
@@ -351,6 +460,9 @@ export default function HomeScreen() {
               />
 
               <View style={styles.questList}>
+                {questItems.length === 0 ? (
+                  <Text style={styles.questItem}>오늘 퀘스트가 없어요</Text>
+                ) : null}
                 {questItems.map((item) => (
                   <View
                     key={item.title}
@@ -441,7 +553,7 @@ export default function HomeScreen() {
 
       {/* 공용 하단 탭바 (FE1 서재와 동일) */}
       <BottomTabBar active="home" />
-    </View>
+    </SafeAreaView>
   );
 }
 

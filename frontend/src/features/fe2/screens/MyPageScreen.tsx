@@ -1,21 +1,32 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getMyProfile } from '../api/userApi';
+import axios from 'axios';
+import apiClient from '@/api/apiClient';
+import { logout } from '@/api/authApi';
+import { clearTokens, getRefreshToken } from '@/utils/tokenStorage';
 import { BottomTabBar } from '@/components/BottomTabBar';
+import { ROUTES } from '@/constants/routes';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
+import { getMyProfile } from '../api/userApi';
+import { getQuests, getRewardStatus } from '../api/rewardApi';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -35,15 +46,38 @@ const COLORS = {
   line: '#EBE5DB',
 };
 
-const DATA = {
-  level: 5,
-  xp: 320,
-  maxXp: 640,
-  currency: 1250,
-  dday: 12,
-  questMinutes: 0,
-  questTarget: 30,
+type PageStats = {
+  level: number;
+  xp: number;
+  maxXp: number;
+  currency: number;
+  dday: number;
+  questMinutes: number;
+  questTarget: number;
+  questTitle: string;
 };
+
+const EMPTY_STATS: PageStats = {
+  level: 1,
+  xp: 0,
+  maxXp: 1,
+  currency: 0,
+  dday: 0,
+  questMinutes: 0,
+  questTarget: 1,
+  questTitle: '오늘의 독서',
+};
+
+function errorMessage(error: unknown, fallback: string) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
 
 // 이미지 경로: frontend/assets/images/mypage/
 const ART = {
@@ -67,31 +101,47 @@ function goTo(path: string) {
   router.push(path as any);
 }
 
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.alert(message ? `${title}\n${message}` : title);
+    return;
+  }
+
+  Alert.alert(title, message);
+}
+
 function pending(name: string) {
-  Alert.alert('안내', `${name} 기능은 연결 준비 중입니다.`);
+  notify('안내', `${name} 기능은 연결 준비 중입니다.`);
 }
 
 export default function MyPageScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<PageStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [withdrawPassword, setWithdrawPassword] = useState('');
+  const [accountBusy, setAccountBusy] = useState(false);
 
   const { width } = useWindowDimensions();
   const compact = width < 410;
 
   const xpPercent = Math.min(
     100,
-    (DATA.xp / DATA.maxXp) * 100
+    (stats.xp / stats.maxXp) * 100
   );
 
   const questPercent = Math.min(
     100,
-    (DATA.questMinutes / DATA.questTarget) * 100
+    (stats.questMinutes / stats.questTarget) * 100
   );
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     let active = true;
 
-    const loadProfile = async () => {
+    const load = async () => {
       try {
         const data = await getMyProfile();
 
@@ -107,6 +157,35 @@ export default function MyPageScreen() {
             nickname: '책읽는고양이',
           });
         }
+      }
+
+      try {
+        const [reward, quests, dday] = await Promise.all([
+          getRewardStatus(),
+          getQuests(),
+          getDday().catch(() => null),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        const minuteQuest =
+          quests.find((quest) => quest.title.includes('30분')) ??
+          quests.find((quest) => quest.type === 'DDAY');
+
+        setStats({
+          level: reward.level,
+          xp: reward.xp,
+          maxXp: Math.max(1, reward.requiredXp),
+          currency: reward.currency,
+          dday: summarizeDday(dday?.records ?? {}).currentStreak,
+          questMinutes: minuteQuest?.progress ?? 0,
+          questTarget: Math.max(1, minuteQuest?.target ?? 1),
+          questTitle: minuteQuest?.title ?? '오늘의 독서',
+        });
+      } catch (error) {
+        console.log('보상 정보 조회 실패:', error);
       } finally {
         if (active) {
           setLoading(false);
@@ -114,12 +193,78 @@ export default function MyPageScreen() {
       }
     };
 
-    loadProfile();
+    void load();
 
     return () => {
       active = false;
     };
   }, []);
+
+  useFocusEffect(loadProfile);
+
+  const handleLogout = async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+
+      if (refreshToken) {
+        await logout(refreshToken);
+      }
+    } catch (error) {
+      console.warn('로그아웃 요청 실패:', error);
+    }
+
+    await clearTokens();
+    router.replace('/auth/login');
+  };
+
+  const handleChangePassword = async () => {
+    if (accountBusy) return;
+
+    if (!currentPassword || !newPassword) {
+      notify('입력 확인', '현재 비밀번호와 새 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setAccountBusy(true);
+
+    try {
+      await apiClient.post('/api/auth/password', {
+        currentPassword,
+        newPassword,
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setShowPasswordForm(false);
+      notify('변경 완료', '비밀번호를 변경했습니다.');
+    } catch (error) {
+      notify('변경 실패', errorMessage(error, '비밀번호를 변경하지 못했습니다.'));
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (accountBusy) return;
+
+    if (!withdrawPassword) {
+      notify('입력 확인', '현재 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setAccountBusy(true);
+
+    try {
+      await apiClient.delete('/api/me', {
+        data: { currentPassword: withdrawPassword },
+      });
+      await clearTokens();
+      router.replace('/auth/login');
+    } catch (error) {
+      notify('탈퇴 실패', errorMessage(error, '회원 탈퇴에 실패했습니다.'));
+    } finally {
+      setAccountBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -136,7 +281,7 @@ export default function MyPageScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -255,7 +400,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              {DATA.dday}일
+              {stats.dday}일
             </Text>
 
             <Text
@@ -281,7 +426,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              Lv. {DATA.level}
+              Lv. {stats.level}
             </Text>
 
             <View style={styles.miniTrack}>
@@ -297,7 +442,7 @@ export default function MyPageScreen() {
               style={styles.summaryHint}
               numberOfLines={2}
             >
-              다음 레벨까지 {DATA.maxXp - DATA.xp} XP
+              다음 레벨까지 {Math.max(0, stats.maxXp - stats.xp)} XP
             </Text>
           </TouchableOpacity>
 
@@ -316,7 +461,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              {DATA.currency.toLocaleString()}
+              {stats.currency.toLocaleString()}
             </Text>
 
             <Text
@@ -351,7 +496,7 @@ export default function MyPageScreen() {
               </Text>
 
               <Text style={styles.questDescription}>
-                30분 이상 독서하기
+                {stats.questTitle}
               </Text>
 
               <View style={styles.questProgressRow}>
@@ -365,7 +510,7 @@ export default function MyPageScreen() {
                 </View>
 
                 <Text style={styles.questCount}>
-                  {DATA.questMinutes}/{DATA.questTarget}분
+                  {stats.questMinutes}/{stats.questTarget}분
                 </Text>
               </View>
             </View>
@@ -397,7 +542,7 @@ export default function MyPageScreen() {
             image={ART.decoration}
             tint="#F4EFE2"
             compact={compact}
-            onPress={() => goTo('/fe2/reward/shop')}
+            onPress={() => goTo('/fe1/library-customize')}
           />
 
           <Shortcut
@@ -428,7 +573,7 @@ export default function MyPageScreen() {
 
             <TouchableOpacity
               style={styles.moreButton}
-              onPress={() => goTo('/reading/library')}
+              onPress={() => goTo(ROUTES.fe1.library)}
             >
               <Text style={styles.moreText}>
                 전체보기
@@ -444,7 +589,7 @@ export default function MyPageScreen() {
 
           <TouchableOpacity
             style={styles.libraryPreview}
-            onPress={() => goTo('/reading/library')}
+            onPress={() => goTo(ROUTES.fe1.library)}
           >
             <Image
               source={ART.bookshelf}
@@ -464,8 +609,8 @@ export default function MyPageScreen() {
         <View style={styles.settingsCard}>
           <SettingsRow
             icon="person-outline"
-            title="계정 정보"
-            onPress={() => pending('계정 정보')}
+            title="비밀번호 변경"
+            onPress={() => setShowPasswordForm((open) => !open)}
           />
 
           <SettingsRow
@@ -488,15 +633,73 @@ export default function MyPageScreen() {
           />
         </View>
 
+        {showPasswordForm ? (
+          <View style={styles.accountForm}>
+            <TextInput
+              style={styles.accountInput}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              placeholder="현재 비밀번호"
+              placeholderTextColor={COLORS.muted}
+            />
+            <TextInput
+              style={styles.accountInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              placeholder="새 비밀번호"
+              placeholderTextColor={COLORS.muted}
+            />
+            <TouchableOpacity
+              style={styles.accountButton}
+              onPress={handleChangePassword}
+              disabled={accountBusy}
+            >
+              <Text style={styles.accountButtonText}>비밀번호 변경</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {showWithdrawForm ? (
+          <View style={styles.accountForm}>
+            <Text style={styles.accountHint}>
+              탈퇴하면 이 계정으로 다시 로그인할 수 없습니다.
+            </Text>
+            <TextInput
+              style={styles.accountInput}
+              value={withdrawPassword}
+              onChangeText={setWithdrawPassword}
+              secureTextEntry
+              placeholder="현재 비밀번호"
+              placeholderTextColor={COLORS.muted}
+            />
+            <TouchableOpacity
+              style={styles.withdrawButton}
+              onPress={handleWithdraw}
+              disabled={accountBusy}
+            >
+              <Text style={styles.withdrawButtonText}>탈퇴하기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setShowWithdrawForm((open) => !open)}
+        >
+          <Ionicons
+            name="person-remove-outline"
+            size={18}
+            color="#A15A4A"
+          />
+          <Text style={styles.withdrawText}>회원 탈퇴</Text>
+        </TouchableOpacity>
+
         {/* 로그아웃 */}
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={() =>
-            Alert.alert(
-              '로그아웃',
-              '로그아웃 기능은 백엔드 인증 연결 후 구현합니다.'
-            )
-          }
+          onPress={handleLogout}
         >
           <Ionicons
             name="log-out-outline"
@@ -512,7 +715,7 @@ export default function MyPageScreen() {
 
       {/* 공용 하단 탭바 (FE1 서재와 동일) */}
       <BottomTabBar active="mypage" />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -978,6 +1181,57 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 13,
     color: COLORS.muted,
+    fontWeight: '700',
+  },
+  withdrawText: {
+    fontSize: 13,
+    color: '#A15A4A',
+    fontWeight: '700',
+  },
+  accountForm: {
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    padding: 14,
+    gap: 10,
+  },
+  accountHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.muted,
+  },
+  accountInput: {
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  accountButton: {
+    backgroundColor: COLORS.green,
+    borderRadius: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  withdrawButton: {
+    backgroundColor: '#A15A4A',
+    borderRadius: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  withdrawButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

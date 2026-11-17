@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, HIT_SLOP, noWebOutline, radius, spacing } from '../../constants/theme';
+import { colors, noWebOutline, radius, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { ONE_LINE_MAX_LENGTH } from '../../hooks/community/useMyReview';
 import { AppButton } from '../common/AppButton';
 import { CatBooksDecor } from '../common/Decor';

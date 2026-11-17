@@ -5,6 +5,7 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
@@ -27,4 +28,8 @@ public interface RewardAccountRepository extends JpaRepository<RewardAccount, Lo
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = LOCK_TIMEOUT_MILLIS))
     @Query("select ra from RewardAccount ra where ra.userId = :userId")
     Optional<RewardAccount> findByUserIdWithLock(@Param("userId") Long userId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from RewardAccount ra where ra.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

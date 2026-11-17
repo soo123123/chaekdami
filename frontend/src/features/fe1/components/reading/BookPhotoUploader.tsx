@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, keepAllWords, radius, spacing } from '../../constants/theme';
+import { colors, keepAllWords, radius, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import type { ReadingPhoto } from '../../types/reading';
 import { Icon, type IconName } from '../common/Icon';
 

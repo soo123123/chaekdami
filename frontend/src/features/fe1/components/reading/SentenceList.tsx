@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, keepAllWords, radius, serifFont, spacing } from '../../constants/theme';
+import { colors, keepAllWords, radius, serifFont, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import type { Sentence } from '../../types/reading';
 import { formatDate } from '../../utils/format';
 import { Card } from '../common/Card';

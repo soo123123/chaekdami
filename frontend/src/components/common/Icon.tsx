@@ -74,6 +74,7 @@ const GLYPHS = {
   coin: mc('circle-multiple'),
   sparkles: ion('sparkles'),
   calendarOutline: ion('calendar-outline'),
+  flame: ion('flame'),
 } as const satisfies Record<string, Glyph>;
 
 export type IconName = keyof typeof GLYPHS;

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -10,8 +10,15 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ROUTES } from '@/constants/routes';
+import { goBackOr } from '@/utils/navigation';
+import { HIT_SLOP } from '@/constants/layout';
+import { router, useFocusEffect } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { getDday } from '../api/ddayApi';
+import { summarizeDday } from '../api/ddayStreak';
+import { getReadingStats } from '../api/readingStatsApi';
 import { getRewardStatus } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
 type RewardStatus = {
@@ -19,7 +26,16 @@ type RewardStatus = {
   xp?: number;
   requiredXp?: number;
   currency?: number;
+  dday?: number;
 };
+
+function formatReadingTime(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes}분`;
+  if (minutes === 0) return `${hours}시간`;
+  return `${hours}시간 ${minutes}분`;
+}
 
 type LevelInfo = {
   level: number;
@@ -234,46 +250,59 @@ export default function RewardScreen() {
 
   const [reward, setReward] =
     useState<RewardStatus>(TEST_REWARD);
+  const [activity, setActivity] = useState({
+    completedBooks: 0,
+    totalMinutes: 0,
+    streak: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [demo, setDemo] = useState(false);
 
-  useEffect(() => {
+  const loadReward = useCallback(() => {
     let active = true;
 
     async function load() {
-      try {
-        const data = await getRewardStatus();
+      const [rewardResult, statsResult, ddayResult] = await Promise.allSettled([
+        getRewardStatus(),
+        getReadingStats(),
+        getDday(),
+      ]);
 
-        if (active) {
-          setReward(data);
-          setDemo(false);
-        }
-      } catch (error) {
-        console.warn('레벨 정보 조회 실패:', error);
+      if (!active) return;
 
-        if (active) {
-          setReward(TEST_REWARD);
-          setDemo(true);
-        }
-      } finally {
-        if (active) setLoading(false);
+      if (rewardResult.status === 'fulfilled') {
+        setReward(rewardResult.value);
+        setDemo(false);
+      } else {
+        console.warn('레벨 정보 조회 실패:', rewardResult.reason);
+        setReward(TEST_REWARD);
+        setDemo(true);
       }
+
+      const records = ddayResult.status === 'fulfilled' ? ddayResult.value.records ?? {} : {};
+      setActivity((previous) => ({
+        completedBooks: statsResult.status === 'fulfilled'
+          ? statsResult.value.completedBooks
+          : previous.completedBooks,
+        totalMinutes: statsResult.status === 'fulfilled'
+          ? statsResult.value.totalMinutes
+          : previous.totalMinutes,
+        streak: summarizeDday(records).currentStreak,
+      }));
+
+      setLoading(false);
     }
 
-    load();
+    void load();
 
     return () => {
       active = false;
     };
   }, []);
 
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/fe2/user/mypage');
-    }
-  };
+  useFocusEffect(loadReward);
+
+  const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
   if (loading) {
     return (
@@ -315,7 +344,7 @@ export default function RewardScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -325,6 +354,9 @@ export default function RewardScreen() {
           <TouchableOpacity
             onPress={goBack}
             style={styles.backButton}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로 가기"
           >
             <Ionicons
               name="chevron-back"
@@ -340,9 +372,11 @@ export default function RewardScreen() {
           <TouchableOpacity
             style={styles.helpButton}
             onPress={() => router.push('/fe2/reward/quest')}
+            accessibilityRole="button"
+            accessibilityLabel="오늘의 퀘스트 보기"
           >
-            <Ionicons
-              name="help-circle-outline"
+            <MaterialCommunityIcons
+              name="clipboard-check-outline"
               size={27}
               color={COLORS.text}
             />
@@ -413,7 +447,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.book}
             label="읽은 책"
-            value="12권"
+            value={`${activity.completedBooks}권`}
           />
 
           <View style={styles.statDivider} />
@@ -421,7 +455,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.clock}
             label="독서 시간"
-            value="18시간 40분"
+            value={formatReadingTime(activity.totalMinutes)}
           />
 
           <View style={styles.statDivider} />
@@ -429,7 +463,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.calendar}
             label="연속 독서"
-            value="12일"
+            value={`${activity.streak}일`}
           />
         </View>
 
@@ -531,7 +565,7 @@ export default function RewardScreen() {
           <Icon name="chevronRight" size={16} color={COLORS.green} />
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -562,10 +596,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 22,
-    height: 37,
+    minHeight: 44,
   },
   backButton: {
     width: 40,
+    height: 44,
     justifyContent: 'center',
   },
   headerTitle: {

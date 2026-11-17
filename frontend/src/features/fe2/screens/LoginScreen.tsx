@@ -236,15 +236,23 @@ export default function LoginScreen() {
 
           {/* 하단 메뉴 */}
           <View style={styles.bottomLinks}>
-            <Text style={styles.forgotPassword}>
-              비밀번호를 잊으셨나요?
-            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/auth/forgot-password')}
+            >
+              <Text style={styles.forgotPassword}>
+                비밀번호를 잊으셨나요?
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.linkDivider} />
 
-            <Text style={styles.signupText}>
-              회원가입
-            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/auth/signup')}
+            >
+              <Text style={styles.signupText}>
+                회원가입
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 

@@ -17,12 +17,13 @@ import java.util.Set;
 public class BookSearchService {
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of("ALL", "BOOK", "FOREIGN", "EBOOK");
+    private static final Set<String> ALLOWED_SORTS = Set.of("DEFAULT", "RELATION", "RECENT", "REG_DTS");
     private static final int MAX_PAGE_SIZE = 50;   // 응답이 커지는 걸 막는 상한
 
     private final Yes24Client yes24Client;
 
     // ① 검색: 제목, 저자, 출판사, 표지로 "이 책이 맞나?" 확인용 목록
-    public BookSearchResponse search(String query, String category, int page, int pageSize) {
+    public BookSearchResponse search(String query, String category, String sort, int page, int pageSize) {
         if (query == null || query.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "검색어를 입력해주세요.");
         }
@@ -30,10 +31,14 @@ public class BookSearchService {
         if (!ALLOWED_CATEGORIES.contains(upperCategory)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 카테고리입니다: " + category);
         }
+        String upperSort = sort == null || sort.isBlank() ? "RELATION" : sort.toUpperCase();
+        if (!ALLOWED_SORTS.contains(upperSort)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 정렬입니다: " + sort);
+        }
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
 
-        Yes24ItemListResponse response = yes24Client.searchBooks(query.trim(), upperCategory, safePage, safeSize);
+        Yes24ItemListResponse response = yes24Client.searchBooks(query.trim(), upperCategory, upperSort, safePage, safeSize);
 
         // 검색 결과가 없으면 빈 목록으로 응답
         if (response == null || response.data() == null || response.data().items() == null) {

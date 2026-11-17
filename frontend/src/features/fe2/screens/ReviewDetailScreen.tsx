@@ -1,4 +1,4 @@
-import { toReviewWrite } from '@/constants/routes';
+import { toReviewWrite, ROUTES } from '@/constants/routes';
 
 import React, { useEffect, useState } from 'react';
 
@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { goBackOr } from '@/utils/navigation';
+import { HIT_SLOP } from '@/constants/layout';
 
 import {
   router,
@@ -91,7 +93,7 @@ const ReviewDetailScreen = () => {
         <Text style={styles.emptyTitle}>
           {hasRecordId ? '독후감을 불러오지 못했습니다.' : '독서 기록 정보가 없습니다.'}
         </Text>
-        <TouchableOpacity style={styles.writeButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.writeButton} onPress={() => goBackOr(ROUTES.fe1.library)}>
           <Text style={styles.writeButtonText}>돌아가기</Text>
         </TouchableOpacity>
       </View>
@@ -122,9 +124,9 @@ const ReviewDetailScreen = () => {
       {/* 상단 */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => goBackOr(ROUTES.fe1.library)}
           style={styles.backTouch}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          hitSlop={HIT_SLOP}
           accessibilityRole="button"
           accessibilityLabel="뒤로 가기"
         >

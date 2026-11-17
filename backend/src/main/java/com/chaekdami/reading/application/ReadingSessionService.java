@@ -8,6 +8,8 @@ import com.chaekdami.reading.infrastructure.ReadingRecordRepository;
 import com.chaekdami.reading.infrastructure.ReadingSessionRepository;
 import com.chaekdami.reading.presentation.dto.request.CreateReadingSessionRequest;
 import com.chaekdami.reading.presentation.dto.response.ReadingSessionResponse;
+import com.chaekdami.dday.application.DdayService;
+import com.chaekdami.reward.application.QuestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ public class ReadingSessionService {
     private final BookRepository bookRepository;
     private final ReadingRecordRepository readingRecordRepository;
     private final ReadingSessionRepository readingSessionRepository;
+    private final QuestService questService;
+    private final DdayService ddayService;
 
     // 독서 종료 후 저장: bookId로 지금 읽는 회차를 찾아 세션을 붙이고, 현재 페이지를 갱신
     @Transactional
@@ -42,9 +46,11 @@ public class ReadingSessionService {
         ReadingSession session = ReadingSession.of(record, request.readingTime(),
                 request.startPage(), request.endPage(), now);
         record.applySession(request.endPage(), now);
-
-        // sentence, photos는 아직 저장하지 않음 (BE 3 문장 모음 / 사진 업로드 방식 확정 후 연결)
-        return ReadingSessionResponse.from(readingSessionRepository.save(session));
+        ReadingSession saved = readingSessionRepository.save(session);
+        questService.recordReadingSession(userId, request.readingTime());
+        ddayService.markTodayRead(userId);
+        // 문장은 클라이언트가 별도 API로 저장한다. 사진은 아직 저장하지 않는다.
+        return ReadingSessionResponse.from(saved);
     }
 
     // 한 회차의 세션 목록 (최근 것 먼저)

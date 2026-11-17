@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, radius, spacing } from '../../constants/theme';
+import { colors, radius, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { Icon } from '../common/Icon';
 
 type RecentSearchListProps = {

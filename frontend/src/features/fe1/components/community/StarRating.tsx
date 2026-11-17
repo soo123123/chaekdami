@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, HIT_SLOP } from '../../constants/theme';
+import { colors } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { Icon } from '../common/Icon';
 
 const STARS = [1, 2, 3, 4, 5] as const;

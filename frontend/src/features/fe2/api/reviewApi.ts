@@ -87,10 +87,9 @@ export type BookReportInput = {
 export const BOOK_REPORT_MAX_LENGTH = 2000;
 
 /**
- * 개발용 Mock 사용 여부. 백엔드 연결 후 false로 바꾼다.
- * 프로덕션 빌드(__DEV__ === false)에서는 항상 실제 API를 쓴다.
+ * 개발용 Mock 사용 여부. false면 독후감을 서버에 저장한다.
  */
-const REVIEW_USE_DEV_MOCK = __DEV__ && true;
+const REVIEW_USE_DEV_MOCK = false;
 
 /** 회차의 독후감 상태 조회 (없으면 bookReport가 null, 404 아님) */
 export const getReadingReview = async (
