@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, radius, spacing } from '../../constants/theme';
+import { colors, radius, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { parseIsoDate, toIsoDate } from '../../utils/format';
 import { AppButton } from './AppButton';
 import { BottomSheetModal } from './BottomSheetModal';

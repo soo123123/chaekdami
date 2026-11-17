@@ -1,14 +1,15 @@
 package com.chaekdami.reward.domain;
 
+import com.chaekdami.global.error.ErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 보상 파트 전용 에러 코드 (BE2 공통 규약)
+ * 보상 파트 전용 에러 코드 (BE2 공통 규약). 공용 GlobalExceptionHandler 가 status 와 code, message 로 응답한다.
  */
 @Getter
 @RequiredArgsConstructor
-public enum RewardErrorCode {
+public enum RewardErrorCode implements ErrorCode {
 
     INSUFFICIENT_CURRENCY("REWARD_001", 400, "보유하신 재화가 부족합니다."),
     REWARD_ACCOUNT_NOT_FOUND("REWARD_004", 404, "사용자의 보상 계정 정보를 찾을 수 없습니다."),

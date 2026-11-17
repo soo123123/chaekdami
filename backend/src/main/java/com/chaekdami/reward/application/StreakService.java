@@ -31,7 +31,7 @@ public class StreakService {
 
     /**
      * 오늘 독서 성공을 기록한다. 놓친 날을 먼저 정산한 뒤 오늘 기록을 남기고, 오늘 첫 성공이면 연속 일수를 늘린다.
-     * 독서 완료 유스케이스(CompleteReadingService)가 세션 완료 시 호출한다.
+     * 독서 세션 보상 진입점(ReadingSessionRewardService)이 세션 완료 시 호출한다.
      */
     @Transactional
     public StreakResult recordReadingDay(Long userId) {

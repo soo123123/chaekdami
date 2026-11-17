@@ -3,6 +3,7 @@ package com.chaekdami.reward.infrastructure;
 import com.chaekdami.reward.domain.ShopItemType;
 import com.chaekdami.reward.domain.UserItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,4 +30,8 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
             + " where si.id = ui.shopItemId and ui.userId = :userId and si.type = :type and ui.quantity > 0"
             + " order by ui.id")
     List<UserItem> findAllInStockByUserIdAndItemType(@Param("userId") Long userId, @Param("type") ShopItemType type);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from UserItem ui where ui.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

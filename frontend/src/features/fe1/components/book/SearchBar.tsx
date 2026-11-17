@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { colors, HIT_SLOP, noWebOutline, radius, spacing } from '../../constants/theme';
+import { colors, noWebOutline, radius, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { Icon } from '../common/Icon';
 
 type SearchBarProps = {

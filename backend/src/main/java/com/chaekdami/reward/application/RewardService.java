@@ -71,7 +71,7 @@ public class RewardService {
 
     /**
      * 독서 세션 완료 경험치를 지급한다. 경험치 부스터 버프가 적용 중이면 배율을 곱한다.
-     * 독서 완료 유스케이스(CompleteReadingService)가 검증된 세션 값으로 호출한다.
+     * 독서 세션 보상 진입점(ReadingSessionRewardService)이 검증된 세션 값으로 호출한다.
      */
     @Transactional
     public ReadingRewardResult grantReadingExperience(Long userId, int durationSeconds, int startPage, int endPage) {

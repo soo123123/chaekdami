@@ -9,6 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ROUTES } from '@/constants/routes';
+import { goBackOr } from '@/utils/navigation';
+import { HIT_SLOP } from '@/constants/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { getQuests } from '../api/rewardApi';
@@ -353,7 +357,7 @@ export default function QuestScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -366,7 +370,13 @@ export default function QuestScreen() {
       >
         {/* 상단 헤더 */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity
+            onPress={() => goBackOr(ROUTES.fe2.level)}
+            style={styles.backButton}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로 가기"
+          >
             <Ionicons
               name="chevron-back"
               size={24}
@@ -667,7 +677,7 @@ export default function QuestScreen() {
         <TouchableOpacity
           style={styles.menuCard}
           onPress={() =>
-            router.push('/reward/shop' as any)
+            router.push(ROUTES.fe2.shop)
           }
         >
           <View style={styles.menuIconBox}>
@@ -718,7 +728,7 @@ export default function QuestScreen() {
           퀘스트 완료 판정과 실제 보상 지급은 서버에서 처리됩니다.
         </Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -755,6 +765,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 18,
+  },
+  backButton: {
+    width: 36,
+    height: 44,
+    justifyContent: 'center',
   },
 
   headerTitle: {

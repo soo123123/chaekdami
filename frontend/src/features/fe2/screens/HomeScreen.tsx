@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   type ImageSourcePropType,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
@@ -194,7 +195,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -552,7 +553,7 @@ export default function HomeScreen() {
 
       {/* 공용 하단 탭바 (FE1 서재와 동일) */}
       <BottomTabBar active="home" />
-    </View>
+    </SafeAreaView>
   );
 }
 

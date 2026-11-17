@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, spacing } from '../../constants/theme';
+import { colors, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { Icon } from '../common/Icon';
 
 const COLLAPSED_LINES = 4;

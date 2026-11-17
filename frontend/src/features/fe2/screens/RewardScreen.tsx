@@ -10,8 +10,12 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ROUTES } from '@/constants/routes';
+import { goBackOr } from '@/utils/navigation';
+import { HIT_SLOP } from '@/constants/layout';
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getDday } from '../api/ddayApi';
 import { summarizeDday } from '../api/ddayStreak';
 import { getReadingStats } from '../api/readingStatsApi';
@@ -298,13 +302,7 @@ export default function RewardScreen() {
 
   useFocusEffect(loadReward);
 
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/fe2/user/mypage');
-    }
-  };
+  const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
   if (loading) {
     return (
@@ -346,7 +344,7 @@ export default function RewardScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -356,6 +354,9 @@ export default function RewardScreen() {
           <TouchableOpacity
             onPress={goBack}
             style={styles.backButton}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로 가기"
           >
             <Ionicons
               name="chevron-back"
@@ -371,9 +372,11 @@ export default function RewardScreen() {
           <TouchableOpacity
             style={styles.helpButton}
             onPress={() => router.push('/fe2/reward/quest')}
+            accessibilityRole="button"
+            accessibilityLabel="오늘의 퀘스트 보기"
           >
-            <Ionicons
-              name="help-circle-outline"
+            <MaterialCommunityIcons
+              name="clipboard-check-outline"
               size={27}
               color={COLORS.text}
             />
@@ -562,7 +565,7 @@ export default function RewardScreen() {
           <Icon name="chevronRight" size={16} color={COLORS.green} />
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -593,10 +596,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 22,
-    height: 37,
+    minHeight: 44,
   },
   backButton: {
     width: 40,
+    height: 44,
     justifyContent: 'center',
   },
   headerTitle: {

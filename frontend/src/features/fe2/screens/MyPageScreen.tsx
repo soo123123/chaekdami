@@ -14,6 +14,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -21,6 +22,7 @@ import apiClient from '@/api/apiClient';
 import { logout } from '@/api/authApi';
 import { clearTokens, getRefreshToken } from '@/utils/tokenStorage';
 import { BottomTabBar } from '@/components/BottomTabBar';
+import { ROUTES } from '@/constants/routes';
 import { getDday } from '../api/ddayApi';
 import { summarizeDday } from '../api/ddayStreak';
 import { getMyProfile } from '../api/userApi';
@@ -279,7 +281,7 @@ export default function MyPageScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -571,7 +573,7 @@ export default function MyPageScreen() {
 
             <TouchableOpacity
               style={styles.moreButton}
-              onPress={() => goTo('/reading/library')}
+              onPress={() => goTo(ROUTES.fe1.library)}
             >
               <Text style={styles.moreText}>
                 전체보기
@@ -587,7 +589,7 @@ export default function MyPageScreen() {
 
           <TouchableOpacity
             style={styles.libraryPreview}
-            onPress={() => goTo('/reading/library')}
+            onPress={() => goTo(ROUTES.fe1.library)}
           >
             <Image
               source={ART.bookshelf}
@@ -713,7 +715,7 @@ export default function MyPageScreen() {
 
       {/* 공용 하단 탭바 (FE1 서재와 동일) */}
       <BottomTabBar active="mypage" />
-    </View>
+    </SafeAreaView>
   );
 }
 

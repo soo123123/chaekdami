@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, HIT_SLOP, spacing } from '../../constants/theme';
+import { colors, spacing } from '../../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { Icon } from './Icon';
 
 type ScreenHeaderProps = {

@@ -16,11 +16,12 @@ import { SentenceInput } from '../components/reading/SentenceInput';
 import { showToast } from '@/components/Toast';
 import { ROUTES, toBookDetail, toReadingComplete } from '@/constants/routes';
 import { FE1_ROUTES } from '../constants/routes';
-import { colors, HIT_SLOP, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
+import { colors, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
+import { HIT_SLOP } from '@/constants/layout';
 import { useReadingEndParams } from '../hooks/common/useRouteParams';
 import { useReadingEnd } from '../hooks/reading/useReadingEnd';
 import { formatDuration, todayIso } from '../utils/format';
-import { goBackOr } from '../utils/navigation';
+import { goBackOr } from '@/utils/navigation';
 
 export function ReadingEndScreen() {
   const { bookId, elapsedTime } = useReadingEndParams();
