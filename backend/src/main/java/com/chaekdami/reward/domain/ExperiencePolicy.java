@@ -11,6 +11,8 @@ public final class ExperiencePolicy {
     private static final int PAGES_PER_EXPERIENCE = 5;
     /** 경험치 부스터 버프 적용 중 독서 경험치 배율. user_buffs 에 배율 컬럼이 없어 고정값으로 둔다. */
     private static final int BOOSTER_MULTIPLIER = 2;
+    /** 책 사진으로 인증된 독서 세션의 추가 경험치. 재화는 주지 않고, 부스터도 적용하지 않는다. */
+    public static final int PHOTO_CERTIFICATION_EXPERIENCE = 20;
 
     private ExperiencePolicy() {
     }

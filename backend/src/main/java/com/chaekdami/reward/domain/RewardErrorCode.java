@@ -13,6 +13,7 @@ public enum RewardErrorCode implements ErrorCode {
 
     INSUFFICIENT_CURRENCY("REWARD_001", 400, "보유하신 재화가 부족합니다."),
     REWARD_ACCOUNT_NOT_FOUND("REWARD_004", 404, "사용자의 보상 계정 정보를 찾을 수 없습니다."),
+    READING_SESSION_NOT_FOUND("REWARD_005", 404, "독서 세션을 찾을 수 없습니다."),
     QUEST_NOT_COMPLETED("QUEST_001", 400, "아직 달성하지 못한 퀘스트입니다."),
     QUEST_ALREADY_REWARDED("QUEST_002", 400, "이미 보상을 수령한 퀘스트입니다."),
     QUEST_NOT_FOUND("QUEST_003", 404, "퀘스트를 찾을 수 없습니다."),

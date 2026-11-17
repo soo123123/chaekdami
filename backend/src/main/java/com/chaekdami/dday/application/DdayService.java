@@ -65,6 +65,22 @@ public class DdayService {
         }
     }
 
+    /**
+     * readDate 날짜를 읽은 날로 기록한다. 독서 완료 보상(BE2)이 세션 종료 날짜로 호출해,
+     * 완료 화면이 자정을 넘겨 열려도 독서한 날에 기록된다.
+     */
+    @Transactional
+    public void markRead(Long userId, LocalDate readDate) {
+        DdayRecord record = ddayRecordRepository.findByUserIdAndRecordDate(userId, readDate).orElse(null);
+        if (record == null) {
+            ddayRecordRepository.save(DdayRecord.create(userId, readDate, DdayRecordStatus.READ));
+            return;
+        }
+        if (record.getStatus() != DdayRecordStatus.READ) {
+            record.changeStatus(DdayRecordStatus.READ);
+        }
+    }
+
     private void saveGoals(Long userId, List<DdayGoalRequest> requests) {
         List<DdayGoalRequest> goals = requests == null ? List.of() : requests;
         if (goals.size() > MAX_GOALS) {

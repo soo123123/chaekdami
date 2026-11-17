@@ -8,8 +8,6 @@ import com.chaekdami.reading.infrastructure.ReadingRecordRepository;
 import com.chaekdami.reading.infrastructure.ReadingSessionRepository;
 import com.chaekdami.reading.presentation.dto.request.CreateReadingSessionRequest;
 import com.chaekdami.reading.presentation.dto.response.ReadingSessionResponse;
-import com.chaekdami.dday.application.DdayService;
-import com.chaekdami.reward.application.QuestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,8 +25,6 @@ public class ReadingSessionService {
     private final BookRepository bookRepository;
     private final ReadingRecordRepository readingRecordRepository;
     private final ReadingSessionRepository readingSessionRepository;
-    private final QuestService questService;
-    private final DdayService ddayService;
 
     // 독서 종료 후 저장: bookId로 지금 읽는 회차를 찾아 세션을 붙이고, 현재 페이지를 갱신
     @Transactional
@@ -47,8 +43,8 @@ public class ReadingSessionService {
                 request.startPage(), request.endPage(), now);
         record.applySession(request.endPage(), now);
         ReadingSession saved = readingSessionRepository.save(session);
-        questService.recordReadingSession(userId, request.readingTime());
-        ddayService.markTodayRead(userId);
+        // 보상(독서 경험치, 퀘스트, D-day)은 저장 때 주지 않는다. 독서 완료 화면이
+        // POST /api/rewards/reading-sessions/{id} 로 요청한다. (BE1 사진 인증 요구사항 7절)
         // 문장은 클라이언트가 별도 API로 저장한다. 사진은 아직 저장하지 않는다.
         return ReadingSessionResponse.from(saved);
     }

@@ -86,12 +86,41 @@ class RewardLedger {
         return promotionReward;
     }
 
+    /**
+     * 특정 대상(referenceId)에 대한 경험치를 지급하고 이력에 대상 id 를 남긴다. 같은 대상에는 한 번만 기록된다.
+     * 지급할 경험치가 0 이어도 "지급 완료" 표시로 이력은 남긴다. (예: 30초 미만 독서)
+     *
+     * @return 이번 지급으로 받은 승급 보상 재화 (레벨업이 없으면 0)
+     */
+    int addExperienceFor(RewardAccount account, int amount, TransactionReason reason, Long referenceId) {
+        int promotionReward = amount > 0 ? account.addExperience(amount) : 0;
+        record(account.getUserId(), TransactionType.INCOME_EXPERIENCE, amount, reason, referenceId);
+        if (promotionReward > 0) {
+            record(account.getUserId(), TransactionType.INCOME_CURRENCY, promotionReward, TransactionReason.LEVEL_UP);
+        }
+        return promotionReward;
+    }
+
+    /**
+     * addExperienceFor 로 이 대상에 이미 경험치를 지급했는지
+     */
+    boolean isExperienceGranted(Long userId, TransactionReason reason, Long referenceId) {
+        return rewardTransactionRepository.existsByUserIdAndTypeAndReasonAndReferenceId(
+                userId, TransactionType.INCOME_EXPERIENCE, reason, referenceId);
+    }
+
     private RewardTransaction record(Long userId, TransactionType type, int amount, TransactionReason reason) {
+        return record(userId, type, amount, reason, null);
+    }
+
+    private RewardTransaction record(Long userId, TransactionType type, int amount, TransactionReason reason,
+                                     Long referenceId) {
         return rewardTransactionRepository.save(RewardTransaction.builder()
                 .userId(userId)
                 .type(type)
                 .amount(amount)
                 .reason(reason)
+                .referenceId(referenceId)
                 .build());
     }
 }

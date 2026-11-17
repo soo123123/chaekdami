@@ -3,10 +3,14 @@ package com.chaekdami.reward.application;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
+import com.chaekdami.reward.domain.RewardTransaction;
+import com.chaekdami.reward.domain.TransactionReason;
+import com.chaekdami.reward.domain.TransactionType;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
 import com.chaekdami.reward.infrastructure.RewardTransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -68,6 +72,20 @@ class RewardLedgerTest {
                 .when(rewardAccountInitializer).insert(USER_ID);
 
         assertThat(rewardLedger.lockAccount(USER_ID)).isSameAs(account);
+    }
+
+    @Test
+    void 세션_보상은_경험치가_0이어도_세션_id와_함께_지급_완료_이력을_남긴다() {
+        int promotionReward = rewardLedger.addExperienceFor(account, 0, TransactionReason.READING_COMPLETE, 42L);
+
+        ArgumentCaptor<RewardTransaction> saved = ArgumentCaptor.forClass(RewardTransaction.class);
+        verify(rewardTransactionRepository).save(saved.capture());
+        assertThat(promotionReward).isZero();
+        assertThat(account.getExperience()).isZero();
+        assertThat(saved.getValue().getReferenceId()).isEqualTo(42L);
+        assertThat(saved.getValue().getAmount()).isZero();
+        assertThat(saved.getValue().getType()).isEqualTo(TransactionType.INCOME_EXPERIENCE);
+        assertThat(saved.getValue().getReason()).isEqualTo(TransactionReason.READING_COMPLETE);
     }
 
     @Test

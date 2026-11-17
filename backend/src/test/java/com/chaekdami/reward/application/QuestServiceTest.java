@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,6 +102,17 @@ class QuestServiceTest {
         assertThatThrownBy(() -> questService.claimReward(USER_ID, 5L))
                 .isInstanceOf(RewardException.class)
                 .extracting("errorCode").isEqualTo(RewardErrorCode.QUEST_ALREADY_REWARDED);
+    }
+
+    @Test
+    void 지난_날짜의_세션은_그날_퀘스트에만_반영하고_퀘스트를_새로_만들지_않는다() {
+        when(userQuestRepository.findAllCreatedBetween(eq(USER_ID), any(), any())).thenReturn(List.of());
+
+        QuestSessionResult result = questService.recordReadingSession(USER_ID, 600, LocalDate.now().minusDays(1));
+
+        assertThat(result.quests()).isEmpty();
+        verify(questRepository, never()).findAllByTypeOrderByIdAsc(any());
+        verify(userQuestRepository, never()).saveAll(any());
     }
 
     private void todayQuests(UserQuest... quests) {

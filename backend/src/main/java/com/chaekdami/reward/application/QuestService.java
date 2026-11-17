@@ -55,13 +55,24 @@ public class QuestService {
      */
     @Transactional
     public QuestSessionResult recordReadingSession(Long userId, int durationSeconds) {
+        return recordReadingSession(userId, durationSeconds, LocalDate.now());
+    }
+
+    /**
+     * readingDate 날짜의 퀘스트에 독서 세션 1회를 반영한다. (독서 완료 화면이 자정을 넘겨 열려도 독서한 날짜로 반영)
+     * 오늘이 아닌 날짜는 그날 이미 만들어진 퀘스트에만 반영한다. 지난 날짜의 퀘스트를 새로 만들지는 않는다.
+     */
+    @Transactional
+    public QuestSessionResult recordReadingSession(Long userId, int durationSeconds, LocalDate readingDate) {
         if (durationSeconds < 0) {
             throw new IllegalArgumentException("독서 시간은 0 이상이어야 합니다. (입력: " + durationSeconds + ")");
         }
         RewardAccount account = rewardLedger.lockAccount(userId);
         int readingMinutes = (durationSeconds + SECONDS_PER_MINUTE / 2) / SECONDS_PER_MINUTE;
 
-        List<UserQuest> todayQuests = getOrCreateTodayQuests(userId);
+        List<UserQuest> todayQuests = readingDate.equals(LocalDate.now())
+                ? getOrCreateTodayQuests(userId)
+                : findQuestsOf(userId, readingDate);
         List<QuestRewardResult> rewarded = new ArrayList<>();
         for (UserQuest userQuest : todayQuests) {
             int progress = DailyQuest.fromCode(userQuest.getQuest().getCode())
@@ -137,5 +148,10 @@ public class QuestService {
                 .toList();
         log.debug("userId={} 오늘의 일일 퀘스트 {}건 생성", userId, created.size());
         return userQuestRepository.saveAll(created);
+    }
+
+    private List<UserQuest> findQuestsOf(Long userId, LocalDate date) {
+        LocalDateTime start = date.atStartOfDay();
+        return userQuestRepository.findAllCreatedBetween(userId, start, start.plusDays(1));
     }
 }

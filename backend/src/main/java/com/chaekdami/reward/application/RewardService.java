@@ -1,5 +1,6 @@
 package com.chaekdami.reward.application;
 
+import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.ExperiencePolicy;
 import com.chaekdami.reward.domain.LevelPolicy;
 import com.chaekdami.reward.domain.RewardAccount;
@@ -70,23 +71,22 @@ public class RewardService {
     }
 
     /**
-     * 독서 세션 완료 경험치를 지급한다. 경험치 부스터 버프가 적용 중이면 배율을 곱한다.
-     * 독서 세션 보상 진입점(ReadingSessionRewardService)이 검증된 세션 값으로 호출한다.
+     * 독서 세션 1회의 독서 경험치를 지급한다. 세션이 끝난 시각에 경험치 부스터가 적용 중이었으면 배율을 곱한다.
+     * 이력에 세션 id 를 남기므로, 독서 완료 보상(ReadingSessionRewardService)이 이미 지급 여부를 확인한 뒤 호출한다.
      */
     @Transactional
-    public ReadingRewardResult grantReadingExperience(Long userId, int durationSeconds, int startPage, int endPage) {
+    public ReadingRewardResult grantReadingExperience(Long userId, ReadingSessionReader.Session session) {
         RewardAccount account = rewardLedger.lockAccount(userId);
 
-        int experience = ExperiencePolicy.readingExperience(durationSeconds, startPage, endPage);
-        boolean boosted = !userBuffRepository.findActiveBuffs(userId, LocalDateTime.now()).isEmpty();
+        int experience = ExperiencePolicy.readingExperience(
+                session.durationSeconds(), session.startPage(), session.endPage());
+        boolean boosted = !userBuffRepository.findActiveBuffs(userId, session.endedAt()).isEmpty();
         if (boosted) {
             experience = ExperiencePolicy.boostedExperience(experience);
         }
-        if (experience == 0) {
-            return new ReadingRewardResult(0, boosted, 0, account.getLevel());
-        }
 
-        int promotionReward = rewardLedger.addExperience(account, experience, TransactionReason.READING_COMPLETE);
+        int promotionReward = rewardLedger.addExperienceFor(
+                account, experience, TransactionReason.READING_COMPLETE, session.id());
         return new ReadingRewardResult(experience, boosted, promotionReward, account.getLevel());
     }
 }
