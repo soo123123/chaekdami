@@ -15,6 +15,7 @@ public record ReadingSessionRewardResponse(
         Reading reading,
         PhotoBonus photoBonus,
         List<CompletedQuest> completedQuests,
+        Streak streak,
         int promotionReward,
         int levelBefore,
         int level,
@@ -33,6 +34,8 @@ public record ReadingSessionRewardResponse(
                         .map(quest -> new CompletedQuest(quest.userQuestId(), quest.title(),
                                 quest.rewardCurrency(), quest.rewardExperience()))
                         .toList(),
+                new Streak(result.streak().currentStreak(), result.streak().longestStreak(),
+                        result.streak().shieldsUsed()),
                 result.promotionReward(),
                 result.levelBefore(),
                 result.level(),
@@ -45,6 +48,9 @@ public record ReadingSessionRewardResponse(
     }
 
     public record PhotoBonus(boolean granted, int experience, int currency) {
+    }
+
+    public record Streak(int currentStreak, int longestStreak, int shieldsUsed) {
     }
 
     public record CompletedQuest(Long userQuestId, String title, int rewardCurrency, int rewardExperience) {

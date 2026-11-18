@@ -7,6 +7,7 @@ import com.chaekdami.reward.domain.ExperiencePolicy;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
+import com.chaekdami.reward.domain.StreakCalculator;
 import com.chaekdami.reward.domain.TransactionReason;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,8 @@ import java.util.stream.Collectors;
 
 /**
  * 독서 완료 화면 보상. 독서 세션 1건에 대해 다음을 한 번에 처리한다.
- * - 기본 보상: 독서 경험치(부스터 적용), 퀘스트 진행과 달성 시 자동 지급, D-day 읽은 날 기록
+ * - 기본 보상: 독서 경험치(부스터 적용), 퀘스트 진행과 달성 시 자동 지급,
+ *   D-day 읽은 날 기록 (그 전에 놓친 날은 방어권으로 자동 정산)
  * - 사진 인증 추가 보상: BE1 이 사진 인증을 확인한 세션이면 경험치 추가 (부스터 미적용, 재화 없음)
  * 기본 보상과 추가 보상은 각각 세션당 한 번만 처리한다. 완료 화면을 다시 열거나 요청을 재시도해도 다시 지급하지 않는다.
  * 퀘스트와 D-day 날짜는 요청 시각이 아니라 세션이 끝난 날짜를 기준으로 한다.
@@ -34,6 +36,7 @@ public class ReadingSessionRewardService {
     private final RewardService rewardService;
     private final QuestService questService;
     private final DdayService ddayService;
+    private final StreakService streakService;
     private final ReadingSessionReader readingSessionReader;
     private final PhotoCertificationChecker photoCertificationChecker;
 
@@ -49,11 +52,13 @@ public class ReadingSessionRewardService {
                 userId, TransactionReason.READING_COMPLETE, readingSessionId);
         ReadingSessionRewardResult.Reading reading = new ReadingSessionRewardResult.Reading(0, false);
         List<ReadingSessionRewardResult.CompletedQuest> completedQuests = List.of();
+        int shieldsUsed = 0;
         if (baseGranted) {
             LocalDate readingDate = session.endedAt().toLocalDate();
             ReadingRewardResult readingReward = rewardService.grantReadingExperience(userId, session);
             QuestSessionResult quests = questService.recordReadingSession(
                     userId, session.durationSeconds(), readingDate);
+            shieldsUsed = streakService.settleBefore(userId, readingDate);
             ddayService.markRead(userId, readingDate);
 
             reading = new ReadingSessionRewardResult.Reading(readingReward.experience(), readingReward.boosted());
@@ -71,12 +76,16 @@ public class ReadingSessionRewardService {
             photoBonus = new ReadingSessionRewardResult.PhotoBonus(true, experience, 0);
         }
 
+        StreakCalculator.Summary streak = streakService.summarize(userId, LocalDate.now());
+        account.syncStreak(streak.currentStreak(), streak.longestStreak());
+
         return new ReadingSessionRewardResult(
                 readingSessionId,
                 baseGranted,
                 reading,
                 photoBonus,
                 completedQuests,
+                new ReadingSessionRewardResult.Streak(streak.currentStreak(), streak.longestStreak(), shieldsUsed),
                 promotionReward,
                 levelBefore,
                 account.getLevel(),

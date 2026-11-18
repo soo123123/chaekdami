@@ -8,10 +8,12 @@ import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
+import com.chaekdami.reward.domain.StreakCalculator;
 import com.chaekdami.reward.domain.TransactionReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,6 +54,8 @@ class ReadingSessionRewardServiceTest {
     private ReadingSessionReader readingSessionReader;
     @Mock
     private PhotoCertificationChecker photoCertificationChecker;
+    @Mock
+    private StreakService streakService;
     @InjectMocks
     private ReadingSessionRewardService service;
 
@@ -62,6 +67,7 @@ class ReadingSessionRewardServiceTest {
     void setUp() {
         when(rewardLedger.lockAccount(USER_ID)).thenReturn(account);
         lenient().when(readingSessionReader.findOwnSession(USER_ID, SESSION_ID)).thenReturn(Optional.of(session));
+        lenient().when(streakService.summarize(eq(USER_ID), any())).thenReturn(new StreakCalculator.Summary(3, 5));
     }
 
     @Test
@@ -73,6 +79,7 @@ class ReadingSessionRewardServiceTest {
                 1, 1, QuestStatus.REWARDED, 50, 10);
         when(questService.recordReadingSession(USER_ID, 1800, READING_DATE)).thenReturn(new QuestSessionResult(
                 List.of(firstSession), List.of(new QuestRewardResult(11L, 50, 10, 0, 50, 1))));
+        when(streakService.settleBefore(USER_ID, READING_DATE)).thenReturn(1);
 
         ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
 
@@ -81,7 +88,11 @@ class ReadingSessionRewardServiceTest {
         assertThat(result.completedQuests()).singleElement()
                 .satisfies(quest -> assertThat(quest.title()).isEqualTo("오늘의 첫 독서 세션 시작하기"));
         assertThat(result.photoBonus().granted()).isFalse();
-        verify(ddayService).markRead(USER_ID, READING_DATE);
+        assertThat(result.streak()).isEqualTo(new ReadingSessionRewardResult.Streak(3, 5, 1));
+        assertThat(account.getDday()).isEqualTo(3);
+        InOrder order = inOrder(streakService, ddayService);
+        order.verify(streakService).settleBefore(USER_ID, READING_DATE);
+        order.verify(ddayService).markRead(USER_ID, READING_DATE);
     }
 
     @Test

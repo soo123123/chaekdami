@@ -71,18 +71,11 @@ public class RewardAccount extends BaseTimeEntity {
     }
 
     /**
-     * 독서에 성공한 날 연속 일수를 1 늘리고, 최고 기록을 넘으면 함께 갱신한다.
+     * D-day 달력으로 계산한 연속 일수를 반영한다. (연속 기록의 기준은 달력이고, 이 값은 그 사본이다)
      */
-    public void extendStreak() {
-        this.dday++;
-        this.maxDday = Math.max(this.maxDday, this.dday);
-    }
-
-    /**
-     * 독서를 놓친 날을 방어권으로 막지 못하면 연속 일수를 0으로 되돌린다. 최고 기록은 유지한다.
-     */
-    public void resetStreak() {
-        this.dday = 0;
+    public void syncStreak(int currentStreak, int longestStreak) {
+        this.dday = currentStreak;
+        this.maxDday = Math.max(this.maxDday, longestStreak);
     }
 
     /**

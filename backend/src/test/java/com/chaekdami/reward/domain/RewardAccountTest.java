@@ -45,14 +45,12 @@ class RewardAccountTest {
     }
 
     @Test
-    void 스트릭_연장과_초기화는_최고_기록을_유지한다() {
-        account.extendStreak();
-        account.extendStreak();
-        account.resetStreak();
-        account.extendStreak();
+    void 달력으로_계산한_연속_일수를_반영하고_최고_기록은_줄지_않는다() {
+        account.syncStreak(5, 5);
+        account.syncStreak(1, 3);
 
         assertThat(account.getDday()).isEqualTo(1);
-        assertThat(account.getMaxDday()).isEqualTo(2);
+        assertThat(account.getMaxDday()).isEqualTo(5);
     }
 
     @Test

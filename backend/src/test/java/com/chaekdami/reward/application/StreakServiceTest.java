@@ -1,27 +1,26 @@
 package com.chaekdami.reward.application;
 
-import com.chaekdami.reward.domain.RewardAccount;
+import com.chaekdami.dday.domain.DdayRecord;
+import com.chaekdami.dday.domain.DdayRecordStatus;
+import com.chaekdami.dday.infrastructure.DdayRecordRepository;
 import com.chaekdami.reward.domain.ShopItemType;
-import com.chaekdami.reward.domain.StreakLog;
 import com.chaekdami.reward.domain.UserItem;
-import com.chaekdami.reward.infrastructure.StreakLogRepository;
 import com.chaekdami.reward.infrastructure.UserItemRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,10 +28,10 @@ import static org.mockito.Mockito.when;
 class StreakServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final LocalDate TODAY = LocalDate.now();
+    private static final LocalDate TODAY = LocalDate.of(2026, 11, 19);
 
     @Mock
-    private StreakLogRepository streakLogRepository;
+    private DdayRecordRepository ddayRecordRepository;
     @Mock
     private UserItemRepository userItemRepository;
     @Mock
@@ -40,96 +39,72 @@ class StreakServiceTest {
     @InjectMocks
     private StreakService streakService;
 
-    private RewardAccount account;
+    @Test
+    void 놓친_날마다_방어권_1개를_쓰고_달력에_방어로_기록한다() {
+        records(TODAY.minusDays(4), DdayRecordStatus.READ, TODAY.minusDays(3), DdayRecordStatus.READ);
+        UserItem shield = shieldStock(5);
 
-    @BeforeEach
-    void setUp() {
-        account = RewardAccount.builder().userId(USER_ID).build();
-        when(rewardLedger.lockAccount(USER_ID)).thenReturn(account);
-        lenient().when(streakLogRepository.existsByUserIdAndAchievedDate(USER_ID, TODAY)).thenReturn(false);
+        int used = streakService.settleBefore(USER_ID, TODAY);   // 그제, 어제를 놓침
+
+        assertThat(used).isEqualTo(2);
+        assertThat(shield.getQuantity()).isEqualTo(3);
+        assertThat(savedProtectedDates()).containsExactly(TODAY.minusDays(2), TODAY.minusDays(1));
     }
 
     @Test
-    void 첫_독서는_스트릭_1일() {
-        StreakResult result = streakService.recordReadingDay(USER_ID);
+    void 방어권이_모자라면_거기서_멈춘다() {
+        records(TODAY.minusDays(4), DdayRecordStatus.READ);
+        UserItem shield = shieldStock(1);
 
-        assertThat(result.currentStreak()).isEqualTo(1);
-        assertThat(result.newlyAchieved()).isTrue();
-        assertThat(result.shieldsUsed()).isZero();
-    }
+        int used = streakService.settleBefore(USER_ID, TODAY);   // 3일 놓침, 방어권 1개
 
-    @Test
-    void 어제_읽었으면_방어권_없이_연장() {
-        streakOf(3);
-        lastLogOn(TODAY.minusDays(1));
-
-        StreakResult result = streakService.recordReadingDay(USER_ID);
-
-        assertThat(result.currentStreak()).isEqualTo(4);
-        verify(userItemRepository, never()).findAllInStockByUserIdAndItemType(any(), any());
-    }
-
-    @Test
-    void 같은_날_두번째_독서는_연장하지_않는다() {
-        streakOf(3);
-        lastLogOn(TODAY);
-        when(streakLogRepository.existsByUserIdAndAchievedDate(USER_ID, TODAY)).thenReturn(true);
-
-        StreakResult result = streakService.recordReadingDay(USER_ID);
-
-        assertThat(result.currentStreak()).isEqualTo(3);
-        assertThat(result.newlyAchieved()).isFalse();
-        verify(streakLogRepository, never()).save(any());
-    }
-
-    @Test
-    void 놓친_날마다_방어권_1개씩_차감하고_스트릭을_유지한다() {
-        streakOf(5);
-        lastLogOn(TODAY.minusDays(3));   // 그제, 어제를 놓침
-        UserItem shield = shieldStock(2);
-
-        StreakResult result = streakService.recordReadingDay(USER_ID);
-
-        assertThat(result.shieldsUsed()).isEqualTo(2);
+        assertThat(used).isEqualTo(1);
         assertThat(shield.getQuantity()).isZero();
-        assertThat(result.currentStreak()).isEqualTo(6);   // 방어한 날은 +0, 오늘 +1
-        verify(streakLogRepository, times(3)).save(any(StreakLog.class));
+        assertThat(savedProtectedDates()).containsExactly(TODAY.minusDays(3));
     }
 
     @Test
-    void 방어권이_모자라면_그날_스트릭을_0으로_되돌린다() {
-        streakOf(5);
-        lastLogOn(TODAY.minusDays(3));
-        shieldStock(1);
+    void 연속_일수가_0이면_방어권을_쓰지_않는다() {
+        records(TODAY.minusDays(9), DdayRecordStatus.READ, TODAY.minusDays(5), DdayRecordStatus.PROTECTED);
 
-        StreakResult result = streakService.recordReadingDay(USER_ID);
+        int used = streakService.settleBefore(USER_ID, TODAY);
 
-        assertThat(result.shieldsUsed()).isEqualTo(1);
-        assertThat(result.currentStreak()).isEqualTo(1);   // 초기화 후 오늘 +1
-        assertThat(result.maxStreak()).isEqualTo(5);
-    }
-
-    @Test
-    void 스트릭이_0이면_방어권을_쓰지_않는다() {
-        lastLogOn(TODAY.minusDays(5));
-
-        StreakResult result = streakService.recordReadingDay(USER_ID);
-
-        assertThat(result.shieldsUsed()).isZero();
-        assertThat(result.currentStreak()).isEqualTo(1);
+        assertThat(used).isZero();
         verify(userItemRepository, never()).findAllInStockByUserIdAndItemType(any(), any());
+        verify(ddayRecordRepository, never()).save(any());
     }
 
-    private void streakOf(int days) {
-        for (int i = 0; i < days; i++) {
-            account.extendStreak();
+    @Test
+    void 어제까지_기록이_있으면_정산할_게_없어_잠그지도_않는다() {
+        records(TODAY.minusDays(1), DdayRecordStatus.READ);
+
+        assertThat(streakService.settleBefore(USER_ID, TODAY)).isZero();
+        verify(rewardLedger, never()).lockAccount(any());
+    }
+
+    @Test
+    void 기록이_없는_사용자는_정산하지_않는다() {
+        when(ddayRecordRepository.findAllByUserIdOrderByRecordDateAsc(USER_ID)).thenReturn(List.of());
+
+        assertThat(streakService.settleBefore(USER_ID, TODAY)).isZero();
+        verify(rewardLedger, never()).lockAccount(any());
+    }
+
+    @Test
+    void 연속_일수는_달력으로_계산한다() {
+        records(TODAY.minusDays(2), DdayRecordStatus.READ,
+                TODAY.minusDays(1), DdayRecordStatus.PROTECTED,
+                TODAY, DdayRecordStatus.READ);
+
+        assertThat(streakService.summarize(USER_ID, TODAY).currentStreak()).isEqualTo(2);
+    }
+
+    private void records(Object... dateAndStatus) {
+        List<DdayRecord> records = new ArrayList<>();
+        for (int i = 0; i < dateAndStatus.length; i += 2) {
+            records.add(DdayRecord.create(USER_ID, (LocalDate) dateAndStatus[i], (DdayRecordStatus) dateAndStatus[i + 1]));
         }
-    }
-
-    /** 스트릭이 0이면 정산이 마지막 기록을 조회하지 않고 끝나므로 lenient 로 둔다. */
-    private void lastLogOn(LocalDate date) {
-        lenient().when(streakLogRepository.findTopByUserIdOrderByAchievedDateDesc(USER_ID))
-                .thenReturn(Optional.of(StreakLog.builder().userId(USER_ID).achievedDate(date).build()));
+        when(ddayRecordRepository.findAllByUserIdOrderByRecordDateAsc(USER_ID)).thenReturn(records);
     }
 
     private UserItem shieldStock(int quantity) {
@@ -137,5 +112,13 @@ class StreakServiceTest {
         when(userItemRepository.findAllInStockByUserIdAndItemType(USER_ID, ShopItemType.SHIELD))
                 .thenReturn(List.of(shield));
         return shield;
+    }
+
+    private List<LocalDate> savedProtectedDates() {
+        ArgumentCaptor<DdayRecord> saved = ArgumentCaptor.forClass(DdayRecord.class);
+        verify(ddayRecordRepository, atLeastOnce()).save(saved.capture());
+        assertThat(saved.getAllValues()).allSatisfy(
+                record -> assertThat(record.getStatus()).isEqualTo(DdayRecordStatus.PROTECTED));
+        return saved.getAllValues().stream().map(DdayRecord::getRecordDate).toList();
     }
 }
