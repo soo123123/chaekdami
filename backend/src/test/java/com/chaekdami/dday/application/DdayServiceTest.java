@@ -1,11 +1,13 @@
 package com.chaekdami.dday.application;
 
+import com.chaekdami.dday.infrastructure.DdayCleanupListener;
 import com.chaekdami.dday.infrastructure.DdayGoalRepository;
 import com.chaekdami.dday.infrastructure.DdayRecordRepository;
 import com.chaekdami.dday.presentation.dto.DdayResponse;
 import com.chaekdami.dday.presentation.dto.DdaySaveRequest;
 import com.chaekdami.reward.application.StreakService;
 import com.chaekdami.reward.domain.StreakCalculator;
+import com.chaekdami.user.application.event.UserWithdrawnEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,7 +45,16 @@ class DdayServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(streakService.summarize(eq(USER_ID), any(LocalDate.class))).thenReturn(new StreakCalculator.Summary(4, 7));
+        lenient().when(streakService.summarize(eq(USER_ID), any(LocalDate.class)))
+                .thenReturn(new StreakCalculator.Summary(4, 7));
+    }
+
+    @Test
+    void 탈퇴_이벤트를_받으면_D_day_기록과_목표를_지운다() {
+        new DdayCleanupListener(ddayService).onUserWithdrawn(new UserWithdrawnEvent(USER_ID));
+
+        verify(ddayRecordRepository).deleteAllByUserId(USER_ID);
+        verify(ddayGoalRepository).deleteAllByUserId(USER_ID);
     }
 
     @Test

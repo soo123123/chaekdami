@@ -3,8 +3,6 @@ package com.chaekdami.reward.application;
 import com.chaekdami.reward.domain.DailyQuest;
 import com.chaekdami.reward.domain.QuestStatus;
 import com.chaekdami.reward.domain.RewardAccount;
-import com.chaekdami.reward.domain.RewardErrorCode;
-import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.TransactionReason;
 import com.chaekdami.reward.domain.UserQuest;
 import com.chaekdami.reward.infrastructure.QuestRepository;
@@ -18,10 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -91,17 +87,6 @@ class QuestServiceTest {
         assertThat(result.rewarded()).isEmpty();
         verify(rewardLedger, never()).addCurrency(any(), anyInt(), any());
         verify(rewardLedger, never()).addExperience(any(), anyInt(), any());
-    }
-
-    @Test
-    void 자동_지급된_퀘스트를_수령_요청하면_QUEST_002() {
-        firstSession.updateProgress(1);
-        firstSession.claimReward();
-        when(userQuestRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(firstSession));
-
-        assertThatThrownBy(() -> questService.claimReward(USER_ID, 5L))
-                .isInstanceOf(RewardException.class)
-                .extracting("errorCode").isEqualTo(RewardErrorCode.QUEST_ALREADY_REWARDED);
     }
 
     @Test

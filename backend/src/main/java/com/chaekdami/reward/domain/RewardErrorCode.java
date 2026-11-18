@@ -17,7 +17,6 @@ public enum RewardErrorCode implements ErrorCode {
     NO_BOOSTER("REWARD_006", 400, "사용할 수 있는 경험치 부스터가 없습니다."),
     QUEST_NOT_COMPLETED("QUEST_001", 400, "아직 달성하지 못한 퀘스트입니다."),
     QUEST_ALREADY_REWARDED("QUEST_002", 400, "이미 보상을 수령한 퀘스트입니다."),
-    QUEST_NOT_FOUND("QUEST_003", 404, "퀘스트를 찾을 수 없습니다."),
     SHOP_ITEM_NOT_FOUND("SHOP_001", 404, "판매 중인 상품을 찾을 수 없습니다."),
     CONCURRENT_REQUEST("CONCURRENCY_001", 409, "현재 요청이 동시에 여러 번 인입되었습니다. 잠시 후 다시 시도해 주세요.");
 

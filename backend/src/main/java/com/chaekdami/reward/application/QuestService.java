@@ -6,8 +6,6 @@ import com.chaekdami.reward.domain.Quest;
 import com.chaekdami.reward.domain.QuestStatus;
 import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
-import com.chaekdami.reward.domain.RewardErrorCode;
-import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.TransactionReason;
 import com.chaekdami.reward.domain.UserQuest;
 import com.chaekdami.reward.infrastructure.QuestRepository;
@@ -92,18 +90,6 @@ public class QuestService {
                 .map(QuestResult::from)
                 .toList();
         return new QuestSessionResult(quests, rewarded);
-    }
-
-    /**
-     * 완료된 퀘스트의 보상 재화와 경험치를 지급한다.
-     * 달성 시 자동 지급으로 바뀌어 보통은 이미 수령된 상태(QUEST_002)다. 자동 지급 전에 완료된 퀘스트를 위해 남겨 둔다.
-     */
-    @Transactional
-    public QuestRewardResult claimReward(Long userId, Long userQuestId) {
-        RewardAccount account = rewardLedger.lockAccount(userId);
-        UserQuest userQuest = userQuestRepository.findByIdAndUserId(userQuestId, userId)
-                .orElseThrow(() -> new RewardException(RewardErrorCode.QUEST_NOT_FOUND));
-        return grantReward(account, userQuest);
     }
 
     /**

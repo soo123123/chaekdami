@@ -13,6 +13,7 @@ import com.chaekdami.reward.application.StreakService;
 import com.chaekdami.reward.domain.StreakCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -91,6 +92,16 @@ public class DdayService {
         if (record.getStatus() != DdayRecordStatus.READ) {
             record.changeStatus(DdayRecordStatus.READ);
         }
+    }
+
+    /**
+     * 회원 탈퇴 시 사용자의 D-day 목표와 달력 기록을 지운다. dday 테이블은 users 에 DB FK 가 없어서 여기서 함께 지운다.
+     * 호출한 쪽(회원 탈퇴)의 트랜잭션에 참여해 탈퇴와 함께 커밋되거나 롤백된다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteAllOfUser(Long userId) {
+        ddayRecordRepository.deleteAllByUserId(userId);
+        ddayGoalRepository.deleteAllByUserId(userId);
     }
 
     private void saveGoals(Long userId, List<DdayGoalRequest> requests) {
