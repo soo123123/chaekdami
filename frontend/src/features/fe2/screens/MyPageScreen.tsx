@@ -5,7 +5,6 @@ import {
   Alert,
   Image,
   Platform,
-  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -126,7 +125,28 @@ export default function MyPageScreen() {
   const [accountBusy, setAccountBusy] = useState(false);
 
   const { width } = useWindowDimensions();
+
   const compact = width < 410;
+
+  const contentWidth = Math.max(
+    0,
+    Math.min(width, 620) - 24
+  );
+
+  const heroHeight =
+    contentWidth < 390
+      ? 260
+      : contentWidth < 500
+        ? 275
+        : 310;
+
+  // 퀘스트 배너 이미지의 가로세로 비율
+  // 실제 이미지가 약 3.2:1 비율이므로
+  // 배너 너비에 따라 높이를 자동 계산합니다.
+  const questAspectRatio = 3.2;
+
+  const questHeight =
+    contentWidth / questAspectRatio;
 
   const xpPercent = Math.min(
     100,
@@ -149,7 +169,10 @@ export default function MyPageScreen() {
           setProfile(data);
         }
       } catch (error) {
-        console.log('사용자 정보 조회 실패:', error);
+        console.log(
+          '사용자 정보 조회 실패:',
+          error
+        );
 
         if (active) {
           setProfile({
@@ -273,6 +296,7 @@ export default function MyPageScreen() {
           size="large"
           color={COLORS.green}
         />
+
         <Text style={styles.loadingText}>
           마이페이지를 불러오는 중...
         </Text>
@@ -286,15 +310,32 @@ export default function MyPageScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {/* 프로필 배너 */}
-        <ImageBackground
-          source={ART.profileBanner}
-          resizeMode="cover"
-          imageStyle={styles.heroBackground}
-          style={styles.hero}
+        {/* 마이페이지 상단 배너 */}
+        <View
+          style={[
+            styles.hero,
+            { height: heroHeight },
+          ]}
         >
+          <Image
+            source={ART.profileBanner}
+            style={styles.heroBackgroundImage}
+            resizeMode="stretch"
+          />
+
+          <View
+            style={styles.heroTextOverlay}
+            pointerEvents="none"
+          />
+
           <View style={styles.heroHeader}>
-            <Text style={styles.heroTitle}>
+            <Text
+              style={[
+                styles.heroTitle,
+                compact && styles.heroTitleCompact,
+              ]}
+              numberOfLines={1}
+            >
               마이페이지
             </Text>
 
@@ -323,15 +364,25 @@ export default function MyPageScreen() {
             </View>
           </View>
 
-          {/* 프로필 정보 */}
-          <View style={styles.profileRow}>
+          <View
+            style={[
+              styles.profileRow,
+              compact && styles.profileRowCompact,
+            ]}
+          >
             <TouchableOpacity
-              style={styles.avatar}
+              style={[
+                styles.avatar,
+                compact && styles.avatarCompact,
+              ]}
               onPress={() => pending('프로필 수정')}
             >
               <Image
                 source={ART.profileCat}
-                style={styles.avatarImage}
+                style={[
+                  styles.avatarImage,
+                  compact && styles.avatarImageCompact,
+                ]}
                 resizeMode="contain"
               />
 
@@ -346,14 +397,20 @@ export default function MyPageScreen() {
 
             <View style={styles.profileDetails}>
               <Text
-                style={styles.nickname}
+                style={[
+                  styles.nickname,
+                  compact && styles.nicknameCompact,
+                ]}
                 numberOfLines={1}
               >
                 {profile?.nickname || '책읽는고양이'}
               </Text>
 
               <Text
-                style={styles.quote}
+                style={[
+                  styles.quote,
+                  compact && styles.quoteCompact,
+                ]}
                 numberOfLines={2}
               >
                 조금씩, 꾸준히. 그게 큰 변화를 만들어요.
@@ -375,15 +432,9 @@ export default function MyPageScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
-          <Image
-            source={ART.bookPlant}
-            style={styles.heroPlant}
-            resizeMode="contain"
-          />
-        </ImageBackground>
-
-        {/* D-day, 레벨, 재화 */}
+        {/* D-day / 레벨 / 재화 */}
         <View style={styles.summary}>
           <TouchableOpacity
             style={styles.summaryItem}
@@ -473,25 +524,30 @@ export default function MyPageScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 오늘의 퀘스트 */}
+        {/* 오늘의 퀘스트 배너 */}
         <TouchableOpacity
-          style={styles.quest}
+          style={[
+            styles.quest,
+            { height: questHeight },
+          ]}
           onPress={() => goTo('/fe2/reward/quest')}
+          activeOpacity={0.9}
         >
-          <ImageBackground
+          <Image
             source={ART.questBanner}
-            resizeMode="cover"
-            imageStyle={styles.questBackgroundImage}
-            style={styles.questBackground}
-          >
-            <Image
-              source={ART.questCat}
-              style={styles.questCat}
-              resizeMode="contain"
-            />
+            style={styles.questBackgroundImage}
+            resizeMode="stretch"
+          />
 
+          <View style={styles.questDetails}>
             <View style={styles.questInfo}>
-              <Text style={styles.questTitle}>
+              <Text
+                style={[
+                  styles.questTitle,
+                  compact && styles.questTitleCompact,
+                ]}
+                numberOfLines={1}
+              >
                 오늘의 퀘스트
               </Text>
 
@@ -522,7 +578,7 @@ export default function MyPageScreen() {
                 color={COLORS.green}
               />
             </View>
-          </ImageBackground>
+          </View>
         </TouchableOpacity>
 
         {/* 바로가기 */}
@@ -713,7 +769,6 @@ export default function MyPageScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* 공용 하단 탭바 (FE1 서재와 동일) */}
       <BottomTabBar active="mypage" />
     </SafeAreaView>
   );
@@ -815,16 +870,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
   },
+
   loadingText: {
     marginTop: 12,
     color: COLORS.muted,
   },
+
   content: {
     width: '100%',
     maxWidth: 620,
@@ -833,46 +891,83 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 28,
   },
+
   hero: {
-    height: 205,
     borderRadius: 23,
     overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 16,
     marginBottom: 12,
-    backgroundColor: '#F0E5D5',
+    backgroundColor: '#F7EBDD',
+    position: 'relative',
   },
-  heroBackground: {
-    borderRadius: 23,
+
+  heroBackgroundImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
   },
+
+  heroTextOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '42%',
+    backgroundColor: 'rgba(250,244,234,0.12)',
+  },
+
   heroHeader: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 2,
+    zIndex: 3,
   },
+
   heroTitle: {
     fontSize: 24,
+    lineHeight: 34,
     fontWeight: '800',
     color: COLORS.text,
+    includeFontPadding: false,
   },
+
+  heroTitleCompact: {
+    fontSize: 21,
+    lineHeight: 30,
+  },
+
   heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
+
   headerIcon: {
     width: 25,
     height: 25,
   },
+
   profileRow: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 24,
     gap: 11,
-    zIndex: 2,
-    paddingRight: 24,
+    zIndex: 3,
   },
+
+  profileRowCompact: {
+    left: 12,
+    right: 12,
+    bottom: 12,
+    gap: 8,
+  },
+
   avatar: {
     width: 74,
     height: 74,
@@ -884,10 +979,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+
+  avatarCompact: {
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    borderWidth: 2,
+  },
+
   avatarImage: {
     width: 65,
     height: 65,
   },
+
+  avatarImageCompact: {
+    width: 49,
+    height: 49,
+  },
+
   editDot: {
     position: 'absolute',
     right: 0,
@@ -899,21 +1008,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   profileDetails: {
     flex: 1,
     minWidth: 0,
   },
+
   nickname: {
     fontSize: 18,
     fontWeight: '800',
     color: COLORS.text,
   },
+
+  nicknameCompact: {
+    fontSize: 15,
+  },
+
   quote: {
     fontSize: 10,
     color: '#4E4942',
     marginTop: 5,
     lineHeight: 15,
   },
+
+  quoteCompact: {
+    fontSize: 9,
+    lineHeight: 13,
+  },
+
   editButton: {
     marginTop: 9,
     backgroundColor: COLORS.white,
@@ -925,19 +1047,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
   },
+
   editButtonText: {
     fontSize: 10,
     color: '#625B51',
     fontWeight: '600',
   },
-  heroPlant: {
-    position: 'absolute',
-    width: 90,
-    height: 92,
-    right: -12,
-    bottom: -13,
-    opacity: 0.8,
-  },
+
   summary: {
     backgroundColor: '#EFF1E9',
     borderRadius: 22,
@@ -946,6 +1062,7 @@ const styles = StyleSheet.create({
     padding: 6,
     marginBottom: 12,
   },
+
   summaryItem: {
     flex: 1,
     minWidth: 0,
@@ -957,16 +1074,19 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 3,
   },
+
   summaryArt: {
     width: 36,
     height: 36,
     marginBottom: 4,
   },
+
   summaryLabel: {
     fontSize: 10,
     color: COLORS.muted,
     textAlign: 'center',
   },
+
   summaryValue: {
     fontSize: 18,
     fontWeight: '800',
@@ -974,6 +1094,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+
   summaryHint: {
     fontSize: 9,
     color: COLORS.muted,
@@ -981,6 +1102,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 12,
   },
+
   miniTrack: {
     width: '76%',
     height: 4,
@@ -989,52 +1111,85 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 5,
   },
+
   miniFill: {
     height: '100%',
     backgroundColor: COLORS.green,
   },
+
+  // 퀘스트 이미지 비율에 맞춘 배너
   quest: {
     marginBottom: 12,
     borderRadius: 21,
     overflow: 'hidden',
-    backgroundColor: COLORS.green,
+    backgroundColor: COLORS.darkGreen,
+    position: 'relative',
+    width: '100%',
   },
-  questBackground: {
-    minHeight: 116,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-  },
+
   questBackgroundImage: {
-    borderRadius: 21,
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
   },
-  questCat: {
-    width: 76,
-    height: 84,
-    flexShrink: 0,
+
+  questDetails: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 13,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+    zIndex: 2,
   },
+
   questInfo: {
     flex: 1,
     minWidth: 0,
-    paddingLeft: 7,
+    paddingRight: 4,
   },
+
   questTitle: {
     fontSize: 17,
+    lineHeight: 24,
     fontWeight: '800',
     color: '#FFFFFF',
+    includeFontPadding: false,
+    textAlign: 'left',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 3,
   },
+
+  questTitleCompact: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
   questDescription: {
     fontSize: 11,
     color: '#F0F6EE',
     marginTop: 6,
+    textAlign: 'left',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 3,
   },
+
   questProgressRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginTop: 12,
   },
+
   questTrack: {
     flex: 1,
     height: 7,
@@ -1042,14 +1197,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
   },
+
   questFill: {
     height: '100%',
     backgroundColor: '#F6F0D8',
   },
+
   questCount: {
     fontSize: 9,
     color: '#FFFFFF',
   },
+
   questArrow: {
     backgroundColor: '#FFFFFF',
     width: 26,
@@ -1059,11 +1217,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 3,
   },
+
   shortcuts: {
     flexDirection: 'row',
     gap: 6,
     marginBottom: 12,
   },
+
   shortcut: {
     flex: 1,
     minWidth: 0,
@@ -1073,6 +1233,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     paddingVertical: 9,
   },
+
   shortcutArtBox: {
     width: '100%',
     height: 57,
@@ -1081,50 +1242,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 7,
   },
+
   shortcutArt: {
     width: 43,
     height: 43,
   },
+
   shortcutTitle: {
     fontSize: 11,
     fontWeight: '800',
     color: COLORS.text,
     textAlign: 'center',
   },
+
   shortcutTitleCompact: {
     fontSize: 10,
   },
+
   shortcutSubtitle: {
     fontSize: 9,
     color: COLORS.muted,
     marginTop: 4,
     textAlign: 'center',
   },
+
   libraryCard: {
     backgroundColor: COLORS.white,
     borderRadius: 21,
     padding: 14,
     marginBottom: 12,
   },
+
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
     color: COLORS.text,
   },
+
   moreButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   moreText: {
     fontSize: 11,
     color: COLORS.muted,
   },
+
   libraryPreview: {
     height: 168,
     backgroundColor: '#F2E8D9',
@@ -1133,10 +1304,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+
   bookshelfImage: {
     width: '94%',
     height: '94%',
   },
+
   shelfCat: {
     position: 'absolute',
     right: 6,
@@ -1144,12 +1317,14 @@ const styles = StyleSheet.create({
     width: 66,
     height: 66,
   },
+
   settingsCard: {
     backgroundColor: COLORS.white,
     borderRadius: 21,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
+
   settingsRow: {
     minHeight: 54,
     flexDirection: 'row',
@@ -1158,14 +1333,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.line,
   },
+
   lastRow: {
     borderBottomWidth: 0,
   },
+
   settingsText: {
     flex: 1,
     fontSize: 13,
     color: '#56534D',
   },
+
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1178,6 +1356,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.line,
   },
+
   logoutText: {
     fontSize: 13,
     color: COLORS.muted,

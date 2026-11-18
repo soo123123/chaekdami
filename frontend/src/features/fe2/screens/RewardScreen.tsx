@@ -21,6 +21,7 @@ import { summarizeDday } from '../api/ddayStreak';
 import { getReadingStats } from '../api/readingStatsApi';
 import { getRewardStatus } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
+
 type RewardStatus = {
   level?: number;
   xp?: number;
@@ -163,6 +164,7 @@ function StatItem({
         <Text style={styles.statLabel} numberOfLines={1}>
           {label}
         </Text>
+
         <Text
           style={styles.statValue}
           numberOfLines={1}
@@ -311,6 +313,7 @@ export default function RewardScreen() {
           size="large"
           color={COLORS.green}
         />
+
         <Text style={styles.loadingText}>
           레벨 정보를 불러오는 중...
         </Text>
@@ -326,6 +329,7 @@ export default function RewardScreen() {
   );
 
   const remainingXp = Math.max(0, requiredXp - xp);
+
   const progress = Math.min(
     100,
     (xp / requiredXp) * 100
@@ -338,6 +342,7 @@ export default function RewardScreen() {
   const contentWidth = Math.min(width, 560);
   const panelInnerWidth = contentWidth - 28 - 26 - 2;
   const cardGap = 4;
+
   const levelCardWidth = Math.max(
     45,
     (panelInnerWidth - cardGap * 4) / 5
@@ -397,9 +402,11 @@ export default function RewardScreen() {
                 <Text style={styles.heroLabel}>
                   현재 레벨
                 </Text>
+
                 <Text style={styles.heroLevel}>
                   Lv. {level}
                 </Text>
+
                 <Text style={styles.heroName}>
                   {levelName}
                 </Text>
@@ -509,6 +516,7 @@ export default function RewardScreen() {
                   <Text style={styles.benefitTitle}>
                     {benefit.title}
                   </Text>
+
                   <Text style={styles.benefitDescription}>
                     {benefit.description}
                   </Text>
@@ -559,10 +567,16 @@ export default function RewardScreen() {
             size={20}
             color={COLORS.green}
           />
+
           <Text style={styles.shopButtonText}>
             재화 상점 가기
           </Text>
-          <Icon name="chevronRight" size={16} color={COLORS.green} />
+
+          <Icon
+            name="chevronRight"
+            size={16}
+            color={COLORS.green}
+          />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -574,6 +588,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
   content: {
     width: '100%',
     maxWidth: 560,
@@ -582,37 +597,44 @@ const styles = StyleSheet.create({
     paddingTop: 21,
     paddingBottom: 40,
   },
+
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
   },
+
   loadingText: {
     marginTop: 12,
     color: COLORS.muted,
   },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 22,
     minHeight: 44,
   },
+
   backButton: {
     width: 40,
     height: 44,
     justifyContent: 'center',
   },
+
   headerTitle: {
     flex: 1,
     fontSize: 25,
     fontWeight: '900',
     color: COLORS.text,
   },
+
   helpButton: {
     width: 35,
     alignItems: 'flex-end',
   },
+
   heroCard: {
     backgroundColor: COLORS.white,
     borderRadius: 23,
@@ -624,45 +646,53 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     overflow: 'hidden',
   },
+
   heroTop: {
     minHeight: 176,
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+
   heroLeft: {
     width: '60%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     zIndex: 2,
   },
+
   heroBadge: {
     width: 63,
     height: 63,
     marginTop: 5,
     marginRight: 8,
   },
+
   heroLevelText: {
     flex: 1,
     paddingTop: 8,
   },
+
   heroLabel: {
     fontSize: 12,
     fontWeight: '800',
     color: COLORS.green,
   },
+
   heroLevel: {
     fontSize: 37,
     fontWeight: '900',
     color: COLORS.text,
     marginTop: 9,
   },
+
   heroName: {
     fontSize: 13,
     fontWeight: '800',
     color: COLORS.green,
     marginTop: 8,
   },
+
   heroCat: {
     position: 'absolute',
     width: 175,
@@ -670,9 +700,11 @@ const styles = StyleSheet.create({
     right: -14,
     top: 3,
   },
+
   heroProgress: {
     marginTop: 5,
   },
+
   progressTrack: {
     width: '100%',
     height: 11,
@@ -680,28 +712,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7E6E3',
     overflow: 'hidden',
   },
+
   progressFill: {
     height: '100%',
     backgroundColor: COLORS.green,
     borderRadius: 10,
   },
+
   xpText: {
     fontSize: 14,
     color: '#66645F',
     marginTop: 12,
   },
+
   remainingText: {
     fontSize: 13,
     color: '#66645F',
     marginTop: 8,
     lineHeight: 20,
   },
+
   demoText: {
     fontSize: 10,
     color: COLORS.muted,
     marginBottom: 11,
     marginLeft: 4,
   },
+
   statsCard: {
     backgroundColor: COLORS.white,
     borderRadius: 21,
@@ -713,12 +750,14 @@ const styles = StyleSheet.create({
     paddingVertical: 19,
     marginBottom: 16,
   },
+
   statItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     minWidth: 0,
   },
+
   statIconCircle: {
     width: 34,
     height: 34,
@@ -728,30 +767,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 4,
   },
+
   statIcon: {
     width: 28,
     height: 28,
   },
+
   statTextArea: {
     flex: 1,
     minWidth: 0,
   },
+
   statLabel: {
     color: COLORS.muted,
     fontSize: 9,
     marginBottom: 4,
   },
+
   statValue: {
     color: COLORS.text,
     fontSize: 11,
     fontWeight: '900',
   },
+
   statDivider: {
     width: 1,
     height: 43,
     backgroundColor: COLORS.border,
     marginHorizontal: 3,
   },
+
   mainPanel: {
     backgroundColor: COLORS.white,
     borderRadius: 23,
@@ -761,6 +806,7 @@ const styles = StyleSheet.create({
     paddingTop: 21,
     paddingBottom: 17,
   },
+
   sectionTitle: {
     fontSize: 20,
     fontWeight: '900',
@@ -768,12 +814,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 3,
     marginBottom: 19,
   },
+
   levelList: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 4,
     marginBottom: 30,
   },
+
   levelCard: {
     minHeight: 198,
     borderWidth: 1,
@@ -784,21 +832,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
+
   levelCardCurrent: {
     borderWidth: 2,
     borderColor: COLORS.green,
     backgroundColor: '#F2F7F0',
   },
+
   levelImage: {
     width: '100%',
     height: 65,
     marginBottom: 7,
   },
+
   levelNumber: {
     fontSize: 13,
     fontWeight: '800',
     color: COLORS.text,
   },
+
   levelName: {
     fontSize: 8,
     fontWeight: '800',
@@ -807,6 +859,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     minHeight: 25,
   },
+
   levelRange: {
     fontSize: 7,
     color: COLORS.muted,
@@ -814,6 +867,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     minHeight: 20,
   },
+
   levelStatusArea: {
     marginTop: 'auto',
     paddingTop: 7,
@@ -821,17 +875,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   currentLabel: {
     backgroundColor: COLORS.green,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
+
   currentLabelText: {
     color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '800',
   },
+
   checkCircle: {
     width: 22,
     height: 22,
@@ -840,9 +897,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   benefits: {
     marginBottom: 24,
   },
+
   benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -851,10 +910,12 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     paddingVertical: 12,
   },
+
   benefitRowFirst: {
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
+
   benefitIconBox: {
     width: 47,
     height: 47,
@@ -866,21 +927,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+
   benefitText: {
     flex: 1,
   },
+
   benefitTitle: {
     color: COLORS.text,
     fontSize: 12,
     fontWeight: '800',
     lineHeight: 18,
   },
+
   benefitDescription: {
     color: COLORS.muted,
     fontSize: 10,
     marginTop: 5,
     lineHeight: 16,
   },
+
   benefitCheck: {
     width: 27,
     height: 27,
@@ -890,6 +955,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 9,
   },
+
+  // 하단 응원 카드
   cheerCard: {
     backgroundColor: COLORS.cream,
     borderRadius: 20,
@@ -898,27 +965,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+
+  // 왼쪽에서 잘리던 이미지를 오른쪽으로 이동
   cheerCat: {
     width: 142,
     height: 145,
-    marginLeft: -12,
+    marginLeft: 0,
   },
+
+  // 글을 카드의 세로 중앙으로 정렬
   cheerInformation: {
     flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
     paddingHorizontal: 5,
     paddingRight: 12,
   },
+
   cheerTitle: {
     fontSize: 17,
     fontWeight: '900',
     color: COLORS.text,
     marginBottom: 10,
   },
+
   cheerDescription: {
     fontSize: 11,
     lineHeight: 19,
     color: COLORS.muted,
   },
+
   shopButton: {
     marginTop: 18,
     backgroundColor: COLORS.white,
@@ -931,6 +1007,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+
   shopButtonText: {
     fontSize: 14,
     fontWeight: '800',

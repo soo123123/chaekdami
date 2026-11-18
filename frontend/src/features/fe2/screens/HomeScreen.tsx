@@ -4,7 +4,6 @@ import {
   View,
   Text,
   Image,
-  ImageBackground,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -26,13 +25,12 @@ import { getTodayReading } from '../api/todayReadingApi';
 
 const GREEN = '#315E49';
 const BG = '#FAF7F1';
+const COIN_COLOR = '#D9A23B';
 
-// 실제 frontend/assets/images 폴더 기준
 const images = {
   banner: require('../../../../assets/images/home/햇살 가득한 책 읽는 공간.png'),
   quest: require('../../../../assets/images/home/quest-cat.png'),
   record: require('../../../../assets/images/home/reading-record.png'),
-  // 마이페이지 프로필과 같은 고양이 (이모지 🐱는 기기에 따라 네모로 나와서 이미지로 바꿈)
   profile: require('../../../../assets/images/mypage/profile-cat.png'),
   current: require('../../../../assets/images/books/current-book.png'),
   recent1: require('../../../../assets/images/books/recent-book-1.png'),
@@ -52,7 +50,13 @@ const recentFallbacks = [
   images.recent6,
 ];
 
-const COIN_COLOR = '#D9A23B';
+type SummaryItem = {
+  icon: IconName;
+  iconColor: string;
+  value: string;
+  label: string;
+  onPress: () => void;
+};
 
 function progressOf(book: RegisteredBook) {
   if (!book.totalPages || book.totalPages <= 0) return 0;
@@ -65,7 +69,9 @@ function coverOf(url: string | undefined, fallback: ImageSourcePropType) {
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
+
   const compact = width < 600;
+  const narrow = width < 380;
   const [questItems, setQuestItems] = useState<
     { title: string; completed: boolean }[]
   >([]);
@@ -173,7 +179,6 @@ export default function HomeScreen() {
     router.push(ROUTES.fe1.library);
   };
 
-  // FE2 화면 이동
   const goToDday = () => {
     router.push('/fe2/reward/dday');
   };
@@ -194,6 +199,7 @@ export default function HomeScreen() {
     router.push('/fe2/user/reading-stats');
   };
 
+
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <ScrollView
@@ -202,52 +208,71 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 상단 배너 */}
-        <ImageBackground
-          source={images.banner}
-          resizeMode="cover"
+        <View
           style={[
             styles.banner,
-            { height: compact ? 240 : 380 },
+            compact && styles.bannerCompact,
           ]}
-          imageStyle={styles.bannerImage}
         >
-          <View style={styles.bannerTop}>
-            <View style={styles.bannerText}>
-              <Text
-                style={[
-                  styles.greeting,
-                  compact && styles.greetingCompact,
-                ]}
-              >
-                오늘도,{'\n'}좋은 책과 함께해요!
-              </Text>
+          {/* 배너 이미지: 카드 전체 채우기 */}
+          <Image
+            source={images.banner}
+            style={styles.bannerBackgroundImage}
+            resizeMode="stretch"
+          />
 
-              <Text
-                style={[
-                  styles.subtitle,
-                  compact && styles.subtitleCompact,
-                ]}
-              >
-                조금씩, 꾸준히. 그게 큰 변화를 만들어요.
-              </Text>
-            </View>
+          {/* 글씨 가독성을 위한 상단 그라데이션 대체 레이어 */}
+          <View
+            pointerEvents="none"
+            style={styles.bannerTextShade}
+          />
 
-            <TouchableOpacity
-              style={styles.avatar}
-              onPress={goToMyPage}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="마이페이지"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          {/* 제목과 설명: 배너 왼쪽 상단 고정 */}
+          <View style={styles.bannerText}>
+            <Text
+              style={[
+                styles.greeting,
+                compact && styles.greetingCompact,
+                narrow && styles.greetingNarrow,
+              ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
             >
-              <Image
-                source={images.profile}
-                style={styles.avatarImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+              오늘도,{'\n'}좋은 책과 함께해요!
+            </Text>
+
+            <Text
+              style={[
+                styles.subtitle,
+                compact && styles.subtitleCompact,
+              ]}
+              numberOfLines={2}
+            >
+              조금씩, 꾸준히. 그게 큰 변화를 만들어요.
+            </Text>
           </View>
-        </ImageBackground>
+
+          {/* 프로필: 배너 오른쪽 상단 고정 */}
+          <TouchableOpacity
+            style={styles.avatar}
+            onPress={goToMyPage}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="마이페이지"
+            hitSlop={{
+              top: 8,
+              bottom: 8,
+              left: 8,
+              right: 8,
+            }}
+          >
+            <Image
+              source={images.profile}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* D-day / 보유 재화 / 레벨 */}
         <View style={styles.summaryRow}>
@@ -312,9 +337,19 @@ export default function HomeScreen() {
               현재 읽고 있는 책
             </Text>
 
-            <TouchableOpacity onPress={handleLibrary} style={styles.moreButton}>
-              <Text style={styles.more}>더보기</Text>
-              <Icon name="chevronRight" size={14} color="#55514C" />
+            <TouchableOpacity
+              onPress={handleLibrary}
+              style={styles.moreButton}
+            >
+              <Text style={styles.more}>
+                더보기
+              </Text>
+
+              <Icon
+                name="chevronRight"
+                size={14}
+                color="#55514C"
+              />
             </TouchableOpacity>
           </View>
 
@@ -391,9 +426,19 @@ export default function HomeScreen() {
               최근 읽은 책
             </Text>
 
-            <TouchableOpacity onPress={handleLibrary} style={styles.moreButton}>
-              <Text style={styles.more}>더보기</Text>
-              <Icon name="chevronRight" size={14} color="#55514C" />
+            <TouchableOpacity
+              onPress={handleLibrary}
+              style={styles.moreButton}
+            >
+              <Text style={styles.more}>
+                더보기
+              </Text>
+
+              <Icon
+                name="chevronRight"
+                size={14}
+                color="#55514C"
+              />
             </TouchableOpacity>
           </View>
 
@@ -476,7 +521,11 @@ export default function HomeScreen() {
                       ]}
                     >
                       {item.completed && (
-                        <Icon name="check" size={13} color="#FFFFFF" />
+                        <Icon
+                          name="check"
+                          size={13}
+                          color="#FFFFFF"
+                        />
                       )}
                     </View>
 
@@ -551,7 +600,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* 공용 하단 탭바 (FE1 서재와 동일) */}
+      {/* 하단 내비게이션 */}
       <BottomTabBar active="home" />
     </SafeAreaView>
   );
@@ -577,24 +626,41 @@ const styles = StyleSheet.create({
 
   banner: {
     width: '100%',
+    height: 380,
     borderRadius: 24,
     overflow: 'hidden',
-    padding: 16,
-    justifyContent: 'flex-start',
+    backgroundColor: '#F7EBDD',
+    position: 'relative',
   },
 
-  bannerImage: {
-    borderRadius: 24,
+  bannerCompact: {
+    height: 260,
   },
 
-  bannerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  // 배경 이미지는 레이아웃에 참여하지 않음
+  bannerBackgroundImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
   },
 
+  // 상단 텍스트 가독성 확보
+  bannerTextShade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '72%',
+    height: '48%',
+    backgroundColor: 'rgba(255, 248, 236, 0.12)',
+  },
+
+  // 제목과 설명은 항상 왼쪽 상단에 고정
   bannerText: {
-    flex: 1,
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 70,
+    zIndex: 2,
   },
 
   greeting: {
@@ -609,6 +675,11 @@ const styles = StyleSheet.create({
     lineHeight: 29,
   },
 
+  greetingNarrow: {
+    fontSize: 19,
+    lineHeight: 27,
+  },
+
   subtitle: {
     fontSize: 14,
     color: '#4C4035',
@@ -618,9 +689,14 @@ const styles = StyleSheet.create({
   subtitleCompact: {
     fontSize: 10,
     marginTop: 7,
+    lineHeight: 15,
   },
 
+  // 프로필은 항상 오른쪽 상단에 고정
   avatar: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
     width: 42,
     height: 42,
     backgroundColor: 'rgba(255,255,255,0.9)',
@@ -628,6 +704,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    zIndex: 3,
   },
 
   avatarImage: {
@@ -701,6 +778,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+
   more: {
     fontSize: 13,
     color: '#55514C',
@@ -876,7 +954,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5E916E',
     borderColor: '#5E916E',
   },
-
 
   questItem: {
     flex: 1,

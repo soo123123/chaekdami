@@ -1,5 +1,5 @@
 
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import React, { useState } from 'react';
 import {
   View,
@@ -29,6 +29,9 @@ const IMAGES = {
   flowerLeft: require('../../../../assets/images/login/login-flower-left.png'),
   flowerRight: require('../../../../assets/images/login/login-flower-right.png'),
 };
+
+const FORGOT_PASSWORD_ROUTE = '/auth/forgot-password' as Href;
+const SIGNUP_ROUTE = '/auth/signup' as Href;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -173,7 +176,12 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.inputBox}>
-            <Icon name="mail" size={19} color="#8D8478" style={styles.inputIcon} />
+            <Icon
+              name="mail"
+              size={19}
+              color="#8D8478"
+              style={styles.inputIcon}
+            />
 
             <TextInput
               style={styles.input}
@@ -194,7 +202,12 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.inputBox}>
-            <Icon name="person" size={19} color="#8D8478" style={styles.inputIcon} />
+            <Icon
+              name="person"
+              size={19}
+              color="#8D8478"
+              style={styles.inputIcon}
+            />
 
             <TextInput
               style={styles.input}
@@ -237,7 +250,7 @@ export default function LoginScreen() {
           {/* 하단 메뉴 */}
           <View style={styles.bottomLinks}>
             <TouchableOpacity
-              onPress={() => router.push('/auth/forgot-password')}
+              onPress={() => router.push(FORGOT_PASSWORD_ROUTE)}
             >
               <Text style={styles.forgotPassword}>
                 비밀번호를 잊으셨나요?
@@ -247,7 +260,7 @@ export default function LoginScreen() {
             <View style={styles.linkDivider} />
 
             <TouchableOpacity
-              onPress={() => router.push('/auth/signup')}
+              onPress={() => router.push(SIGNUP_ROUTE)}
             >
               <Text style={styles.signupText}>
                 회원가입
