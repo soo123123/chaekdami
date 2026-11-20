@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,6 +89,33 @@ class StreakServiceTest {
 
         assertThat(streakService.settleBefore(USER_ID, TODAY)).isZero();
         verify(rewardLedger, never()).lockAccount(any());
+    }
+
+    @Test
+    void 방어로_막혀_있던_날을_읽음으로_바꿀_때_방어권_1개를_돌려준다() {
+        DdayRecord protectedDay = DdayRecord.create(USER_ID, TODAY.minusDays(2), DdayRecordStatus.PROTECTED);
+        when(ddayRecordRepository.findByUserIdAndRecordDate(USER_ID, TODAY.minusDays(2)))
+                .thenReturn(Optional.of(protectedDay));
+        UserItem shield = UserItem.builder().userId(USER_ID).shopItemId(10L).quantity(0).build();
+        when(userItemRepository.findAllByUserIdAndItemType(USER_ID, ShopItemType.SHIELD)).thenReturn(List.of(shield));
+
+        boolean refunded = streakService.refundShieldIfProtected(USER_ID, TODAY.minusDays(2));
+
+        assertThat(refunded).isTrue();
+        assertThat(shield.getQuantity()).isEqualTo(1);
+        verify(rewardLedger).lockAccount(USER_ID);
+    }
+
+    @Test
+    void 읽음이거나_기록이_없는_날은_돌려주지_않는다() {
+        when(ddayRecordRepository.findByUserIdAndRecordDate(USER_ID, TODAY.minusDays(1)))
+                .thenReturn(Optional.of(DdayRecord.create(USER_ID, TODAY.minusDays(1), DdayRecordStatus.READ)));
+        when(ddayRecordRepository.findByUserIdAndRecordDate(USER_ID, TODAY)).thenReturn(Optional.empty());
+
+        assertThat(streakService.refundShieldIfProtected(USER_ID, TODAY.minusDays(1))).isFalse();
+        assertThat(streakService.refundShieldIfProtected(USER_ID, TODAY)).isFalse();
+        verify(rewardLedger, never()).lockAccount(any());
+        verify(userItemRepository, never()).findAllByUserIdAndItemType(any(), any());
     }
 
     @Test

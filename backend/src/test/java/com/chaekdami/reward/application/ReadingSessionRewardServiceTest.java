@@ -80,6 +80,7 @@ class ReadingSessionRewardServiceTest {
         when(questService.recordReadingSession(USER_ID, 1800, READING_DATE)).thenReturn(new QuestSessionResult(
                 List.of(firstSession), List.of(new QuestRewardResult(11L, 50, 10, 0, 50, 1))));
         when(streakService.settleBefore(USER_ID, READING_DATE)).thenReturn(1);
+        when(streakService.refundShieldIfProtected(USER_ID, READING_DATE)).thenReturn(true);
 
         ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
 
@@ -88,10 +89,11 @@ class ReadingSessionRewardServiceTest {
         assertThat(result.completedQuests()).singleElement()
                 .satisfies(quest -> assertThat(quest.title()).isEqualTo("오늘의 첫 독서 세션 시작하기"));
         assertThat(result.photoBonus().granted()).isFalse();
-        assertThat(result.streak()).isEqualTo(new ReadingSessionRewardResult.Streak(3, 5, 1));
+        assertThat(result.streak()).isEqualTo(new ReadingSessionRewardResult.Streak(3, 5, 1, true));
         assertThat(account.getDday()).isEqualTo(3);
         InOrder order = inOrder(streakService, ddayService);
         order.verify(streakService).settleBefore(USER_ID, READING_DATE);
+        order.verify(streakService).refundShieldIfProtected(USER_ID, READING_DATE);
         order.verify(ddayService).markRead(USER_ID, READING_DATE);
     }
 

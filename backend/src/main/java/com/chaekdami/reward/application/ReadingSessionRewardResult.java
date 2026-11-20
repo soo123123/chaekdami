@@ -46,10 +46,11 @@ public record ReadingSessionRewardResult(
     }
 
     /**
-     * @param currentStreak 현재 연속 독서 일수 (방어한 날은 +0)
-     * @param shieldsUsed   이번 요청에서 놓친 날을 막느라 자동으로 쓴 방어권 수
+     * @param currentStreak  현재 연속 독서 일수 (방어한 날은 +0)
+     * @param shieldsUsed    이번 요청에서 놓친 날을 막느라 자동으로 쓴 방어권 수
+     * @param shieldRefunded 독서한 날이 이미 방어권으로 막혀 있어서, 그 방어권 1개를 돌려줬는지
      */
-    public record Streak(int currentStreak, int longestStreak, int shieldsUsed) {
+    public record Streak(int currentStreak, int longestStreak, int shieldsUsed, boolean shieldRefunded) {
     }
 
     public record CompletedQuest(

@@ -31,6 +31,14 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
             + " order by ui.id")
     List<UserItem> findAllInStockByUserIdAndItemType(@Param("userId") Long userId, @Param("type") ShopItemType type);
 
+    /**
+     * 사용자의 특정 종류 아이템 인벤토리 행을 수량과 관계없이 먼저 들어온 순으로 조회한다. (예: 방어권 환불 대상)
+     */
+    @Query("select ui from UserItem ui, ShopItem si"
+            + " where si.id = ui.shopItemId and ui.userId = :userId and si.type = :type"
+            + " order by ui.id")
+    List<UserItem> findAllByUserIdAndItemType(@Param("userId") Long userId, @Param("type") ShopItemType type);
+
     @Modifying(flushAutomatically = true)
     @Query("delete from UserItem ui where ui.userId = :userId")
     int deleteAllByUserId(@Param("userId") Long userId);

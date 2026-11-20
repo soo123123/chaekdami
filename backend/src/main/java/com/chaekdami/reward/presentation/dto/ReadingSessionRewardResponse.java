@@ -35,7 +35,7 @@ public record ReadingSessionRewardResponse(
                                 quest.rewardCurrency(), quest.rewardExperience()))
                         .toList(),
                 new Streak(result.streak().currentStreak(), result.streak().longestStreak(),
-                        result.streak().shieldsUsed()),
+                        result.streak().shieldsUsed(), result.streak().shieldRefunded()),
                 result.promotionReward(),
                 result.levelBefore(),
                 result.level(),
@@ -50,7 +50,7 @@ public record ReadingSessionRewardResponse(
     public record PhotoBonus(boolean granted, int experience, int currency) {
     }
 
-    public record Streak(int currentStreak, int longestStreak, int shieldsUsed) {
+    public record Streak(int currentStreak, int longestStreak, int shieldsUsed, boolean shieldRefunded) {
     }
 
     public record CompletedQuest(Long userQuestId, String title, int rewardCurrency, int rewardExperience) {

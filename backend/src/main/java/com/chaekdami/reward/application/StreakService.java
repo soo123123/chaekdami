@@ -70,6 +70,28 @@ public class StreakService {
     }
 
     /**
+     * date 가 "방어"로 기록돼 있으면 그날 쓴 방어권 1개를 돌려준다. 그날을 "읽음"으로 바꾸기 직전에 호출한다.
+     * 독서 완료 보상이 늦게 처리돼, 실제로 읽은 날을 정산이 먼저 방어권으로 막아 버린 경우를 바로잡는다.
+     *
+     * @return 방어권을 돌려줬으면 true
+     */
+    @Transactional
+    public boolean refundShieldIfProtected(Long userId, LocalDate date) {
+        DdayRecord record = ddayRecordRepository.findByUserIdAndRecordDate(userId, date).orElse(null);
+        if (record == null || record.getStatus() != DdayRecordStatus.PROTECTED) {
+            return false;
+        }
+        rewardLedger.lockAccount(userId);
+        return userItemRepository.findAllByUserIdAndItemType(userId, ShopItemType.SHIELD).stream()
+                .findFirst()
+                .map(shield -> {
+                    shield.addQuantity(1);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    /**
      * today 기준 현재 연속 일수와 최고 연속 일수
      */
     @Transactional(readOnly = true)
