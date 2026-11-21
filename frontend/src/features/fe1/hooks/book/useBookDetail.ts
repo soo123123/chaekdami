@@ -46,6 +46,8 @@ export function useBookDetail(bookId: number | null) {
     book: data?.book ?? null,
     readingSummary: data?.readingSummary ?? null,
     sentences: data?.sentences ?? [],
+    rounds: data?.rounds ?? [],
+    currentRound: data?.currentRound ?? null,
     isLoading,
     error,
     isRemoving,

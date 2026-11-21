@@ -9,6 +9,7 @@ import type { ReadingApi } from './readingApi';
 import type {
   BookCatalogDetail,
   BookDetail,
+  ReadingRound,
   RegisteredBook,
   Sentence,
 } from '../types/reading';
@@ -68,13 +69,31 @@ let nextSentenceId = 1;
 let nextRecordId = 1;
 
 /** 책마다 현재 회차 (백엔드 reading_records: UNIQUE(book_id, round)) */
-type MockRound = { readingRecordId: number; round: number; status: 'IN_PROGRESS' | 'COMPLETED' };
+type MockRound = { readingRecordId: number; round: number; status: 'IN_PROGRESS' | 'COMPLETED'; completedAt?: string };
 const currentRoundByBook = new Map<number, MockRound>();
+/** 책마다 지난 회차까지 모두 (최신 회차가 앞) — 책 상세의 독후감 '모두 보기'용 */
+const roundsByBook = new Map<number, MockRound[]>();
 
 function startRound(bookId: number, round: number): MockRound {
   const created: MockRound = { readingRecordId: nextRecordId++, round, status: 'IN_PROGRESS' };
   currentRoundByBook.set(bookId, created);
+  roundsByBook.set(bookId, [created, ...(roundsByBook.get(bookId) ?? [])]);
   return created;
+}
+
+function completeRound(round: MockRound) {
+  if (round.status === 'COMPLETED') return;
+  round.status = 'COMPLETED';
+  round.completedAt = new Date().toISOString();
+}
+
+function toMockReadingRound(round: MockRound): ReadingRound {
+  return {
+    readingRecordId: round.readingRecordId,
+    round: round.round,
+    status: round.status === 'COMPLETED' ? 'COMPLETED' : 'READING',
+    completedAt: round.completedAt,
+  };
 }
 
 const library: RegisteredBook[] = [];
@@ -97,7 +116,7 @@ function seedBook(entry: CatalogEntry, currentPage: number, daysAgo: number) {
   // 읽기 시작한 책은 1회차를 가진다 (완독 도서는 1회차 완독)
   if (currentPage > 0) {
     const round = startRound(book.bookId, 1);
-    if (book.status === 'COMPLETED') round.status = 'COMPLETED';
+    if (book.status === 'COMPLETED') completeRound(round);
   }
   return book;
 }
@@ -202,6 +221,11 @@ export const devMockReadingApi: ReadingApi = {
       book: { ...book },
       readingSummary: seconds > 0 ? { totalReadingSeconds: seconds, readingDays: days, averageSecondsPerDay: days ? Math.round(seconds / days) : 0 } : null,
       sentences: [...(sentencesByBook.get(bookId) ?? [])].reverse(),
+      rounds: (roundsByBook.get(bookId) ?? []).map(toMockReadingRound),
+      currentRound: (() => {
+        const round = currentRoundByBook.get(bookId);
+        return round ? toMockReadingRound(round) : null;
+      })(),
     };
     return detail;
   },
@@ -213,6 +237,7 @@ export const devMockReadingApi: ReadingApi = {
     library.splice(index, 1);
     sentencesByBook.delete(bookId);
     currentRoundByBook.delete(bookId);
+    roundsByBook.delete(bookId);
   },
 
   async saveReadingRecord(request) {
@@ -237,7 +262,7 @@ export const devMockReadingApi: ReadingApi = {
       list.push({ sentenceId: nextSentenceId++, content: request.sentence, page: request.endPage, createdAt: todayIso() });
       sentencesByBook.set(book.bookId, list);
     }
-    if (book.status === 'COMPLETED') round.status = 'COMPLETED';
+    if (book.status === 'COMPLETED') completeRound(round);
     return { readingRecordId: round.readingRecordId, round: round.round, isCompleted: round.status === 'COMPLETED' };
   },
 

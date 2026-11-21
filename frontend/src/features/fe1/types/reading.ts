@@ -110,10 +110,22 @@ export type ReadingTimeSummary = {
   weekSeconds: number;
 };
 
+/** 책의 회차(1회독, 2회독 …). 독후감은 회차마다 1개다 (FE2 독후감 API의 readingRecordId) */
+export type ReadingRound = {
+  readingRecordId: number;
+  round: number;
+  status: BookStatus;
+  completedAt?: string;
+};
+
 export type BookDetail = {
   book: RegisteredBook;
   readingSummary: ReadingSummary | null;
   sentences: Sentence[];
+  /** 이 책의 모든 회차 (최신 회차가 앞) */
+  rounds: ReadingRound[];
+  /** 가장 최근 회차 (= rounds[0]). 회차가 없으면 null */
+  currentRound: ReadingRound | null;
 };
 
 /* ------------------------------------------------------------------ */
@@ -146,8 +158,15 @@ export type RegisterManualBookRequest = ReadingSettings & {
   book: ManualBookInput;
 };
 
+/** 독서 인증 사진의 검증 상태. 검증에 실패한 사진은 바로 지우므로 상태로 두지 않는다. */
+export type ReadingPhotoStatus = 'verifying' | 'verified';
+
+/** 독서 종료 화면에 첨부한 인증 사진 (선택, 1장). 이미지는 검증에만 쓰고 저장하지 않는다. */
 export type ReadingPhoto = {
   uri: string;
+  status: ReadingPhotoStatus;
+  /** 검증 통과 시 서버가 발급한 검증 번호 */
+  verificationId?: number;
 };
 
 export type ReadingRecordRequest = {
@@ -157,7 +176,8 @@ export type ReadingRecordRequest = {
   startPage: number;
   endPage: number;
   sentence?: string;
-  photos: ReadingPhoto[];
+  /** 검증을 통과한 인증 사진의 검증 번호. 사진 인증은 선택이며 이미지 자체는 보내지 않는다. */
+  photoVerificationId?: number;
 };
 
 /**

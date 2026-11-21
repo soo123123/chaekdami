@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import { useEffect, useRef, type PropsWithChildren } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../../constants/theme';
@@ -36,7 +36,20 @@ type ConfirmModalProps = {
   isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /**
+   * 바깥 영역 탭·뒤로가기로 닫을 때. 주지 않으면 onCancel이 불린다.
+   * 취소 버튼이 '그냥 저장하기'처럼 동작을 실행하는 경우, 실수로 실행되지 않게 따로 준다.
+   */
+  onDismiss?: () => void;
+  /**
+   * 모달이 화면에서 완전히 사라진 뒤 불린다. (닫힐 때마다)
+   * iOS는 사라지는 중인 모달 위에 카메라 등 다른 화면을 띄우면 무시되므로, 그런 동작은 여기서 한다.
+   */
+  onClosed?: () => void;
 };
+
+/** iOS 외 플랫폼에서 fade 애니메이션이 끝났다고 보는 시간 */
+const CLOSE_ANIMATION_MS = 300;
 
 /** 플랫폼(웹 포함)과 무관하게 동작하는 확인 모달 */
 export function ConfirmModal({
@@ -49,11 +62,33 @@ export function ConfirmModal({
   isLoading = false,
   onConfirm,
   onCancel,
+  onDismiss,
+  onClosed,
 }: ConfirmModalProps) {
+  const dismiss = onDismiss ?? onCancel;
+  const onClosedRef = useRef(onClosed);
+  onClosedRef.current = onClosed;
+
+  // iOS는 Modal의 onDismiss로 정확한 시점을 받고, 그 외 플랫폼은 닫기 애니메이션 시간만큼 기다린다.
+  const wasVisibleRef = useRef(visible);
+  useEffect(() => {
+    const justClosed = wasVisibleRef.current && !visible;
+    wasVisibleRef.current = visible;
+    if (!justClosed || Platform.OS === 'ios') return;
+    const timer = setTimeout(() => onClosedRef.current?.(), CLOSE_ANIMATION_MS);
+    return () => clearTimeout(timer);
+  }, [visible]);
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={dismiss}
+      onDismiss={Platform.OS === 'ios' ? () => onClosedRef.current?.() : undefined}
+    >
       <View style={styles.center}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={isLoading ? undefined : onCancel} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={isLoading ? undefined : dismiss} />
         <View style={styles.dialog} accessibilityRole="alert">
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>

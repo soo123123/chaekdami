@@ -16,6 +16,7 @@ import type {
   ItemId,
   ReadingRecordRequest,
   ReadingRecordResult,
+  ReadingRound,
   ReadingTimeSummary,
   RegisteredBook,
   RegisterCatalogBookRequest,
@@ -144,6 +145,15 @@ function localDate(date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function toReadingRound(record: BeRecord): ReadingRound {
+  return {
+    readingRecordId: record.id,
+    round: record.round,
+    status: toStatus(record.status, record.currentPage),
+    completedAt: record.completedAt ?? undefined,
+  };
 }
 
 function toRegisteredBook(book: BeBook, record?: BeRecord | null): RegisteredBook {
@@ -335,6 +345,8 @@ const httpReadingApi: ReadingApi = {
       book: toRegisteredBook(book, latest),
       readingSummary: summarize(sessionGroups.flat()).detail,
       sentences,
+      rounds: [...records].sort((a, b) => b.round - a.round).map(toReadingRound),
+      currentRound: latest ? toReadingRound(latest) : null,
     };
   },
 
@@ -356,6 +368,8 @@ const httpReadingApi: ReadingApi = {
       readingTime: request.readingTime,
       startPage: request.startPage,
       endPage: request.endPage,
+      // 사진 인증을 통과했을 때만 보낸다. 서버는 이 번호로 세션에 '사진 인증됨'을 표시한다.
+      ...(request.photoVerificationId != null ? { photoVerificationId: request.photoVerificationId } : {}),
     });
     const sentence = request.sentence?.trim();
     if (sentence && recordId != null) {
