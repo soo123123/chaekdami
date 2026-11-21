@@ -9,6 +9,7 @@ import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
+import { BookPhotoUploader } from '../components/reading/BookPhotoUploader';
 import { ReadingPageRange, ReadingTime } from '../components/reading/ReadingRecordFields';
 import { ReadingResult } from '../components/reading/ReadingResult';
 import { SaveReadingRecordButton } from '../components/reading/SaveReadingRecordButton';
@@ -18,6 +19,7 @@ import { ROUTES, toBookDetail, toReadingComplete } from '@/constants/routes';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
 import { HIT_SLOP } from '@/constants/layout';
+import { useImagePicker } from '../hooks/common/useImagePicker';
 import { useReadingEndParams } from '../hooks/common/useRouteParams';
 import { useReadingEnd } from '../hooks/reading/useReadingEnd';
 import { formatDuration, todayIso } from '../utils/format';
@@ -26,6 +28,7 @@ import { goBackOr } from '@/utils/navigation';
 export function ReadingEndScreen() {
   const { bookId, elapsedTime } = useReadingEndParams();
   const record = useReadingEnd(bookId, elapsedTime);
+  const picker = useImagePicker();
   const { book } = record;
   const [today] = useState(todayIso);
   const { width: windowWidth } = useWindowDimensions();
@@ -55,7 +58,78 @@ export function ReadingEndScreen() {
     goBack();
   };
 
-  const handleSave = async () => {
+  /** 촬영·선택한 사진(1장)을 첨부하면 바로 검증이 시작된다. 취소하면 아무것도 하지 않는다. */
+  const attachPicked = (uris: string[]) => {
+    if (uris[0]) record.attachPhoto(uris[0]);
+  };
+  const takePhoto = async () => attachPicked(await picker.takePhoto());
+
+  // 사진 카드는 저장 버튼보다 위에 있어 안내를 놓칠 수 있으므로,
+  // 검증 실패·시간 초과·카메라 권한 문제는 토스트로도 알린다.
+  useEffect(() => {
+    if (record.photoNotice) showToast(record.photoNotice, 'error');
+  }, [record.photoNotice]);
+  useEffect(() => {
+    if (picker.error) showToast(picker.error, 'error');
+  }, [picker.error]);
+
+  // 사진 인증 안내 팝업 (사진 없이 저장을 누른 경우, 화면당 한 번)
+  const [isPhotoPromptOpen, setIsPhotoPromptOpen] = useState(false);
+  const photoPromptShownRef = useRef(false);
+  /** [사진 찍기]를 누른 경우, 팝업이 완전히 닫힌 뒤 카메라를 연다 (iOS는 닫히는 중인 모달 위에 카메라를 띄우지 못함) */
+  const openCameraAfterCloseRef = useRef(false);
+  /** 저장 요청 중복 방지. status는 state라 같은 프레임에 두 번 누르면 둘 다 통과할 수 있다. */
+  const isSavingRef = useRef(false);
+
+  /**
+   * 저장 버튼·'다시 시도하기'를 눌렀을 때.
+   * 1) 저장 중이거나 사진 검증 중이면 무시 2) 입력값 확인 3) 사진을 시도한 적 없으면 인증 안내 4) 저장
+   */
+  const handlePressSave = () => {
+    if (isSavingRef.current || record.isLoading) return;
+    // 검증 중에는 저장 버튼이 비활성화되지만, 다른 경로('다시 시도하기')로 들어오는 경우도 막는다.
+    if (record.isPhotoVerifying) return;
+    const inputError = record.validateInputs();
+    if (inputError) {
+      // 저장 버튼은 화면 아래에 있어 본문 오류 문구가 안 보일 수 있으므로 상단에도 띄운다.
+      showToast(inputError, 'error');
+      return;
+    }
+    if (!record.photo && !record.hasTriedPhoto && !photoPromptShownRef.current) {
+      photoPromptShownRef.current = true;
+      setIsPhotoPromptOpen(true);
+      return;
+    }
+    void doSave();
+  };
+
+  const handlePromptTakePhoto = () => {
+    openCameraAfterCloseRef.current = true;
+    setIsPhotoPromptOpen(false);
+  };
+
+  const handlePromptSaveWithoutPhoto = () => {
+    setIsPhotoPromptOpen(false);
+    void doSave();
+  };
+
+  const handlePromptClosed = () => {
+    if (!openCameraAfterCloseRef.current) return;
+    openCameraAfterCloseRef.current = false;
+    void takePhoto();
+  };
+
+  const doSave = async () => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    try {
+      await saveAndNavigate();
+    } finally {
+      isSavingRef.current = false;
+    }
+  };
+
+  const saveAndNavigate = async () => {
     const saved = await record.saveReadingRecord();
     if (!saved.ok) {
       // 저장 버튼은 화면 아래에 있어 본문 오류 문구가 안 보일 수 있으므로 상단에도 띄운다.
@@ -126,7 +200,18 @@ export function ReadingEndScreen() {
     <ScreenContainer
       header={header}
       footer={book ? (
-        <SaveReadingRecordButton onPress={handleSave} isLoading={record.isLoading} />
+        <View style={styles.footer}>
+          {record.isPhotoVerifying ? (
+            <Text style={styles.verifyingMessage} accessibilityLiveRegion="polite">
+              사진을 확인하고 있어요. 확인이 끝나면 저장할 수 있어요.
+            </Text>
+          ) : null}
+          <SaveReadingRecordButton
+            onPress={handlePressSave}
+            isLoading={record.isLoading}
+            isVerifying={record.isPhotoVerifying}
+          />
+        </View>
       ) : undefined}
     >
       {record.isBookLoading ? <LoadingView /> : null}
@@ -168,13 +253,31 @@ export function ReadingEndScreen() {
             ) : null}
           </Card>
 
+          <Card
+            title="책 사진 인증하기"
+            subtitle="읽은 책 페이지를 찍어 인증하면 완료 화면에서 추가 보상을 받아요."
+            right={<OptionalMark />}
+          >
+            <BookPhotoUploader
+              photo={record.photo}
+              onRemove={() => {
+                picker.clearError();
+                record.removePhoto();
+              }}
+              onTakePhoto={takePhoto}
+              onPickFromGallery={async () => attachPicked(await picker.pickFromLibrary())}
+              errorMessage={picker.error ?? record.photoNotice}
+            />
+          </Card>
+
           <Card title="인상 깊었던 문장" subtitle="가장 기억에 남는 문장을 적어보세요." right={<RequiredMark />}>
             <SentenceInput value={record.sentence} onChange={record.setSentence} />
           </Card>
 
           <InlineError message={record.saveError} />
-          {record.status === 'error' ? (
-            <Pressable accessibilityRole="button" onPress={handleSave}>
+          {/* 검증 중에는 숨긴다: 저장 버튼 비활성화를 우회해 인증 없이 저장되는 것을 막는다 */}
+          {record.status === 'error' && !record.isPhotoVerifying ? (
+            <Pressable accessibilityRole="button" onPress={handlePressSave}>
               <Text style={styles.retry}>다시 시도하기</Text>
             </Pressable>
           ) : null}
@@ -191,8 +294,26 @@ export function ReadingEndScreen() {
         onConfirm={handleLeave}
         onCancel={() => setIsLeaveConfirmOpen(false)}
       />
+
+      <ConfirmModal
+        visible={isPhotoPromptOpen}
+        title="사진으로 인증하고 보상을 더 받아볼까요?"
+        message="읽은 책 페이지를 찍어 인증하면 완료 화면에서 추가 보상을 받을 수 있어요."
+        confirmLabel="사진 찍기"
+        cancelLabel="그냥 저장하기"
+        onConfirm={handlePromptTakePhoto}
+        onCancel={handlePromptSaveWithoutPhoto}
+        // 바깥 탭·뒤로가기는 팝업만 닫는다 (실수로 저장되지 않게)
+        onDismiss={() => setIsPhotoPromptOpen(false)}
+        onClosed={handlePromptClosed}
+      />
     </ScreenContainer>
   );
+}
+
+/** 선택 입력 항목 표시 */
+function OptionalMark() {
+  return <Text style={styles.optional}>선택</Text>;
 }
 
 /** 필수 입력 항목 표시 */
@@ -202,6 +323,7 @@ function RequiredMark() {
 
 const styles = StyleSheet.create({
   required: { fontSize: 13, fontWeight: '700', color: colors.danger },
+  optional: { fontSize: 13, fontWeight: '700', color: colors.secondaryText },
   recordsButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.md - 2, borderRadius: radius.pill, backgroundColor: colors.surface, ...softShadow },
   recordsLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
   intro: { gap: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.md, minHeight: 128 },
@@ -211,6 +333,8 @@ const styles = StyleSheet.create({
   fields: { flexDirection: 'row', borderWidth: 1, borderColor: colors.border, borderRadius: radius.input + 2, backgroundColor: '#FBF7F1' },
   fieldDivider: { width: 1, backgroundColor: colors.border },
   hint: { fontSize: 13, color: colors.secondaryText },
+  footer: { gap: spacing.sm },
+  verifyingMessage: { fontSize: 13, color: colors.secondaryText, textAlign: 'center' },
   retry: { fontSize: 14, color: colors.primary, fontWeight: '700', textAlign: 'center' },
   done: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.md },
   doneTitle: { fontSize: 22, fontWeight: '800', color: colors.text },

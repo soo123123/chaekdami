@@ -2,11 +2,14 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookInfo } from '../components/book/BookInfo';
+import { BookReportCard } from '../components/book/BookReportCard';
+import { BookReportListSheet } from '../components/book/BookReportListSheet';
 import { BottomSheetModal, ConfirmModal } from '../components/common/BottomSheetModal';
 import { CatBooksDecor } from '../components/common/Decor';
 import { Icon } from '../components/common/Icon';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { ScreenHeader } from '../components/common/ScreenHeader';
+import type { ReadingRound } from '../types/reading';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
 import { BookAction } from '../components/reading/BookAction';
 import { BookProgress } from '../components/reading/BookProgress';
@@ -17,6 +20,8 @@ import { FE1_ROUTES } from '../constants/routes';
 import { colors, spacing } from '../constants/theme';
 import { HIT_SLOP } from '@/constants/layout';
 import { useBookDetail } from '../hooks/book/useBookDetail';
+import { useBookReport } from '../hooks/book/useBookReport';
+import { toReviewDetail, toReviewWrite } from '@/constants/routes';
 import { useBookDetailModeParam, useBookIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
 import { goBackOr } from '@/utils/navigation';
@@ -30,7 +35,9 @@ export function BookDetailScreen() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRereadConfirmOpen, setIsRereadConfirmOpen] = useState(false);
-  const { book } = detail;
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const { book, currentRound, rounds } = detail;
+  const report = useBookReport(currentRound?.readingRecordId ?? null, book?.status === 'COMPLETED');
   // 뒤로 갈 화면이 없으면(스택 맨 아래) 서재로 간다
   const goBackToLibrary = () => goBackOr(FE1_ROUTES.library);
 
@@ -74,6 +81,23 @@ export function BookDetailScreen() {
   };
 
   const isCompleted = book?.status === 'COMPLETED';
+
+  // 독후감 버튼: 독서 완료 화면과 같은 규칙 (읽는 중이면 비활성, 완독이면 작성/보기)
+  const remainingPages = book?.totalPages ? Math.max(book.totalPages - book.currentPage, 0) : null;
+  const writeReview = () => {
+    if (currentRound) router.push(toReviewWrite(currentRound.readingRecordId));
+  };
+  const openReview = () => {
+    if (currentRound) router.push(toReviewDetail(currentRound.readingRecordId));
+  };
+  // '모두 보기'는 현재 회차 말고도 완독한 회차가 있을 때만 (지난 회차 독후감 입구)
+  const hasPastCompletedRound = rounds.some(
+    round => round.status === 'COMPLETED' && round.readingRecordId !== currentRound?.readingRecordId,
+  );
+  const selectRoundReport = (round: ReadingRound, hasReport: boolean) => {
+    setIsReportsOpen(false);
+    router.push(hasReport ? toReviewDetail(round.readingRecordId) : toReviewWrite(round.readingRecordId));
+  };
 
   // 완독한 책은 '다시 읽기' 전에 한 번 확인한다.
   const handleReadPress = () => {
@@ -119,6 +143,18 @@ export function BookDetailScreen() {
           <BookProgress currentPage={book.currentPage} totalPages={book.totalPages} />
           <ReadingSummary summary={detail.readingSummary} startedAt={book.startedAt} />
           <SentenceList sentences={detail.sentences} />
+          {!isRecordsMode && currentRound ? (
+            <BookReportCard
+              currentRound={currentRound}
+              canWrite={report.canWrite}
+              hasReport={report.hasReport}
+              remainingPages={remainingPages}
+              showAll={hasPastCompletedRound}
+              onWrite={writeReview}
+              onOpen={openReview}
+              onShowAll={() => setIsReportsOpen(true)}
+            />
+          ) : null}
           <InlineError message={detail.removeError} />
         </>
       ) : null}
@@ -131,6 +167,13 @@ export function BookDetailScreen() {
           <MenuItem icon="trash" label="서재에서 제거" danger onPress={openRemoveConfirm} />
         </View>
       </BottomSheetModal>
+
+      <BookReportListSheet
+        visible={isReportsOpen}
+        rounds={rounds}
+        onClose={() => setIsReportsOpen(false)}
+        onSelect={selectRoundReport}
+      />
 
       <ConfirmModal
         visible={isRereadConfirmOpen}
