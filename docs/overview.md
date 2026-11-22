@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 서비스 개요
 
@@ -30,7 +30,7 @@
 | 회원 | 가입, 로그인·로그아웃, 비밀번호 변경·재설정, 탈퇴 | ✅ | [user](./domains/user/) |
 | 도서 | YES24 검색, 직접 등록, 개인 서재, 상태 필터 | ✅ | [reading](./domains/reading/) |
 | 독서 | 타이머 세션(3분~2시간), 페이지·독서율, 자동 완독, 다회독 | ✅ | [reading](./domains/reading/) |
-| 독서 인증 | 책 페이지 사진 인증 | ⏳ [TODO-1](./known-issues.md#todo-1) 앱 Mock만 | |
+| 독서 인증 | 책 페이지 사진 인증, 통과 시 사진 인증 보상 +20 EXP | ✅ (Gemini 임시 API, ⏳ [TODO-23](./known-issues.md#todo-23)) | |
 | 독후 활동 | 문장 모음, 별점·한줄평, 독후감, 좋아요·신고 | ✅ | [review](./domains/review/) |
 | 커뮤니티 | 같은 책 완독자끼리 공개 모음집·독후감 보기 | ✅ | [review](./domains/review/) |
 | 보상 | 경험치·레벨, 재화, 일일 퀘스트, 상점, 부스터 | ✅ | [reward](./domains/reward/) |

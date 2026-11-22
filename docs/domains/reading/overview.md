@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading — 독서
 
@@ -73,7 +73,8 @@ backend/src/main/java/com/chaekdami/reading/
 - ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 세션과 문장이 따로 저장됨
 - ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) 책 삭제 시 독후활동 데이터가 남음
 - ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) 탈퇴 시 서재 데이터가 남음
-- ⏳ [TODO-1](../../known-issues.md#todo-1) 독서 인증 앱 연결 — 서버 API는 있지만 앱은 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock 사용
-- ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos`·`photoVerificationId` 저장 안 함
+- ⏳ [TODO-23](../../known-issues.md#todo-23) 독서 인증 429 임시 규칙 (통과, 보상 제외)
+- ⏳ [TODO-24](../../known-issues.md#todo-24) AI 장애를 앱에 따로 알리지 않음
+- ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos` 저장 안 함
 - ⏳ [TODO-7](../../known-issues.md#todo-7) 서재 테마 저장 API 없음 (기기에만 저장)
 - ⏳ [TODO-11](../../known-issues.md#todo-11) 바코드 스캔 검색 미구현

@@ -4,6 +4,7 @@ import com.chaekdami.reading.application.ReadingSessionService;
 import com.chaekdami.reading.domain.Book;
 import com.chaekdami.reading.domain.ReadingRecord;
 import com.chaekdami.reading.infrastructure.BookRepository;
+import com.chaekdami.reading.infrastructure.CertificationRepository;
 import com.chaekdami.reading.infrastructure.ReadingRecordRepository;
 import com.chaekdami.reading.infrastructure.ReadingSessionRepository;
 import com.chaekdami.user.presentation.GlobalExceptionHandler;
@@ -42,13 +43,15 @@ class ReadingSessionControllerTest {
     private ReadingRecordRepository readingRecordRepository;
     @Mock
     private ReadingSessionRepository readingSessionRepository;
+    @Mock
+    private CertificationRepository certificationRepository;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         ReadingSessionService service =
-                new ReadingSessionService(bookRepository, readingRecordRepository, readingSessionRepository);
+                new ReadingSessionService(bookRepository, readingRecordRepository, readingSessionRepository, certificationRepository);
         mockMvc = MockMvcBuilders.standaloneSetup(new ReadingSessionController(service))
                 .setControllerAdvice(new ReadingExceptionHandler(), new GlobalExceptionHandler())
                 .build();

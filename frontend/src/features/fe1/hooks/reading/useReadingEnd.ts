@@ -26,8 +26,8 @@ export type SaveResult = ({ ok: true } & ReadingRecordResult) | { ok: false; mes
  *   완독한 책을 다시 읽는 경우(새 회차)는 0쪽부터 시작한다.
  * - 저장 성공 응답을 받은 뒤에만 status가 success가 된다.
  * - 인상 깊었던 문장은 필수다.
- * - 책 사진 인증은 선택(1장)이다. 첨부하면 바로 비동기로 검증하고,
- *   통과하면 검증 번호만 저장 요청에 싣는다(이미지는 보내지도 저장하지도 않는다).
+ * - 책 사진 인증은 선택(1장)이다. 첨부하면 바로 가장 최근 회차로 서버 인증을 요청하고,
+ *   통과하면 인증 번호만 저장 요청에 싣는다(세션 저장 요청에는 이미지를 싣지 않는다).
  *   통과하지 못하면 사진을 지우고 다시 찍도록 안내한다.
  * - 검증은 PHOTO_VERIFY_TIMEOUT_MS 안에 끝나지 않으면 실패로 처리한다.
  * - 검증 중에는 저장하지 않는다(화면에서 저장 버튼을 비활성화한다).
@@ -39,6 +39,8 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     { enabled: bookId !== null },
   );
   const book = data?.book ?? null;
+  /** 사진 인증을 보낼 회차: 책의 가장 최근 회차. 완독한 책을 다시 읽는 첫 세션이면 새 회차가 저장 때 생겨서 이전 회차로 인증된다(서버가 세션에 연결하므로 보상에는 영향 없음). */
+  const readingRecordId = data?.currentRound?.readingRecordId ?? null;
 
   const [readingTime, setReadingTime] = useState(elapsedTime);
   const [startPage, setStartPage] = useState(0);
@@ -74,6 +76,13 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   const attachPhoto = async (uri: string) => {
     if (bookId === null) return;
     cancelVerify();
+    if (readingRecordId === null) {
+      // 회차 정보가 없으면(책 정보를 아직 못 받음 등) 인증할 수 없다.
+      setHasTriedPhoto(true);
+      setPhoto(null);
+      setPhotoNotice(PHOTO_ERROR_MESSAGE);
+      return;
+    }
     const controller = new AbortController();
     verifyRef.current = controller;
     setHasTriedPhoto(true);
@@ -89,7 +98,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
       setPhotoNotice(PHOTO_TIMEOUT_MESSAGE);
     }, PHOTO_VERIFY_TIMEOUT_MS);
     try {
-      const verification = await photoVerifyApi.verify(bookId, uri, controller.signal);
+      const verification = await photoVerifyApi.verify(readingRecordId, uri, controller.signal);
       if (verifyRef.current !== controller) return; // 그사이 지워졌거나 다른 사진으로 바뀜
       verifyRef.current = null;
       if (verification.verified) {

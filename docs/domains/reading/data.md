@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading 데이터
 
@@ -19,7 +19,8 @@ erDiagram
 | users 1 : N books | 같은 책도 사용자마다 별도 행. 서로의 서재는 보이지 않는다 |
 | books 1 : N reading_records | 완독한 책을 다시 읽으면 기존 기록을 덮지 않고 새 회차를 만든다 |
 | reading_records 1 : N reading_sessions | 회차 동안 타이머를 켤 때마다 쌓인다. 총 독서 시간 = 세션 합 |
-| reading_records 1 : N certifications | 회차에 올린 인증 사진의 판정 결과. 세션과는 연결되지 않는다 |
+| reading_records 1 : N certifications | 회차에 올린 인증 사진의 판정 결과. 사진을 붙일 때의 가장 최근 회차라, 다회독 첫 세션의 인증은 이전 회차에 붙는다 |
+| reading_sessions 1 : 0..1 certifications | 세션 저장 때 통과한 인증을 연결 (`reading_session_id`, 외래 키 아닌 숫자 칸). 사진 인증 보상 판단에 쓴다 |
 
 `reading_records.user_id`·`reading_sessions.user_id`는 조회 편의용으로 함께 저장한다 (항상 책 주인과 같다).
 
@@ -100,6 +101,8 @@ INDEX `idx_reading_sessions_reading_record_id`, `idx_reading_sessions_user_id_st
 | book_page | boolean | | AI 판단: 책 페이지인가 |
 | status | varchar(20) | not null | `PASSED` · `UNVERIFIED` · `FAILED` |
 | message | varchar(1000) | | 판정 이유 (여러 개면 줄바꿈으로 구분) |
+| ai_skipped | boolean | | AI 사용 한도 초과(429)로 확인 없이 통과. `null`은 false (칸이 생기기 전 기록) |
+| reading_session_id | bigint | UNIQUE | 이 인증을 쓴 독서 세션. 세션 저장 때 채움, 한 세션에 하나 |
 | created_at | timestamp | not null | |
 
 ## 삭제

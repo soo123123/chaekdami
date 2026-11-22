@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading API
 
@@ -24,7 +24,7 @@
 | GET | `/api/reading-records/{id}/sessions` | 회차의 세션 목록 (최근 먼저) | 200 | ✅ |
 | GET | `/api/me/reading-today` | 오늘 독서 요약 | 200 | ✅ |
 | GET | `/api/me/reading-stats` | 독서 통계 | 200 | ✅ |
-| POST | `/api/reading-records/{id}/certifications` | 독서 인증 (사진 → AI 글자 추출 → 판정) | 201 | ✅ 앱 미연결 ⏳ [TODO-1](../../known-issues.md#todo-1) |
+| POST | `/api/reading-records/{id}/certifications` | 독서 인증 (사진 → AI 글자 추출 → 판정) | 201 | ✅ |
 | GET | `/api/reading-records/{id}/certifications` | 회차의 인증 목록 (최신 먼저) | 200 | ✅ |
 
 ---
@@ -195,7 +195,8 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
   "startPage": 108,
   "endPage": 120,
   "sentence": "사람은 책을 만들고, 책은 사람을 만든다.",
-  "photos": [{ "uri": "file:///…" }]
+  "photos": [{ "uri": "file:///…" }],
+  "photoVerificationId": 12
 }
 ```
 
@@ -206,7 +207,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 | `startPage`, `endPage` | ✅ | 이번에 읽은 범위 |
 | `sentence` | | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 받기만 하고 저장하지 않음. **현재 앱은 이 필드를 보내지 않고**, 세션 저장 뒤 문장 API(`POST /api/reading-records/{id}/sentences`, 쪽 번호 = `endPage`)로 따로 저장한다 |
 | `photos` | | ⏳ [TODO-2](../../known-issues.md#todo-2) 받기만 하고 저장하지 않음 |
-| `photoVerificationId` | | ⏳ [TODO-2](../../known-issues.md#todo-2) 앱은 사진 인증 통과 시 보내지만 **서버 DTO에 이 필드가 없어 무시됨** |
+| `photoVerificationId` | | 통과한 독서 인증 번호(`CertificationResponse.id`). 내 인증이고 `PASSED`이고 아직 다른 세션에 안 쓰였으면 **이 세션에 연결**한다 (사진 인증 보상 판단용). 조건이 안 맞으면 무시하고 저장은 성공 ([rules.md](./rules.md#5-독서-인증)) |
 
 ```json
 // 응답 201
@@ -243,7 +244,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 
 ## 독서 인증
 
-> ⏳ [TODO-1](../../known-issues.md#todo-1) — 서버 API는 있지만 앱은 아직 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock을 쓴다.
+앱은 독서 종료 화면에서 사진을 붙이는 순간 **그 책의 가장 최근 회차**로 `image`만 보낸다 (쪽 범위·문장은 보내지 않음). `PASSED`만 통과로 보고, 통과 번호를 세션 저장 요청의 `photoVerificationId`로 보낸다. 앱은 최대 45초 기다린다.
 
 ### POST /api/reading-records/{id}/certifications
 
@@ -277,7 +278,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 | `bookPage` | AI가 책 페이지로 봤는지. 판단 못 하면 `null` |
 | `detectedPage` | 사진에서 찾은 쪽 번호. 못 찾으면 `null` |
 | `sentenceFound` | 문장을 찾았는지. 문장을 안 보냈거나 **목록 조회면 항상 `null`** |
-| `messages` | 판정 이유·안내 문구. 화면에 그대로 보여줘도 된다 |
+| `messages` | 판정 이유·안내 문구. 화면에 그대로 보여줘도 된다. AI 사용 한도 초과(429)로 확인 없이 통과하면 "AI 확인 없이 통과했어요. (사용 한도 초과)" |
 | `extractedText` | AI가 읽은 글자 |
 
 ### GET /api/reading-records/{id}/certifications

@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 문제 · 할 일 · 질문
 
@@ -44,9 +44,7 @@
 
 | ID | 할 일 | 지금 상태 | 위치 | 문서 |
 |---|---|---|---|---|
-| <a id="todo-1"></a>TODO-1 | 독서 인증 앱 연결 | 서버 API는 있음 (`POST`·`GET /api/reading-records/{id}/certifications`, PR #13). 앱은 아직 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock 사용 (`PHOTO_VERIFY_USE_MOCK = true`). 주소·요청 형식이 달라 앱 수정 필요 (스펙). contract-check의 유일한 불일치 | 앱 `photoVerifyApi.ts` | [reading/api](./domains/reading/api.md#독서-인증) |
-| <a id="todo-2"></a>TODO-2 | 세션 요청의 사진 연결 | `photos` 저장 안 함, 앱이 보내는 `photoVerificationId`는 서버 DTO에 칸이 없어 무시 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
-| <a id="todo-3"></a>TODO-3 | 사진 인증 추가 보상 연결 | 지급 로직은 있으나 인증 조회 임시 구현이 항상 false. 인증 결과는 `certifications`에 저장되지만 세션과 연결되지 않음 | `PendingPhotoCertificationChecker` | [reward/rules](./domains/reward/rules.md#2-경험치) |
+| <a id="todo-2"></a>TODO-2 | 세션 요청의 사진 저장 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | AI 기능 (책 추천, 독후감 피드백, 문장 인증) | 없음. `book_reports.revision`만 준비 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | 주간 퀘스트 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
 | <a id="todo-6"></a>TODO-6 | 랭킹, 레벨 해금 | 없음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
@@ -71,6 +69,8 @@
 | <a id="todo-20"></a>TODO-20 | 프론트 ESLint 설정 | 설정 없음 | `frontend/` |
 | <a id="todo-21"></a>TODO-21 | DB 없이 도는 컨텍스트 테스트 | `ChaekdamiApplicationTests.contextLoads`가 DB 비밀번호 없으면 실패 | `backend/src/test` |
 | <a id="todo-22"></a>TODO-22 | 안 쓰는 메서드 정리 | `DdayService.markTodayRead` 호출 없음 | `DdayService` |
+| <a id="todo-23"></a>TODO-23 | 독서 인증 429 임시 규칙 되돌리기 | Gemini가 임시 API라 사용 한도 초과(429)면 `PASSED`(`ai_skipped`), 사진 인증 보상에서는 제외. 정식 AI API로 바꿀 때 둘 다 다시 정한다 | `GeminiRetryPolicy`, `CertificationVerifier`, `Certification.isRewardable` |
+| <a id="todo-24"></a>TODO-24 | AI 장애를 앱에 따로 알리기 | AI 장애(시간 초과·다시 시도 실패)도 글자 부족과 같은 `UNVERIFIED`로 와서 앱은 "다시 찍어주세요"만 보여준다 | `GeminiPageTextExtractor`, 앱 `useReadingEnd` |
 
 ## 3. ❓ 질문
 
@@ -80,10 +80,11 @@
 | <a id="ask-2"></a>ASK-2 | 세션 최대 2시간을 유지하나? | [reading/rules](./domains/reading/rules.md#3-독서-세션) |
 | <a id="ask-3"></a>ASK-3 | 목록 페이지 번호를 통일하나? (review는 0부터, 도서 검색은 1부터) | [review/rules](./domains/review/rules.md#6-공통) |
 | <a id="ask-4"></a>ASK-4 | 책을 삭제하면 보상 내역도 지우나? | ISSUE-DATA-3 |
-| <a id="ask-5"></a>ASK-5 | 독서 인증 판정을 얼마나 엄격하게 하나? (`UNVERIFIED`도 보상을 주나, 쪽 번호 허용 오차 ±3쪽 유지, 앱 업로드 타임아웃 30초 정도) | [reading/rules](./domains/reading/rules.md#5-독서-인증) |
 
 ## 4. 해결됨
 
 | ID | 해결 | 날짜 | 스펙 |
 |---|---|---|---|
-| — | | | |
+| TODO-1 독서 인증 앱 연결 | 앱이 `POST /api/reading-records/{id}/certifications`로 사진을 보냄 (가장 최근 회차, 45초). `PASSED`만 통과 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
+| TODO-3 사진 인증 추가 보상 연결 | 세션 저장 때 인증을 세션에 연결하고 `CertificationPhotoChecker`가 조회. 429 통과는 제외 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
+| ASK-5 독서 인증 판정 엄격도 | `UNVERIFIED`는 통과 아님(다시 찍기, 보상 없음). 앱은 쪽 범위를 보내지 않아 쪽 번호 비교 안 함(±3쪽 규칙은 범위를 보내는 호출에만). 앱 대기 45초, 서버 AI 호출은 한 번 다시 시도 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |

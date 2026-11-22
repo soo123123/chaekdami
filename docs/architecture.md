@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 아키텍처
 
@@ -61,7 +61,7 @@ flowchart LR
 | 회원 탈퇴 → 독후활동·보상·D-day 삭제 | 이벤트 `UserWithdrawnEvent` | `*CleanupListener` |
 | 독후활동 → 책·독서 기록 조회 | port (`BookReader`, `ReadingRecordReader`) + JDBC 구현 | `review/application/port`, `review/infrastructure/Jdbc*` |
 | 보상 → 독서 세션 조회 | port (`ReadingSessionReader`) | `reward/infrastructure/ReadingSessionRepositoryReader` |
-| 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 항상 false ⏳ [TODO-3](./known-issues.md#todo-3) | `PendingPhotoCertificationChecker` |
+| 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 세션에 연결된 독서 인증 조회 | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` |
 | 보상 ↔ D-day | 서로 직접 참조 (연속일 계산을 함께 씀) | `ReadingSessionRewardService`, `StreakService`, `DdayService` |
 | 독서 → 문장 수 | 직접 참조 | `TodayReadingService` |
 | 독후활동 이벤트 (`ReviewCreatedEvent` 등) | 발행만 하고 받는 곳 없음 | `review/application/event` |
@@ -151,7 +151,7 @@ frontend/src/
 | `src/api/authApi.ts` | `/api/auth/*`, `/api/me` |
 | `features/fe1/api/readingApi.ts` | 검색, 서재, 독서 기록, 세션, 문장 |
 | `features/fe1/api/communityApi.ts` | 리뷰(평점·한줄평), 좋아요, 신고, 평점 요약 |
-| `features/fe1/api/photoVerifyApi.ts` | `POST /api/reading-photos/verify` — 백엔드 없음, Mock ⏳ [TODO-1](./known-issues.md#todo-1) |
+| `features/fe1/api/photoVerifyApi.ts` | `POST /api/reading-records/{id}/certifications` — 독서 인증 (가장 최근 회차) |
 | `features/fe2/api/rewardApi.ts` | 보상, 독서 완료 보상, 부스터, 퀘스트, 상점 |
 | `features/fe2/api/ddayApi.ts` | D-day |
 | `features/fe2/api/reviewApi.ts` | 독후감 |

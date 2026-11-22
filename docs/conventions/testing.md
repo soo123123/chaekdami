@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 실행과 테스트
 
@@ -60,7 +60,7 @@ npx expo start --tunnel      # 같은 와이파이가 아닐 때 실기기
 | 상수 | 현재 | 뜻 |
 |---|---|---|
 | `FE1_USE_DEV_MOCK` | `false` | `true`면 서재·검색·독서·한줄평이 Mock 사용 |
-| `PHOTO_VERIFY_USE_MOCK` | `true` | 독서 인증 사진 검증 Mock (앱이 아직 서버 인증 API에 연결 안 됨, [TODO-1](../known-issues.md#todo-1)) |
+| `PHOTO_VERIFY_USE_MOCK` | `false` | `true`면 독서 인증 사진 검증을 Mock으로 (서버 미호출). Mock 인증 번호는 보상 확인에 쓰지 않는다 |
 | `REVIEW_USE_DEV_MOCK` (`fe2/api/reviewApi.ts`) | `false` | 독후감 Mock |
 
 ## 4. 테스트

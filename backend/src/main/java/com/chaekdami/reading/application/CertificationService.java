@@ -70,9 +70,20 @@ public class CertificationService {
                 extraction.pageNumber(),
                 extraction.isBookPage(),
                 result.status(),
-                String.join("\n", result.messages())
+                String.join("\n", result.messages()),
+                extraction.aiSkipped()
         ));
         return CertificationResponse.from(saved, result.sentenceFound());
+    }
+
+    // 사진 인증 추가 보상용: 이 세션에 보상 대상 인증(PASSED, AI 확인함)이 연결돼 있는가
+    public boolean isPhotoCertified(Long userId, Long readingSessionId) {
+        if (userId == null || readingSessionId == null) {
+            return false;
+        }
+        return certificationRepository.findByUserIdAndReadingSessionId(userId, readingSessionId)
+                .map(Certification::isRewardable)
+                .orElse(false);
     }
 
     // 회차의 인증 목록

@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading 규칙
 
@@ -71,12 +71,15 @@
 | 실패: 책 페이지 아님 | AI가 "책 페이지가 아니다"라고 **확실히** 판단한 경우만 (판단 못 하면 통과) | `CertificationVerifier.verify` | ✅ |
 | 실패: 같은 사진 재사용 | 내 최근 인증 50건과 글자 3글자 조각이 90% 이상 겹치면 | `CertificationVerifier.DUPLICATE_SIMILARITY`, `CertificationService` | ✅ |
 | 확인 불가: 글자 부족 | 읽은 글자(정규화 후)가 20자 미만 | `CertificationVerifier.MIN_TEXT_LENGTH` | ✅ |
-| 확인 불가: 쪽 번호 범위 밖 | 읽은 범위 ±3쪽 밖. `startPage`·`endPage`를 둘 다 보냈을 때만 비교, 쪽 번호를 못 찾으면 통과 | `CertificationVerifier.PAGE_MARGIN` | ✅ ❓ [ASK-5](../../known-issues.md#ask-5) |
+| 확인 불가: 쪽 번호 범위 밖 | 읽은 범위 ±3쪽 밖. `startPage`·`endPage`를 둘 다 보냈을 때만 비교, 쪽 번호를 못 찾으면 통과. **앱은 범위를 보내지 않으므로** 앱 인증에서는 비교하지 않는다 | `CertificationVerifier.PAGE_MARGIN` | ✅ |
 | 문장 확인 | 문장의 3글자 조각 60% 이상이 사진에 있으면 찾은 것. 판정에는 영향 없음 | `CertificationVerifier.SENTENCE_MATCH` | ✅ |
 | AI 선택 | `OCR_PROVIDER=gemini` + `GEMINI_API_KEY`면 Gemini, 아니면 Mock (항상 책 페이지, 쪽 번호 없음) | `GeminiPageTextExtractor`, `MockPageTextExtractor` | ✅ |
-| AI 장애 | 한도 초과·시간 초과(30초) 등은 빈 결과로 처리 → 글자 부족으로 `UNVERIFIED` | `GeminiPageTextExtractor.extract` | ✅ |
+| AI 다시 시도 | 연결 실패·서버 오류(5xx)면 첫 호출 시작부터 4초 안에 실패했을 때만 1초 쉬고 한 번 더 (최대 2번, 전체 약 40초) | `GeminiRetryPolicy`, `GeminiPageTextExtractor.extract` | ✅ |
+| AI 장애 | 응답 시간 초과(30초)·그 밖의 실패, 다시 시도해도 실패하면 빈 결과로 처리 → 글자 부족으로 `UNVERIFIED` (앱은 다시 찍게 안내) | `GeminiPageTextExtractor.extract` | ✅ ⏳ [TODO-24](../../known-issues.md#todo-24) |
+| AI 사용 한도 초과(429) | 다시 시도 없이 다른 검사도 건너뛰고 `PASSED` + "AI 확인 없이 통과" 문구, `ai_skipped = true`. Gemini가 임시 API라 둔 **임시 규칙** | `GeminiRetryPolicy`, `CertificationVerifier.verify` | ✅ ⏳ [TODO-23](../../known-issues.md#todo-23) |
 | 사진 크기 | 최대 10MB. AI에 보내기 전 긴 쪽 1600px로 줄임 (HEIC는 원본) | `application.properties`, `GeminiPageTextExtractor.MAX_SIDE` | ✅ |
 | 사진 저장 | 저장하지 않음 (`image_url` 항상 `null`) | `CertificationService` | ✅ |
 | 소유권 | 남의 회차면 404 | `CertificationService` | ✅ |
-| 보상 연결 | 인증 결과가 보상(사진 인증 +20 EXP)에 아직 연결 안 됨 | `PendingPhotoCertificationChecker` | ⏳ [TODO-3](../../known-issues.md#todo-3) |
-| 앱 연결 | 앱은 아직 이 API를 부르지 않음 | 앱 `photoVerifyApi.ts` | ⏳ [TODO-1](../../known-issues.md#todo-1) |
+| 세션 연결 | 세션 저장 때 `photoVerificationId`가 내 인증 + `PASSED` + 아직 안 쓰임이면 그 세션에 연결 (회차는 비교·이동하지 않음). 안 맞으면 무시하고 저장은 성공. 인증 하나는 세션 하나에만 | `ReadingSessionService.linkCertification`, `Certification.linkSession` | ✅ |
+| 보상 연결 | 세션에 연결된 인증이 `PASSED`이고 `ai_skipped`가 아니면 사진 인증 보상 대상 ([reward/rules](../reward/rules.md#2-경험치)) | `CertificationService.isPhotoCertified`, `CertificationPhotoChecker` | ✅ |
+| 앱 연결 | 사진을 붙일 때 가장 최근 회차로 `image`만 보냄. `PASSED`만 통과, `UNVERIFIED`·`FAILED`는 사진을 지우고 다시 찍게 함. 45초 기다림 | 앱 `photoVerifyApi.ts`, `useReadingEnd.ts`, `config.ts` | ✅ |

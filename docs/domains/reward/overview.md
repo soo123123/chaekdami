@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE2
 
 # reward — 보상
 
@@ -29,7 +29,7 @@ backend/src/main/java/com/chaekdami/reward/
 ├── domain/          ExperiencePolicy, LevelPolicy, DailyQuest, DailyQuestPicker, StreakCalculator,
 │                    RewardErrorCode, 엔티티
 └── infrastructure/  Repository, DailyQuestSeeder, ShopItemSeeder,
-                     ReadingSessionRepositoryReader, PendingPhotoCertificationChecker, RewardCleanupListener
+                     ReadingSessionRepositoryReader, CertificationPhotoChecker, RewardCleanupListener
 ```
 
 프론트: `frontend/src/features/fe2/api/rewardApi.ts`, 화면 `RewardScreen` · `QuestScreen` · `ShopScreen` · `ReadingCompleteScreen` (FE2)
@@ -39,7 +39,7 @@ backend/src/main/java/com/chaekdami/reward/
 | 방향 | 무엇 | 방식 |
 |---|---|---|
 | reward → reading | 세션의 독서 시간·쪽수·종료 시각 조회 | port `ReadingSessionReader` |
-| reward → reading | 사진 인증 여부 | port `PhotoCertificationChecker` — 임시 구현이 항상 false ⏳ [TODO-3](../../known-issues.md#todo-3) |
+| reward → reading | 사진 인증 여부 | port `PhotoCertificationChecker` → `CertificationPhotoChecker`가 `CertificationService.isPhotoCertified` 호출 |
 | reward ↔ dday | 읽은 날 기록, 방어권 정산, 연속일 계산 | 직접 참조 (`DdayService`, `StreakService`) |
 | user → reward | 회원 탈퇴 시 보상 데이터 삭제 | 이벤트 `UserWithdrawnEvent` → `RewardCleanupListener` |
 | 앱 | 세션 저장 후 독서 완료 화면에서 보상 API 호출 | [architecture.md](../../architecture.md#41-독서--보상) |
@@ -48,7 +48,6 @@ backend/src/main/java/com/chaekdami/reward/
 
 - ✅ 보상 상태, 독서 완료 보상, 일일 퀘스트, 상점, 부스터, 방어권 자동 정산
 - ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) 책 삭제 시 보상 내역이 지워진 세션을 가리킨 채 남음
-- ⏳ [TODO-3](../../known-issues.md#todo-3) 사진 인증 추가 보상 — 지급 로직은 있으나 인증 조회가 없어 지급되지 않음
 - ⏳ [TODO-5](../../known-issues.md#todo-5) 주간 퀘스트 — `QuestType.WEEKLY` 값만 있음
 - ⏳ [TODO-6](../../known-issues.md#todo-6) 랭킹, 레벨 해금 — 미구현
 - ⏳ [TODO-19](../../known-issues.md#todo-19) reward ↔ dday 직접 참조

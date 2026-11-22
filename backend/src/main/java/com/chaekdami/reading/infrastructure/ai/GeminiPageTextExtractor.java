@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 // Gemini로 책 페이지 사진에서 글자·페이지 번호를 추출 (reading.ocr.provider=gemini 일 때 사용)
 // - AI 호출이 실패해도 인증 자체는 막지 않음: 빈 결과를 돌려주면 판정이 "확인 불가"가 됨
+// - 연결 실패·5xx는 한 번 다시 부름, 사용 한도 초과(429)는 "AI 확인 안 함"으로 돌려줌 (GeminiRetryPolicy)
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "reading.ocr.provider", havingValue = "gemini")
@@ -84,26 +85,57 @@ public class GeminiPageTextExtractor implements PageTextExtractor {
                 "generationConfig", Map.of("temperature", 0)
         );
 
+        // 사진 축소·본문 만들기는 한 번만 하고, 호출만 최대 2번 함 (다시 시도 규칙: GeminiRetryPolicy)
         long started = System.currentTimeMillis();
-        try {
-            GeminiResponse response = restClient.post()
-                    .uri("/v1beta/models/{model}:generateContent", model)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .body(GeminiResponse.class);
-            String answer = firstText(response);
-            log.info("Gemini 추출 완료 ({}): {}ms, 답 {}자", model, System.currentTimeMillis() - started, answer.length());
-            return parse(answer);
-        } catch (Exception e) {
-            // 한도 초과(429), 서버 오류, 시간 초과 등: 인증을 실패시키지 않고 "확인 불가"로 넘어가게 함
-            Throwable root = e;
-            while (root.getCause() != null && root.getCause() != root) {
-                root = root.getCause();
+        for (int attempt = 1; ; attempt++) {
+            try {
+                GeminiResponse response = restClient.post()
+                        .uri("/v1beta/models/{model}:generateContent", model)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(GeminiResponse.class);
+                String answer = firstText(response);
+                log.info("Gemini 추출 완료 ({}): {}ms, {}번째 호출, 답 {}자", model, System.currentTimeMillis() - started, attempt, answer.length());
+                return parse(answer);
+            } catch (Exception e) {
+                long elapsed = System.currentTimeMillis() - started;
+                GeminiRetryPolicy.Kind kind = GeminiRetryPolicy.classify(e);
+                logFailure(e, elapsed, attempt, kind);
+
+                // 사용 한도 초과: 임시 API라 "AI 확인 안 함"으로 넘겨 통과로 판정되게 함 (보상은 주지 않음)
+                if (kind == GeminiRetryPolicy.Kind.RATE_LIMITED) {
+                    return PageExtraction.skipped();
+                }
+                if (attempt < GeminiRetryPolicy.MAX_ATTEMPTS && GeminiRetryPolicy.shouldRetry(kind, elapsed)) {
+                    if (!pause(GeminiRetryPolicy.RETRY_DELAY.toMillis())) {
+                        return new PageExtraction("", null, null);
+                    }
+                    continue;
+                }
+                // 그 밖: 인증을 실패시키지 않고 빈 결과로 넘겨 "확인 불가"가 되게 함
+                return new PageExtraction("", null, null);
             }
-            log.warn("Gemini 글자 추출 실패 ({}ms, 모델 {}): {} / 원인: {} {}", System.currentTimeMillis() - started, model,
-                    e.getMessage(), root.getClass().getSimpleName(), root.getMessage());
-            return new PageExtraction("", null, null);
+        }
+    }
+
+    private void logFailure(Exception e, long elapsed, int attempt, GeminiRetryPolicy.Kind kind) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        log.warn("Gemini 글자 추출 실패 ({}ms, {}번째 호출, 모델 {}, 판단 {}): {} / 원인: {} {}", elapsed, attempt, model, kind,
+                e.getMessage(), root.getClass().getSimpleName(), root.getMessage());
+    }
+
+    // 다시 부르기 전에 쉼. 중간에 끊기면 false
+    private static boolean pause(long millis) {
+        try {
+            Thread.sleep(millis);
+            return true;
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 

@@ -9,7 +9,8 @@ public record CreateReadingSessionRequest(
         Integer startPage,        // 이번에 읽기 시작한 페이지
         Integer endPage,          // 이번에 읽고 멈춘 페이지
         String sentence,          // 인상 깊은 문장 — 아직 저장하지 않음 (BE 3 문장 모음과 연동 방식 협의 후)
-        List<Photo> photos        // 인증 사진 — 아직 저장하지 않음 (업로드 방식 협의 후)
+        List<Photo> photos,       // 인증 사진 — 아직 저장하지 않음 (업로드 방식 협의 후)
+        Long photoVerificationId  // 통과한 독서 인증 번호 (선택). 내 PASSED 인증이고 아직 안 쓰였으면 이 세션에 연결
 ) {
     public record Photo(String uri) {}
 }

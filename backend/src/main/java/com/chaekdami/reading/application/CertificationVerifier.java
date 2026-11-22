@@ -20,6 +20,7 @@ public class CertificationVerifier {
     static final int PAGE_MARGIN = 3;               // 페이지 번호 허용 오차 (±3쪽)
     static final double DUPLICATE_SIMILARITY = 0.9; // 이 이상 비슷하면 같은 사진으로 봄
     static final double SENTENCE_MATCH = 0.6;       // 문장 글자 조각의 60% 이상이 사진에 있으면 찾은 것으로 봄
+    static final String AI_SKIPPED_MESSAGE = "AI 확인 없이 통과했어요. (사용 한도 초과)";
 
     public record Result(
             CertificationStatus status,
@@ -30,6 +31,11 @@ public class CertificationVerifier {
 
     public Result verify(PageExtraction extraction, Integer startPage, Integer endPage,
                          String sentence, List<String> previousNormalizedTexts) {
+        // AI 사용 한도 초과(429)로 사진을 확인하지 못함: 임시 API라 다른 검사 없이 통과 (보상은 주지 않음)
+        if (extraction.aiSkipped()) {
+            return new Result(CertificationStatus.PASSED, "", null, List.of(AI_SKIPPED_MESSAGE));
+        }
+
         List<String> fails = new ArrayList<>();
         List<String> unverified = new ArrayList<>();
         List<String> notes = new ArrayList<>();
