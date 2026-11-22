@@ -1,0 +1,63 @@
+> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+
+# reading 규칙
+
+## 1. 도서 검색과 서재
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| YES24 호출 | 서버만 호출 (키 노출·CORS 방지). 키는 `YES24_API_KEY` | `Yes24Client` | ✅ |
+| 검색과 상세 분리 | 검색 `detail=N`(가벼운 목록), 상세 `detail=Y`(쪽수·소개) | `Yes24Client` | ✅ |
+| 세트 상품 | ISBN이 없는 상품은 검색 결과에서 제외 | `BookSearchService` | ✅ |
+| YES24 404 | 에러가 아니라 "결과 없음" (검색) / 404 (상세) | `Yes24Client` | ✅ |
+| 출간일 변환 | `"20190226"` → `"2019-02-26"` | `BookSearchService` | ✅ |
+| 검색 페이지 크기 | 1~50 | `BookSearchService.MAX_PAGE_SIZE` | ✅ |
+| 등록 필수값 | 제목 비어 있지 않음, 전체 쪽수 1 이상 | `BookService.createBook` | ✅ |
+| ISBN 정규화 | 숫자·X 외 문자 제거, 빈 값은 `null` | `BookService` | ✅ |
+| 중복 등록 | 같은 사용자가 같은 YES24 책(`item_id`)을 두 번 → 409. 직접 입력 책은 제한 없음 | `BookService`, UNIQUE `uk_books_user_id_item_id` | ✅ |
+| 등록 시 1회차 | 책을 담는 순간 1회차 기록을 `NOT_STARTED`·0쪽으로 생성 | `BookService.createBook` | ✅ |
+| 소유권 | 서재 조회·삭제는 `user_id`와 `book_id`를 함께 조건. 남의 책은 404 | `BookService.findMyBook` | ✅ |
+| 서재 상태 필터 | 책별 **최근 회차**의 상태로 거른다 | `BookService.getBooks` | ✅ |
+
+## 2. 독서 기록(회차)
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 상태 전환 | `NOT_STARTED` → (0쪽 초과) `IN_PROGRESS` → (마지막 쪽) `COMPLETED` | `ReadingRecord.updatePage` | ✅ |
+| 페이지 범위 | 0 이상, 전체 쪽수 이하 | `ReadingRecord.updatePage` | ✅ |
+| 자동 완독 | 현재 페이지 = 전체 쪽수가 되면 완독 (PATCH·세션 모두) | `ReadingRecord` | ✅ |
+| 완독 후 수정 | 페이지 수정·세션 추가 불가 (400·409). 새 회차를 시작해야 함 | `ReadingRecord` | ✅ |
+| 진행 중 회차 수 | 한 책에 끝나지 않은 회차는 최대 1개. 새 회차는 최근 회차가 완독일 때만 (아니면 409) | `ReadingRecordService.create` | ✅ |
+| 독서율 | `current_page ÷ total_pages × 100`, 저장하지 않음 | `ReadingRecord.getProgressRate` | ✅ |
+| 메모 길이 | 200자 이하 | `ReadingRecord.MAX_MEMO_LENGTH` | ✅ |
+| 하루 목표 페이지 | 1 이상 | `ReadingRecord.changeGoal` | ✅ |
+| 공개 여부 | 이 회차의 문장 모음집을 커뮤니티에 공개할지. 기본 비공개 | `ReadingRecord` → `SentenceCollectionService` | ✅ |
+| 완독 → 보상 | 완독 API는 보상을 주지 않음 | `ReadingRecordService.complete` | ✅ (보상은 세션 단위) |
+
+## 3. 독서 세션
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 최소 시간 | 3분 (프론트 종료 버튼도 3분 전에는 잠김) | `ReadingSession.MIN_SECONDS` ↔ 프론트 `MIN_READING_SECONDS` | ✅ |
+| 최대 시간 | 2시간 | `ReadingSession.MAX_SECONDS` | ✅ ❓ [ASK-2](../../known-issues.md#ask-2) |
+| 페이지 | 시작 0 이상, 끝 ≥ 시작, 끝 ≤ 전체 쪽수 | `ReadingSession.of` | ✅ |
+| 시각 | 앱 값을 믿지 않고 서버 시각 기준. `ended_at` = 요청 받은 시각 | `ReadingSessionService.create` | ✅ |
+| 붙을 회차 | 최근 회차가 진행 중이면 그 회차, 기록이 없으면 1회차 생성, 최근 회차가 완독이면 409 | `ReadingSessionService` | ✅ |
+| 현재 페이지 갱신 | 끝 페이지가 현재 페이지보다 크면 갱신. **뒤로 가지 않음** (앞부분 재독은 저장되지만 현재 페이지 유지) | `ReadingRecord.applySession` | ✅ |
+| 상태 갱신 | 읽기 전이면 읽는 중으로, 끝 페이지가 마지막 쪽이면 완독 | `ReadingRecord.applySession` | ✅ |
+| 보상 | 세션 저장은 보상을 주지 않는다. 독서 완료 화면이 보상 API를 부른다 | [reward/rules.md](../reward/rules.md#1-독서-완료-보상) | ✅ |
+| 문장·사진 | 요청에 있어도 저장하지 않음 | `ReadingSessionService` | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) ⏳ [TODO-2](../../known-issues.md#todo-2) |
+| 시간 입력 | 앱이 보낸 `readingTime`을 범위만 검증 | `ReadingSession.of` | ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1) |
+| 앱 종료 시 | 타이머 중 앱이 완전히 종료되면 측정 시간 유실 | 앱 `useReadingTimer` | ⚠️ [ISSUE-LIMIT-2](../../known-issues.md#issue-limit-2) |
+| "상태 변경 5분" | 옛 기획의 문구, 의미 미정 | — | ❓ [ASK-1](../../known-issues.md#ask-1) |
+
+## 4. 오늘·통계
+
+| 규칙 | 값 | 코드 위치 |
+|---|---|---|
+| 오늘 독서 분 | 오늘 세션 시간 합, 30초 단위 반올림 | `TodayReadingService` |
+| 통계 날짜 기준 | 세션 `started_at`의 날짜 | `ReadingStatsService` |
+| 주간 | 이번 주 월~일 | `ReadingStatsService.week` |
+| 월간 | 이번 달을 7일씩 1~3주, 4주는 22일~말일 | `ReadingStatsService.month` |
+| 하루 | 오늘을 05·08·11·14·17·20시 시작 6구간 (라벨 06시~21시) | `ReadingStatsService.DAILY_START_HOURS` |
+| 목표 달성 | `goalBooks`·`goalTarget` 항상 0 | ⏳ [TODO-12](../../known-issues.md#todo-12) |

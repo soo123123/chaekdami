@@ -1,6 +1,9 @@
-# review-api-for-frontend
+> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 원본: `docs/review-api-for-frontend.md` (커밋 `209eec7`)를 옮기고 현재 코드와 대조해 보정했다.
 
-# 독후활동 API (프론트 전달용)
+# review API (독후활동)
+
+공통 규칙은 [conventions/api.md](../../conventions/api.md)에도 있다. 아래 "공통으로 지킬 것"은 이 도메인 기준의 자세한 설명이다.
 
 앱이 호출하는 서버 주소는 `http://localhost:8080` 이다.
 
@@ -100,7 +103,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-## 실패 응답
+## 에러 코드
 
 실패는 항상 이 모양이다.
 
@@ -860,7 +863,7 @@ Content-Type: application/json
 | --- | --- |
 | 문장 `content` | 앞뒤 공백을 지운 뒤 1~500자 |
 | 문장 `pageNumber` | 생략 가능. 1 이상, 그 책의 전체 쪽수 이하 |
-| 세션 `sentence` | 독서 종료 저장에 넣는 문장. 규칙과 길이 제한은 문장 `content` 와 같다. 쪽 번호는 저장되지 않는다 |
+| 세션 `sentence` | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 독서 종료 저장(`POST /api/reading-sessions`)의 문장 필드. `SentenceService.recordFromSession`은 있지만 **세션 저장이 호출하지 않아 저장되지 않는다.** 현재 앱은 이 필드를 보내지 않고 문장 API로 따로 저장한다. 연결 후 규칙은 문장 `content` 와 같고 쪽 번호는 저장되지 않는다 ([known-issues](../../known-issues.md)) |
 | 별점 `rating` | 1 이상 5 이하 정수. 리뷰를 만들 때 필수 |
 | 한줄평 `oneLine` | 최대 100자. 줄바꿈 불가. 빈 문자열이면 한줄평 삭제 |
 | 리뷰 `isSpoiler` | 생략하면 false |

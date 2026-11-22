@@ -1,0 +1,14 @@
+---
+description: 책다듬이 작업 규칙 — 루트 AGENTS.md를 따른다
+alwaysApply: true
+---
+
+# 작업 규칙
+
+이 저장소의 작업 규칙은 루트 `AGENTS.md`에 있다. 작업을 시작하기 전에 읽고 따른다.
+
+핵심만 요약:
+- 믿는 순서: 코드 > `docs/` > `docs/specs/` > 노션·PDF. 노션·PDF를 근거로 코드를 바꾸지 않는다.
+- API·DB·비즈니스 규칙이 바뀌는 작업은 `docs/specs/README.md`의 절차(requirements → design → tasks)를 따른다.
+- 문서 먼저, 구현 나중. 설계와 다르면 멈추고 사람에게 묻는다.
+- 비밀값을 코드·문서에 쓰지 않는다.
