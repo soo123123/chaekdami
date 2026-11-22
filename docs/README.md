@@ -16,7 +16,7 @@
 | [overview.md](./overview.md) | 서비스 목적, 주요 기능, 기획 의도 | 처음 합류했을 때 |
 | [glossary.md](./glossary.md) | bookId, readingRecordId 같은 용어와 식별자 | 이름이 헷갈릴 때 |
 | [architecture.md](./architecture.md) | 전체 구조, 도메인끼리 연결, 프론트 구조 | 여러 파트를 건드릴 때 |
-| [conventions/](./conventions/) | API 공통 규칙, 이름 규칙, git, 실행·테스트 | 코드를 쓰기 전 |
+| [conventions/](./conventions/) | API 공통 규칙, 이름 규칙, git, 실행·테스트, hooks·skills | 코드를 쓰기 전 |
 | [domains/](./domains/) | 도메인별 개념·API·DB·규칙 (reading · review · reward · dday · user) | 해당 기능 작업 시 |
 | [decisions/](./decisions/) | 설계를 왜 바꿨는지 | "왜 이렇게 됐지?" 싶을 때 |
 | [known-issues.md](./known-issues.md) | ⚠️ 문제(`ISSUE-`) · ⏳ 할 일(`TODO-`) · ❓ 질문(`ASK-`) 목록 | 작업 고를 때, 문제점 찾을 때 |

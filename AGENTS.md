@@ -24,6 +24,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 | 여러 도메인에 걸친 작업 | [docs/architecture.md](docs/architecture.md) |
 | 새 기능·API·DB·규칙 변경 | [docs/specs/README.md](docs/specs/README.md) |
 | 이름 짓기 / 커밋 / 실행·테스트 | [docs/conventions/](docs/conventions/) |
+| hooks·skills (AI 작업 도구) | [docs/conventions/harness.md](docs/conventions/harness.md) |
 | 문제점·남은 일·결정할 것 | [docs/known-issues.md](docs/known-issues.md) |
 
 도메인 폴더의 `overview.md`부터 읽고, 필요한 것만 `api.md` · `data.md` · `rules.md`를 연다.
@@ -58,6 +59,8 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 | 프론트 린트 | `cd frontend && npx expo lint` (ESLint 설정 전) |
 | 프론트↔백엔드 API 경로 | `python3 scripts/harness/contract-check.py` |
 | 문서 상태 | `python3 scripts/harness/docs-check.py` |
+
+Claude Code에서는 문서·API 파일을 고치면 hook이 위 두 검사를 자동으로 돌린다 ([harness.md](docs/conventions/harness.md)).
 
 ## 6. 프론트엔드 (Expo) 주의
 

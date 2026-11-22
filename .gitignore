@@ -42,3 +42,6 @@ out/
 .DS_Store
 __pycache__/
 *.pyc
+
+# Claude 개인 설정 (팀 공용은 .claude/settings.json)
+.claude/settings.local.json

@@ -14,6 +14,7 @@
 | [0004](./0004-dday-records.md) | 연속 독서 기준을 D-day 달력 하나로 | dday·reward |
 | [0005](./0005-reading-session-api.md) | 독서 세션을 한 번의 저장 API로 | reading |
 | [0006](./0006-expo-router.md) | 화면 이동은 Expo Router, 라우트는 /fe1·/fe2 | 프론트 |
+| [0007](./0007-hooks-skills.md) | AI 작업 규칙을 hooks·skills로 보조, 스펙 없이 관리 | 작업 방식 |
 
 ## 새 결정을 남길 때
 

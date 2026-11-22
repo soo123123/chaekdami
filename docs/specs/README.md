@@ -51,3 +51,4 @@
 | 001 | [reward-integration](./001-reward-integration/) — 보상(BE2) 병합과 프론트 연결 | in-progress (테스트·실기기 확인 남음) | FE1·FE2·BE2 |
 | 002 | [reading-reward](./002-reading-reward/) — 독서 보상 연결 (초기안) | superseded → 001 | FE1 |
 | 003 | [session-sentence-and-cleanup](./003-session-sentence-and-cleanup/) — 세션 문장 저장과 삭제 데이터 정리 | draft | BE1·BE3 |
+| 004 | [reading-certification-app](./004-reading-certification-app/) — 독서 인증 앱 연결 (Mock → 실제 서버) | draft | BE1·FE1 |
