@@ -1,4 +1,4 @@
-> 상태: in-progress (구현 완료, 7.1 테스트·8.x 실기기 확인 남음) · 기준: fix/fe1@ef397a6 · 담당: FE1·FE2·BE2
+> 상태: in-progress (구현 완료, 8.1·8.3~8.5 실기기 확인 남음) · 기준: fix/fe1@ef397a6 · 담당: FE1·FE2·BE2
 > 원본: `docs/reward-integration/design.md` — 스펙 000에서 이 위치로 옮김. 결정 요약: [decisions/0003](../../decisions/0003-reward-on-complete-screen.md), [0004](../../decisions/0004-dday-records.md)
 
 # 001 · 보상(BE2) 브랜치 병합과 프론트 연결 — Design
