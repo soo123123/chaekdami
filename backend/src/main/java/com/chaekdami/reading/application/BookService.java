@@ -4,6 +4,7 @@ import com.chaekdami.reading.domain.Book;
 import com.chaekdami.reading.domain.ReadingRecord;
 import com.chaekdami.reading.domain.ReadingStatus;
 import com.chaekdami.reading.infrastructure.BookRepository;
+import com.chaekdami.reading.infrastructure.CertificationRepository;
 import com.chaekdami.reading.infrastructure.ReadingRecordRepository;
 import com.chaekdami.reading.infrastructure.ReadingSessionRepository;
 import com.chaekdami.reading.presentation.dto.request.CreateBookRequest;
@@ -28,6 +29,7 @@ public class BookService {
     private final BookRepository bookRepository;
     private final ReadingRecordRepository readingRecordRepository;
     private final ReadingSessionRepository readingSessionRepository;
+    private final CertificationRepository certificationRepository;
 
     // 내 서재에 책 등록 (YES24 책, 수동 책 공통) + 1회차 독서 기록(읽기 전) 자동 생성
     @Transactional
@@ -97,6 +99,7 @@ public class BookService {
     @Transactional
     public void deleteBook(Long userId, Long bookId) {
         Book book = findMyBook(userId, bookId);
+        certificationRepository.deleteAllByReadingRecordBookId(bookId);
         readingSessionRepository.deleteAllByReadingRecordBookId(bookId);
         readingRecordRepository.deleteAllByBookId(bookId);
         bookRepository.delete(book);
