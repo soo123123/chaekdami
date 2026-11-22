@@ -1,5 +1,6 @@
 package com.chaekdami.reward.application;
 
+import com.chaekdami.reward.infrastructure.ReadingSessionRewardRepository;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
 import com.chaekdami.reward.infrastructure.RewardTransactionRepository;
 import com.chaekdami.reward.infrastructure.UserBuffRepository;
@@ -26,11 +27,14 @@ public class RewardCleanupService {
     private final UserBuffRepository userBuffRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
     private final RewardAccountRepository rewardAccountRepository;
+    private final ReadingSessionRewardRepository readingSessionRewardRepository;
 
     public void deleteAllOfUser(Long userId) {
         userQuestRepository.deleteAllByUserId(userId);
         userItemRepository.deleteAllByUserId(userId);
         userBuffRepository.deleteAllByUserId(userId);
+        readingSessionRewardRepository.deleteAllQuestsByUserId(userId);
+        readingSessionRewardRepository.deleteAllByUserId(userId);
         rewardTransactionRepository.deleteAllByUserId(userId);
         rewardAccountRepository.deleteAllByUserId(userId);
     }

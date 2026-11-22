@@ -4,12 +4,14 @@ import com.chaekdami.dday.application.DdayService;
 import com.chaekdami.reward.application.port.PhotoCertificationChecker;
 import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.QuestStatus;
+import com.chaekdami.reward.domain.ReadingSessionReward;
 import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.StreakCalculator;
 import com.chaekdami.reward.domain.TransactionReason;
+import com.chaekdami.reward.infrastructure.ReadingSessionRewardRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +58,8 @@ class ReadingSessionRewardServiceTest {
     private PhotoCertificationChecker photoCertificationChecker;
     @Mock
     private StreakService streakService;
+    @Mock
+    private ReadingSessionRewardRepository readingSessionRewardRepository;
     @InjectMocks
     private ReadingSessionRewardService service;
 
@@ -68,6 +72,7 @@ class ReadingSessionRewardServiceTest {
         when(rewardLedger.lockAccount(USER_ID)).thenReturn(account);
         lenient().when(readingSessionReader.findOwnSession(USER_ID, SESSION_ID)).thenReturn(Optional.of(session));
         lenient().when(streakService.summarize(eq(USER_ID), any())).thenReturn(new StreakCalculator.Summary(3, 5));
+        lenient().when(readingSessionRewardRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -91,6 +96,8 @@ class ReadingSessionRewardServiceTest {
         assertThat(result.photoBonus().granted()).isFalse();
         assertThat(result.streak()).isEqualTo(new ReadingSessionRewardResult.Streak(3, 5, 1, true));
         assertThat(account.getDday()).isEqualTo(3);
+        assertThat(result.experience()).isEqualTo(ExperienceProgress.of(account));
+        verify(readingSessionRewardRepository).save(any(ReadingSessionReward.class));
         InOrder order = inOrder(streakService, ddayService);
         order.verify(streakService).settleBefore(USER_ID, READING_DATE);
         order.verify(streakService).refundShieldIfProtected(USER_ID, READING_DATE);
@@ -98,16 +105,30 @@ class ReadingSessionRewardServiceTest {
     }
 
     @Test
-    void 이미_기본_보상을_받은_세션이면_다시_지급하지_않는다() {
-        when(rewardLedger.isExperienceGranted(USER_ID, TransactionReason.READING_COMPLETE, SESSION_ID)).thenReturn(true);
+    void 이미_기본_보상을_받은_세션이면_다시_지급하지_않고_처음_받은_내역을_돌려준다() {
+        alreadyBaseGranted();
+        ReadingSessionReward saved = ReadingSessionReward.start(USER_ID, SESSION_ID, 1);
+        saved.recordBase(34, true,
+                List.of(new ReadingSessionReward.CompletedQuest(11L, "오늘의 첫 독서 세션 시작하기", 50, 10)),
+                1, true, 100);
+        saved.recordLevelAfter(2);
+        when(readingSessionRewardRepository.findByUserIdAndReadingSessionId(USER_ID, SESSION_ID))
+                .thenReturn(Optional.of(saved));
 
         ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
 
         assertThat(result.baseGranted()).isFalse();
-        assertThat(result.reading().experience()).isZero();
+        assertThat(result.reading()).isEqualTo(new ReadingSessionRewardResult.Reading(34, true));
+        assertThat(result.completedQuests()).singleElement()
+                .satisfies(quest -> assertThat(quest.userQuestId()).isEqualTo(11L));
+        assertThat(result.streak()).isEqualTo(new ReadingSessionRewardResult.Streak(3, 5, 1, true));
+        assertThat(result.promotionReward()).isEqualTo(100);
+        assertThat(result.levelBefore()).isEqualTo(1);
+        assertThat(result.leveledUp()).isTrue();
         verify(rewardService, never()).grantReadingExperience(any(), any());
         verify(questService, never()).recordReadingSession(any(), anyInt(), any());
         verify(ddayService, never()).markRead(any(), any());
+        verify(readingSessionRewardRepository, never()).save(any());
     }
 
     @Test
@@ -126,10 +147,14 @@ class ReadingSessionRewardServiceTest {
         alreadyBaseGranted();
         when(photoCertificationChecker.isPhotoCertified(USER_ID, SESSION_ID)).thenReturn(true);
         when(rewardLedger.isExperienceGranted(USER_ID, TransactionReason.PHOTO_CERTIFICATION, SESSION_ID)).thenReturn(true);
+        ReadingSessionReward saved = ReadingSessionReward.start(USER_ID, SESSION_ID, 1);
+        saved.recordPhotoBonus(20, 0);
+        when(readingSessionRewardRepository.findByUserIdAndReadingSessionId(USER_ID, SESSION_ID))
+                .thenReturn(Optional.of(saved));
 
         ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
 
-        assertThat(result.photoBonus().granted()).isFalse();
+        assertThat(result.photoBonus()).isEqualTo(new ReadingSessionRewardResult.PhotoBonus(true, 20, 0));
         verify(rewardLedger, never()).addExperienceFor(any(), anyInt(), eq(TransactionReason.PHOTO_CERTIFICATION), any());
     }
 

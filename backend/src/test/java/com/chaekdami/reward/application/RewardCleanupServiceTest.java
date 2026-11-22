@@ -1,5 +1,6 @@
 package com.chaekdami.reward.application;
 
+import com.chaekdami.reward.infrastructure.ReadingSessionRewardRepository;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
 import com.chaekdami.reward.infrastructure.RewardCleanupListener;
 import com.chaekdami.reward.infrastructure.RewardTransactionRepository;
@@ -32,6 +33,8 @@ class RewardCleanupServiceTest {
     private RewardTransactionRepository rewardTransactionRepository;
     @Mock
     private RewardAccountRepository rewardAccountRepository;
+    @Mock
+    private ReadingSessionRewardRepository readingSessionRewardRepository;
     @InjectMocks
     private RewardCleanupService rewardCleanupService;
 
@@ -40,13 +43,15 @@ class RewardCleanupServiceTest {
         new RewardCleanupListener(rewardCleanupService).onUserWithdrawn(new UserWithdrawnEvent(USER_ID));
 
         InOrder order = inOrder(userQuestRepository, userItemRepository, userBuffRepository,
-                rewardTransactionRepository, rewardAccountRepository);
+                readingSessionRewardRepository, rewardTransactionRepository, rewardAccountRepository);
         order.verify(userQuestRepository).deleteAllByUserId(USER_ID);
         order.verify(userItemRepository).deleteAllByUserId(USER_ID);
         order.verify(userBuffRepository).deleteAllByUserId(USER_ID);
+        order.verify(readingSessionRewardRepository).deleteAllQuestsByUserId(USER_ID);
+        order.verify(readingSessionRewardRepository).deleteAllByUserId(USER_ID);
         order.verify(rewardTransactionRepository).deleteAllByUserId(USER_ID);
         order.verify(rewardAccountRepository).deleteAllByUserId(USER_ID);
         verifyNoMoreInteractions(userQuestRepository, userItemRepository, userBuffRepository,
-                rewardTransactionRepository, rewardAccountRepository);
+                readingSessionRewardRepository, rewardTransactionRepository, rewardAccountRepository);
     }
 }

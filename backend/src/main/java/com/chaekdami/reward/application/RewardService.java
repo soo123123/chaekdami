@@ -2,7 +2,6 @@ package com.chaekdami.reward.application;
 
 import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.ExperiencePolicy;
-import com.chaekdami.reward.domain.LevelPolicy;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
@@ -57,16 +56,15 @@ public class RewardService {
         StreakCalculator.Summary streak = streakService.summarize(userId, today);
         account.syncStreak(streak.currentStreak(), streak.longestStreak());
 
-        int currentExperience = account.getExperience() - LevelPolicy.totalExperienceToReach(account.getLevel());
-        int nextLevelExperience = LevelPolicy.requiredExperience(account.getLevel());
+        ExperienceProgress progress = ExperienceProgress.of(account);
         int ownedShieldCount = userItemRepository.sumQuantityByUserIdAndItemType(userId, ShopItemType.SHIELD);
         List<UserBuff> activeBuffs = userBuffRepository.findActiveBuffs(userId, LocalDateTime.now());
 
         return new RewardStatusResult(
                 account.getLevel(),
-                currentExperience,
-                nextLevelExperience,
-                currentExperience * 100 / nextLevelExperience,
+                progress.currentExperience(),
+                progress.nextLevelExperience(),
+                progress.percentage(),
                 account.getCurrency(),
                 account.getDday(),
                 ownedShieldCount,

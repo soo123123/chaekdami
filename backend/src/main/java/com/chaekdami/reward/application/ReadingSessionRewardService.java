@@ -4,11 +4,13 @@ import com.chaekdami.dday.application.DdayService;
 import com.chaekdami.reward.application.port.PhotoCertificationChecker;
 import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.ExperiencePolicy;
+import com.chaekdami.reward.domain.ReadingSessionReward;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.StreakCalculator;
 import com.chaekdami.reward.domain.TransactionReason;
+import com.chaekdami.reward.infrastructure.ReadingSessionRewardRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,8 @@ import java.util.stream.Collectors;
  *   D-day 읽은 날 기록 (그 전에 놓친 날은 방어권으로 자동 정산,
  *   보상이 늦게 처리돼 그날이 이미 "방어"로 막혀 있었으면 그 방어권은 돌려줌)
  * - 사진 인증 추가 보상: BE1 이 사진 인증을 확인한 세션이면 경험치 추가 (부스터 미적용, 재화 없음)
- * 기본 보상과 추가 보상은 각각 세션당 한 번만 처리한다. 완료 화면을 다시 열거나 요청을 재시도해도 다시 지급하지 않는다.
+ * 기본 보상과 추가 보상은 각각 세션당 한 번만 처리한다. 완료 화면을 다시 열거나 요청을 재시도해도 다시 지급하지 않고,
+ * 이 세션으로 받았던 보상 내역(reading_session_rewards)을 그대로 돌려준다.
  * 퀘스트와 D-day 날짜는 요청 시각이 아니라 세션이 끝난 날짜를 기준으로 한다.
  */
 @Slf4j
@@ -40,59 +43,78 @@ public class ReadingSessionRewardService {
     private final StreakService streakService;
     private final ReadingSessionReader readingSessionReader;
     private final PhotoCertificationChecker photoCertificationChecker;
+    private final ReadingSessionRewardRepository readingSessionRewardRepository;
 
     @Transactional
     public ReadingSessionRewardResult grant(Long userId, Long readingSessionId) {
         RewardAccount account = rewardLedger.lockAccount(userId);
         ReadingSessionReader.Session session = readingSessionReader.findOwnSession(userId, readingSessionId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.READING_SESSION_NOT_FOUND));
-        int levelBefore = account.getLevel();
-        int promotionReward = 0;
+        ReadingSessionReward reward = readingSessionRewardRepository
+                .findByUserIdAndReadingSessionId(userId, readingSessionId)
+                .orElseGet(() -> readingSessionRewardRepository.save(
+                        ReadingSessionReward.start(userId, readingSessionId, account.getLevel())));
 
         boolean baseGranted = !rewardLedger.isExperienceGranted(
                 userId, TransactionReason.READING_COMPLETE, readingSessionId);
-        ReadingSessionRewardResult.Reading reading = new ReadingSessionRewardResult.Reading(0, false);
-        List<ReadingSessionRewardResult.CompletedQuest> completedQuests = List.of();
-        int shieldsUsed = 0;
-        boolean shieldRefunded = false;
         if (baseGranted) {
-            LocalDate readingDate = session.endedAt().toLocalDate();
-            ReadingRewardResult readingReward = rewardService.grantReadingExperience(userId, session);
-            QuestSessionResult quests = questService.recordReadingSession(
-                    userId, session.durationSeconds(), readingDate);
-            shieldsUsed = streakService.settleBefore(userId, readingDate);
-            shieldRefunded = streakService.refundShieldIfProtected(userId, readingDate);
-            ddayService.markRead(userId, readingDate);
-
-            reading = new ReadingSessionRewardResult.Reading(readingReward.experience(), readingReward.boosted());
-            completedQuests = toCompletedQuests(quests);
-            promotionReward += readingReward.promotionReward()
-                    + quests.rewarded().stream().mapToInt(QuestRewardResult::promotionReward).sum();
+            grantBase(account, session, reward);
         }
 
-        ReadingSessionRewardResult.PhotoBonus photoBonus = ReadingSessionRewardResult.PhotoBonus.notGranted();
         if (isPhotoCertified(userId, readingSessionId)
                 && !rewardLedger.isExperienceGranted(userId, TransactionReason.PHOTO_CERTIFICATION, readingSessionId)) {
             int experience = ExperiencePolicy.PHOTO_CERTIFICATION_EXPERIENCE;
-            promotionReward += rewardLedger.addExperienceFor(
+            int promotionReward = rewardLedger.addExperienceFor(
                     account, experience, TransactionReason.PHOTO_CERTIFICATION, readingSessionId);
-            photoBonus = new ReadingSessionRewardResult.PhotoBonus(true, experience, 0);
+            reward.recordPhotoBonus(experience, promotionReward);
+            reward.recordLevelAfter(account.getLevel());
         }
 
         StreakCalculator.Summary streak = streakService.summarize(userId, LocalDate.now());
         account.syncStreak(streak.currentStreak(), streak.longestStreak());
 
+        return toResult(baseGranted, reward, streak, account);
+    }
+
+    private void grantBase(RewardAccount account, ReadingSessionReader.Session session, ReadingSessionReward reward) {
+        Long userId = account.getUserId();
+        LocalDate readingDate = session.endedAt().toLocalDate();
+        ReadingRewardResult readingReward = rewardService.grantReadingExperience(userId, session);
+        QuestSessionResult quests = questService.recordReadingSession(userId, session.durationSeconds(), readingDate);
+        int shieldsUsed = streakService.settleBefore(userId, readingDate);
+        boolean shieldRefunded = streakService.refundShieldIfProtected(userId, readingDate);
+        ddayService.markRead(userId, readingDate);
+
+        int promotionReward = readingReward.promotionReward()
+                + quests.rewarded().stream().mapToInt(QuestRewardResult::promotionReward).sum();
+        reward.recordBase(readingReward.experience(), readingReward.boosted(), toCompletedQuests(quests),
+                shieldsUsed, shieldRefunded, promotionReward);
+        reward.recordLevelAfter(account.getLevel());
+    }
+
+    /**
+     * 보상 내역은 이 세션으로 받은 것 전체(저장된 기록), 레벨/경험치/재화/연속 일수는 지금 값이다.
+     */
+    private static ReadingSessionRewardResult toResult(boolean baseGranted, ReadingSessionReward reward,
+                                                       StreakCalculator.Summary streak, RewardAccount account) {
         return new ReadingSessionRewardResult(
-                readingSessionId,
+                reward.getReadingSessionId(),
                 baseGranted,
-                reading,
-                photoBonus,
-                completedQuests,
-                new ReadingSessionRewardResult.Streak(
-                        streak.currentStreak(), streak.longestStreak(), shieldsUsed, shieldRefunded),
-                promotionReward,
-                levelBefore,
+                new ReadingSessionRewardResult.Reading(reward.getReadingExperience(), reward.isBoosted()),
+                reward.hasPhotoBonus()
+                        ? new ReadingSessionRewardResult.PhotoBonus(true, reward.getPhotoBonusExperience(), 0)
+                        : ReadingSessionRewardResult.PhotoBonus.notGranted(),
+                reward.getCompletedQuests().stream()
+                        .map(quest -> new ReadingSessionRewardResult.CompletedQuest(quest.getUserQuestId(),
+                                quest.getTitle(), quest.getRewardCurrency(), quest.getRewardExperience()))
+                        .toList(),
+                new ReadingSessionRewardResult.Streak(streak.currentStreak(), streak.longestStreak(),
+                        reward.getShieldsUsed(), reward.isShieldRefunded()),
+                reward.getPromotionReward(),
+                reward.getLevelBefore(),
+                reward.isLeveledUp(),
                 account.getLevel(),
+                ExperienceProgress.of(account),
                 account.getCurrency()
         );
     }
@@ -109,12 +131,12 @@ public class ReadingSessionRewardService {
         }
     }
 
-    private static List<ReadingSessionRewardResult.CompletedQuest> toCompletedQuests(QuestSessionResult quests) {
+    private static List<ReadingSessionReward.CompletedQuest> toCompletedQuests(QuestSessionResult quests) {
         Map<Long, String> titles = quests.quests().stream()
                 .filter(quest -> quest.userQuestId() != null)
                 .collect(Collectors.toMap(QuestResult::userQuestId, QuestResult::title, (first, second) -> first));
         return quests.rewarded().stream()
-                .map(reward -> new ReadingSessionRewardResult.CompletedQuest(
+                .map(reward -> new ReadingSessionReward.CompletedQuest(
                         reward.userQuestId(),
                         titles.get(reward.userQuestId()),
                         reward.rewardCurrency(),

@@ -7,7 +7,10 @@ import java.util.List;
 /**
  * 독서 완료 화면 보상 응답 ([BE2] 독서 인증 사진 추가 보상 요구사항 3.4 형식)
  *
- * @param baseGranted 이번 요청에서 기본 보상을 처리했는지. 이미 받은 세션이면 false (reading.experience = 0)
+ * 같은 세션으로 다시 요청하면 보상은 다시 지급하지 않고, 처음 받은 보상 내역을 그대로 돌려준다.
+ * level, currentExperience, nextLevelExperience, experiencePercentage, currency, streak 의 연속 일수는 지금 값이다.
+ *
+ * @param baseGranted 이번 요청에서 기본 보상을 처리했는지. 이미 받은 세션이면 false (보상 내역은 그대로 옴)
  */
 public record ReadingSessionRewardResponse(
         Long readingSessionId,
@@ -20,6 +23,9 @@ public record ReadingSessionRewardResponse(
         int levelBefore,
         int level,
         boolean leveledUp,
+        int currentExperience,
+        int nextLevelExperience,
+        int experiencePercentage,
         int currency
 ) {
 
@@ -40,6 +46,9 @@ public record ReadingSessionRewardResponse(
                 result.levelBefore(),
                 result.level(),
                 result.leveledUp(),
+                result.experience().currentExperience(),
+                result.experience().nextLevelExperience(),
+                result.experience().percentage(),
                 result.currency()
         );
     }
