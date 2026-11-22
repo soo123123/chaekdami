@@ -44,6 +44,23 @@ public final class ExperiencePolicy {
         return experience * BOOSTER_MULTIPLIER;
     }
 
+    /**
+     * 독서 시간 중 일부에만 부스터가 적용됐을 때의 독서 경험치.
+     * 적용된 시간 비율만큼만 배율을 준다. (반올림)
+     * 예: 60 EXP, 3600초 중 1200초 적용 -> 60 + 20 = 80
+     *
+     * @param boostedSeconds  독서 시간 중 부스터가 적용된 시간(초). durationSeconds 를 넘으면 전체 적용으로 본다
+     * @param durationSeconds 독서 시간(초). 0 이하면 boostedSeconds 와 관계없이 기본 경험치
+     */
+    public static int boostedExperience(int experience, long boostedSeconds, int durationSeconds) {
+        if (experience <= 0 || durationSeconds <= 0 || boostedSeconds <= 0) {
+            return experience;
+        }
+        long applied = Math.min(boostedSeconds, durationSeconds);
+        long extra = (long) experience * (BOOSTER_MULTIPLIER - 1) * applied;
+        return experience + (int) ((extra + durationSeconds / 2) / durationSeconds);
+    }
+
     /** 0 이상 정수의 Math.round(value / divisor) 와 같은 반올림 나눗셈 */
     private static int roundDivide(int value, int divisor) {
         return (value + divisor / 2) / divisor;

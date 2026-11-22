@@ -21,6 +21,17 @@ public interface UserBuffRepository extends JpaRepository<UserBuff, Long> {
             + " order by ub.buffEndAt desc")
     List<UserBuff> findActiveBuffs(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
+    /**
+     * [from, to) 구간과 조금이라도 겹치는 활성 버프를 시작 시각 순으로 조회한다. (독서 세션의 부스터 적용 시간 계산용)
+     */
+    @Query("select ub from UserBuff ub"
+            + " where ub.userId = :userId and ub.buffActivated = true"
+            + " and ub.buffStartAt < :to and ub.buffEndAt > :from"
+            + " order by ub.buffStartAt asc")
+    List<UserBuff> findOverlappingBuffs(@Param("userId") Long userId,
+                                        @Param("from") LocalDateTime from,
+                                        @Param("to") LocalDateTime to);
+
     @Modifying(flushAutomatically = true)
     @Query("delete from UserBuff ub where ub.userId = :userId")
     int deleteAllByUserId(@Param("userId") Long userId);

@@ -29,6 +29,20 @@ class ExperiencePolicyTest {
         assertThat(ExperiencePolicy.boostedExperience(33)).isEqualTo(66);
     }
 
+    @ParameterizedTest(name = "{0} EXP, {2}초 중 {1}초 적용 -> {3} EXP")
+    @CsvSource({
+            "60, 1200, 3600, 80",   // 1/3 적용
+            "60, 3600, 3600, 120",  // 전체 적용
+            "60, 5000, 3600, 120",  // 독서 시간보다 길게 겹쳐도 전체 적용까지만
+            "60, 0, 3600, 60",      // 적용 안 됨
+            "33, 900, 1800, 50",    // 33 + 16.5 -> 반올림 17
+            "0, 600, 600, 0",       // 경험치가 0이면 0
+            "10, 100, 0, 10"        // 독서 시간 0초면 기본 경험치
+    })
+    void 부스터는_적용된_시간_비율만큼_2배(int experience, long boostedSeconds, int durationSeconds, int expected) {
+        assertThat(ExperiencePolicy.boostedExperience(experience, boostedSeconds, durationSeconds)).isEqualTo(expected);
+    }
+
     @Test
     void 잘못된_입력은_거부한다() {
         assertThatThrownBy(() -> ExperiencePolicy.readingExperience(-1, 0, 0))
