@@ -184,6 +184,47 @@ class ReadingSessionRewardServiceTest {
                 .extracting("errorCode").isEqualTo(RewardErrorCode.READING_SESSION_NOT_FOUND);
     }
 
+    @Test
+    void 독서_시간이_3분_미만인_세션이면_REWARD_007로_거절하고_아무_보상도_기록도_남기지_않는다() {
+        ReadingSessionReader.Session shortSession =
+                new ReadingSessionReader.Session(SESSION_ID, 179, 30, 52, ENDED_AT);
+        when(readingSessionReader.findOwnSession(USER_ID, SESSION_ID)).thenReturn(Optional.of(shortSession));
+
+        assertThatThrownBy(() -> service.grant(USER_ID, SESSION_ID))
+                .isInstanceOf(RewardException.class)
+                .extracting("errorCode").isEqualTo(RewardErrorCode.READING_SESSION_TOO_SHORT);
+
+        verify(rewardService, never()).grantReadingExperience(any(), any());
+        verify(questService, never()).recordReadingSession(any(), anyInt(), any());
+        verify(ddayService, never()).markRead(any(), any());
+        verify(streakService, never()).settleBefore(any(), any());
+        verify(streakService, never()).refundShieldIfProtected(any(), any());
+        verify(readingSessionRewardRepository, never()).findByUserIdAndReadingSessionId(any(), any());
+        verify(readingSessionRewardRepository, never()).save(any());
+        verify(rewardLedger, never()).addExperienceFor(any(), anyInt(), any(), any());
+    }
+
+    @Test
+    void 독서_시간이_정확히_3분인_세션은_정상_지급한다() {
+        ReadingSessionReader.Session minimumSession =
+                new ReadingSessionReader.Session(SESSION_ID, 180, 30, 52, ENDED_AT);
+        when(readingSessionReader.findOwnSession(USER_ID, SESSION_ID)).thenReturn(Optional.of(minimumSession));
+        baseNotGrantedYet();
+        when(rewardService.grantReadingExperience(USER_ID, minimumSession))
+                .thenReturn(new ReadingRewardResult(3, false, 0, 1));
+        when(questService.recordReadingSession(USER_ID, 180, READING_DATE))
+                .thenReturn(new QuestSessionResult(List.of(), List.of()));
+
+        ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
+
+        assertThat(result.baseGranted()).isTrue();
+        assertThat(result.reading().experience()).isEqualTo(3);
+        verify(questService).recordReadingSession(USER_ID, 180, READING_DATE);
+        verify(streakService).settleBefore(USER_ID, READING_DATE);
+        verify(ddayService).markRead(USER_ID, READING_DATE);
+        verify(readingSessionRewardRepository).save(any(ReadingSessionReward.class));
+    }
+
     private void baseNotGrantedYet() {
         when(rewardLedger.isExperienceGranted(USER_ID, TransactionReason.READING_COMPLETE, SESSION_ID)).thenReturn(false);
     }

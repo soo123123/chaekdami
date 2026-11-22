@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReadingSession {
 
+    public static final int MIN_SECONDS = 3 * 60;        // 한 번 최소 3분 (프론트 MIN_READING_SECONDS 와 같은 값으로 유지)
     public static final int MAX_SECONDS = 2 * 60 * 60;   // 한 번 최대 2시간
 
     @Id
@@ -41,7 +42,7 @@ public class ReadingSession {
     private LocalDateTime endedAt;   // 종료 시각 (서버가 저장 요청을 받은 시각)
 
     @Column(nullable = false)
-    private Integer durationSeconds; // 실제 읽은 시간(초), 최대 2시간
+    private Integer durationSeconds; // 실제 읽은 시간(초), 3분 ~ 2시간
 
     @Column(nullable = false)
     private Integer startPage;
@@ -55,8 +56,8 @@ public class ReadingSession {
 
     public static ReadingSession of(ReadingRecord record, int durationSeconds,
                                     int startPage, int endPage, LocalDateTime endedAt) {
-        if (durationSeconds <= 0) {
-            throw new IllegalArgumentException("독서 시간은 1초 이상이어야 합니다.");
+        if (durationSeconds < MIN_SECONDS) {
+            throw new IllegalArgumentException("독서 시간은 3분 이상이어야 합니다.");
         }
         if (durationSeconds > MAX_SECONDS) {
             throw new IllegalArgumentException("한 번의 독서 시간은 최대 2시간입니다.");

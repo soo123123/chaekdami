@@ -1,6 +1,7 @@
 package com.chaekdami.reward.application;
 
 import com.chaekdami.dday.application.DdayService;
+import com.chaekdami.reading.domain.ReadingSession;
 import com.chaekdami.reward.application.port.PhotoCertificationChecker;
 import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.ExperiencePolicy;
@@ -50,6 +51,10 @@ public class ReadingSessionRewardService {
         RewardAccount account = rewardLedger.lockAccount(userId);
         ReadingSessionReader.Session session = readingSessionReader.findOwnSession(userId, readingSessionId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.READING_SESSION_NOT_FOUND));
+        // 최소 시간 검사 전에 저장된 3분 미만 세션이 남아 있을 수 있으므로 보상 기록을 만들기 전에 거절한다.
+        if (session.durationSeconds() < ReadingSession.MIN_SECONDS) {
+            throw new RewardException(RewardErrorCode.READING_SESSION_TOO_SHORT);
+        }
         ReadingSessionReward reward = readingSessionRewardRepository
                 .findByUserIdAndReadingSessionId(userId, readingSessionId)
                 .orElseGet(() -> readingSessionRewardRepository.save(

@@ -4,7 +4,7 @@
  */
 export const FE1_USE_DEV_MOCK = false;
 
-/** 독서 종료 버튼이 활성화되기까지 필요한 최소 독서 시간(초). 3분 */
+/** 독서 종료 버튼이 활성화되기까지 필요한 최소 독서 시간(초). 3분. 백엔드 ReadingSession.MIN_SECONDS 와 같은 값으로 유지 */
 export const MIN_READING_SECONDS = 3 * 60;
 
 /**

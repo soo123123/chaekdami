@@ -14,7 +14,7 @@ public interface ReadingSessionReader {
     Optional<Session> findOwnSession(Long userId, Long readingSessionId);
 
     /**
-     * @param durationSeconds 검증된 독서 시간(초). 독서 도메인이 1초 ~ 2시간으로 검증한다.
+     * @param durationSeconds 검증된 독서 시간(초). 독서 도메인이 3분 ~ 2시간으로 검증한다.
      * @param endedAt         세션 종료 시각. 퀘스트·D-day 날짜 기준으로 쓴다.
      */
     record Session(
