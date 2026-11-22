@@ -3,8 +3,6 @@ package com.chaekdami.reward.application;
 import com.chaekdami.reward.domain.DailyQuest;
 import com.chaekdami.reward.domain.QuestStatus;
 import com.chaekdami.reward.domain.RewardAccount;
-import com.chaekdami.reward.domain.RewardErrorCode;
-import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.TransactionReason;
 import com.chaekdami.reward.domain.UserQuest;
 import com.chaekdami.reward.infrastructure.QuestRepository;
@@ -16,11 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -93,14 +90,14 @@ class QuestServiceTest {
     }
 
     @Test
-    void 자동_지급된_퀘스트를_수령_요청하면_QUEST_002() {
-        firstSession.updateProgress(1);
-        firstSession.claimReward();
-        when(userQuestRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(firstSession));
+    void 지난_날짜의_세션은_그날_퀘스트에만_반영하고_퀘스트를_새로_만들지_않는다() {
+        when(userQuestRepository.findAllCreatedBetween(eq(USER_ID), any(), any())).thenReturn(List.of());
 
-        assertThatThrownBy(() -> questService.claimReward(USER_ID, 5L))
-                .isInstanceOf(RewardException.class)
-                .extracting("errorCode").isEqualTo(RewardErrorCode.QUEST_ALREADY_REWARDED);
+        QuestSessionResult result = questService.recordReadingSession(USER_ID, 600, LocalDate.now().minusDays(1));
+
+        assertThat(result.quests()).isEmpty();
+        verify(questRepository, never()).findAllByTypeOrderByIdAsc(any());
+        verify(userQuestRepository, never()).saveAll(any());
     }
 
     private void todayQuests(UserQuest... quests) {

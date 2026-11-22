@@ -1,0 +1,67 @@
+package com.chaekdami.reward.presentation.dto;
+
+import com.chaekdami.reward.application.ReadingSessionRewardResult;
+
+import java.util.List;
+
+/**
+ * 독서 완료 화면 보상 응답 ([BE2] 독서 인증 사진 추가 보상 요구사항 3.4 형식)
+ *
+ * 같은 세션으로 다시 요청하면 보상은 다시 지급하지 않고, 처음 받은 보상 내역을 그대로 돌려준다.
+ * level, currentExperience, nextLevelExperience, experiencePercentage, currency, streak 의 연속 일수는 지금 값이다.
+ *
+ * @param baseGranted 이번 요청에서 기본 보상을 처리했는지. 이미 받은 세션이면 false (보상 내역은 그대로 옴)
+ */
+public record ReadingSessionRewardResponse(
+        Long readingSessionId,
+        boolean baseGranted,
+        Reading reading,
+        PhotoBonus photoBonus,
+        List<CompletedQuest> completedQuests,
+        Streak streak,
+        int promotionReward,
+        int levelBefore,
+        int level,
+        boolean leveledUp,
+        int currentExperience,
+        int nextLevelExperience,
+        int experiencePercentage,
+        int currency
+) {
+
+    public static ReadingSessionRewardResponse from(ReadingSessionRewardResult result) {
+        return new ReadingSessionRewardResponse(
+                result.readingSessionId(),
+                result.baseGranted(),
+                new Reading(result.reading().experience(), result.reading().boosted()),
+                new PhotoBonus(result.photoBonus().granted(), result.photoBonus().experience(),
+                        result.photoBonus().currency()),
+                result.completedQuests().stream()
+                        .map(quest -> new CompletedQuest(quest.userQuestId(), quest.title(),
+                                quest.rewardCurrency(), quest.rewardExperience()))
+                        .toList(),
+                new Streak(result.streak().currentStreak(), result.streak().longestStreak(),
+                        result.streak().shieldsUsed(), result.streak().shieldRefunded()),
+                result.promotionReward(),
+                result.levelBefore(),
+                result.level(),
+                result.leveledUp(),
+                result.experience().currentExperience(),
+                result.experience().nextLevelExperience(),
+                result.experience().percentage(),
+                result.currency()
+        );
+    }
+
+    public record Reading(int experience, boolean boosted) {
+    }
+
+    public record PhotoBonus(boolean granted, int experience, int currency) {
+    }
+
+    public record Streak(int currentStreak, int longestStreak, int shieldsUsed, boolean shieldRefunded) {
+    }
+
+    public record CompletedQuest(Long userQuestId, String title, int rewardCurrency, int rewardExperience) {
+    }
+}

@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -55,5 +56,12 @@ public class UserBuff extends BaseTimeEntity {
             return false;
         }
         return !now.isBefore(buffStartAt) && now.isBefore(buffEndAt);
+    }
+
+    /**
+     * 적용 중인 버프의 종료 시각을 duration 만큼 늦춘다. (부스터를 겹쳐 쓴 경우)
+     */
+    public void extend(Duration duration) {
+        this.buffEndAt = this.buffEndAt.plus(duration);
     }
 }

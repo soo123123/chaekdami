@@ -9,12 +9,14 @@ import com.chaekdami.dday.presentation.dto.DdayGoalRequest;
 import com.chaekdami.dday.presentation.dto.DdayGoalResponse;
 import com.chaekdami.dday.presentation.dto.DdayResponse;
 import com.chaekdami.dday.presentation.dto.DdaySaveRequest;
+import com.chaekdami.reward.application.StreakService;
+import com.chaekdami.reward.domain.StreakCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,15 +28,22 @@ import java.util.Set;
 public class DdayService {
 
     private static final int MAX_GOALS = 30;
-    private static final int MAX_RECORDS = 800;
     private static final int MAX_TITLE_LENGTH = 100;
     private static final int MAX_BOOKS = 999;
 
     private final DdayGoalRepository ddayGoalRepository;
     private final DdayRecordRepository ddayRecordRepository;
+    private final StreakService streakService;
 
-    @Transactional(readOnly = true)
+    /**
+     * 목표와 달력을 조회한다. 놓친 날이 있으면 방어권 자동 차감(BE2 StreakService)을 먼저 정산하므로 쓰기 트랜잭션이다.
+     * 연속 일수는 서버가 계산한 값이다. (읽은 날 +1, 방어한 날 +0)
+     */
+    @Transactional
     public DdayResponse get(Long userId) {
+        LocalDate today = LocalDate.now();
+        streakService.settleBefore(userId, today);
+
         List<DdayGoalResponse> goals = ddayGoalRepository.findAllByUserIdOrderByTargetDateAscIdAsc(userId).stream()
                 .map(DdayGoalResponse::from)
                 .toList();
@@ -42,13 +51,17 @@ public class DdayService {
         for (DdayRecord record : ddayRecordRepository.findAllByUserIdOrderByRecordDateAsc(userId)) {
             records.put(record.getRecordDate().toString(), record.getStatus().code());
         }
-        return new DdayResponse(goals, records);
+        StreakCalculator.Summary streak = streakService.summarize(userId, today);
+        return new DdayResponse(goals, records, streak.currentStreak(), streak.longestStreak());
     }
 
+    /**
+     * 목표만 저장한다. 달력 기록은 서버가 쓴다(독서 완료 보상의 "읽음", 방어권 자동 차감의 "방어").
+     * 요청에 records 가 와도 무시한다. (클라이언트가 방어권 없이 "방어"를 기록하지 못하게)
+     */
     @Transactional
     public DdayResponse save(Long userId, DdaySaveRequest request) {
         saveGoals(userId, request == null ? null : request.goals());
-        saveRecords(userId, request == null ? null : request.records());
         return get(userId);
     }
 
@@ -63,6 +76,32 @@ public class DdayService {
         if (record.getStatus() != DdayRecordStatus.READ) {
             record.changeStatus(DdayRecordStatus.READ);
         }
+    }
+
+    /**
+     * readDate 날짜를 읽은 날로 기록한다. 독서 완료 보상(BE2)이 세션 종료 날짜로 호출해,
+     * 완료 화면이 자정을 넘겨 열려도 독서한 날에 기록된다.
+     */
+    @Transactional
+    public void markRead(Long userId, LocalDate readDate) {
+        DdayRecord record = ddayRecordRepository.findByUserIdAndRecordDate(userId, readDate).orElse(null);
+        if (record == null) {
+            ddayRecordRepository.save(DdayRecord.create(userId, readDate, DdayRecordStatus.READ));
+            return;
+        }
+        if (record.getStatus() != DdayRecordStatus.READ) {
+            record.changeStatus(DdayRecordStatus.READ);
+        }
+    }
+
+    /**
+     * 회원 탈퇴 시 사용자의 D-day 목표와 달력 기록을 지운다. dday 테이블은 users 에 DB FK 가 없어서 여기서 함께 지운다.
+     * 호출한 쪽(회원 탈퇴)의 트랜잭션에 참여해 탈퇴와 함께 커밋되거나 롤백된다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteAllOfUser(Long userId) {
+        ddayRecordRepository.deleteAllByUserId(userId);
+        ddayGoalRepository.deleteAllByUserId(userId);
     }
 
     private void saveGoals(Long userId, List<DdayGoalRequest> requests) {
@@ -113,43 +152,4 @@ public class DdayService {
         }
     }
 
-    private void saveRecords(Long userId, Map<String, String> requests) {
-        Map<String, String> records = requests == null ? Map.of() : requests;
-        if (records.size() > MAX_RECORDS) {
-            throw new IllegalArgumentException("달력 기록은 " + MAX_RECORDS + "개까지 저장할 수 있습니다.");
-        }
-
-        List<DdayRecord> existing = ddayRecordRepository.findAllByUserIdOrderByRecordDateAsc(userId);
-        Map<LocalDate, DdayRecord> byDate = new LinkedHashMap<>();
-        for (DdayRecord record : existing) {
-            byDate.put(record.getRecordDate(), record);
-        }
-
-        Set<LocalDate> keep = new HashSet<>();
-        for (Map.Entry<String, String> entry : records.entrySet()) {
-            LocalDate date = parseDate(entry.getKey());
-            DdayRecordStatus status = DdayRecordStatus.fromCode(entry.getValue());
-            DdayRecord record = byDate.get(date);
-            if (record == null) {
-                ddayRecordRepository.save(DdayRecord.create(userId, date, status));
-            } else {
-                record.changeStatus(status);
-            }
-            keep.add(date);
-        }
-
-        for (DdayRecord record : existing) {
-            if (!keep.contains(record.getRecordDate())) {
-                ddayRecordRepository.delete(record);
-            }
-        }
-    }
-
-    private static LocalDate parseDate(String value) {
-        try {
-            return LocalDate.parse(value);
-        } catch (DateTimeParseException exception) {
-            throw new IllegalArgumentException("달력 날짜는 yyyy-MM-dd 여야 합니다.");
-        }
-    }
 }

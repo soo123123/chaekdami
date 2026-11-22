@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
 
@@ -21,9 +20,6 @@ public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
     List<UserQuest> findAllCreatedBetween(@Param("userId") Long userId,
                                           @Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end);
-
-    @Query("select uq from UserQuest uq join fetch uq.quest where uq.id = :id and uq.userId = :userId")
-    Optional<UserQuest> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from UserQuest uq where uq.userId = :userId")

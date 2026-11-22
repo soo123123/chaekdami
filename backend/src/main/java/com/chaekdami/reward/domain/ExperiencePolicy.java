@@ -1,5 +1,7 @@
 package com.chaekdami.reward.domain;
 
+import java.time.Duration;
+
 /**
  * 독서 세션 완료 시 지급하는 기본 경험치 규칙
  * - 1분당 1 EXP (30초 이상이면 1분으로 반올림)
@@ -11,6 +13,10 @@ public final class ExperiencePolicy {
     private static final int PAGES_PER_EXPERIENCE = 5;
     /** 경험치 부스터 버프 적용 중 독서 경험치 배율. user_buffs 에 배율 컬럼이 없어 고정값으로 둔다. */
     private static final int BOOSTER_MULTIPLIER = 2;
+    /** 경험치 부스터 1개의 효과 시간. 적용 중에 또 쓰면 이만큼 연장된다. */
+    public static final Duration BOOSTER_DURATION = Duration.ofMinutes(30);
+    /** 책 사진으로 인증된 독서 세션의 추가 경험치. 재화는 주지 않고, 부스터도 적용하지 않는다. */
+    public static final int PHOTO_CERTIFICATION_EXPERIENCE = 20;
 
     private ExperiencePolicy() {
     }

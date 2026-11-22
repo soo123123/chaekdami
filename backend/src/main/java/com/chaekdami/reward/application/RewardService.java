@@ -1,11 +1,12 @@
 package com.chaekdami.reward.application;
 
+import com.chaekdami.reward.application.port.ReadingSessionReader;
 import com.chaekdami.reward.domain.ExperiencePolicy;
-import com.chaekdami.reward.domain.LevelPolicy;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
 import com.chaekdami.reward.domain.ShopItemType;
+import com.chaekdami.reward.domain.StreakCalculator;
 import com.chaekdami.reward.domain.TransactionReason;
 import com.chaekdami.reward.domain.UserBuff;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,26 +43,28 @@ public class RewardService {
     }
 
     /**
-     * 보상 상태 통합 조회. 놓친 날이 있으면 방어권 차감/스트릭 초기화를 먼저 정산하므로 쓰기 트랜잭션이다.
-     * 정산이 계정을 잠그고 읽어야 최신 값이 반영되므로, 계정 조회보다 먼저 호출한다. 계정이 없으면 새로 만든다.
+     * 보상 상태 통합 조회. 놓친 날이 있으면 방어권 자동 차감을 먼저 정산하므로 쓰기 트랜잭션이다.
+     * 연속 일수는 D-day 달력으로 계산해 계정에 반영한 뒤 돌려준다. 계정이 없으면 새로 만든다.
      */
     @Transactional
     public RewardStatusResult getRewardStatus(Long userId) {
-        streakService.settleIfNeeded(userId);
+        LocalDate today = LocalDate.now();
+        streakService.settleBefore(userId, today);
         rewardLedger.createAccountIfAbsent(userId);
         RewardAccount account = rewardAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
+        StreakCalculator.Summary streak = streakService.summarize(userId, today);
+        account.syncStreak(streak.currentStreak(), streak.longestStreak());
 
-        int currentExperience = account.getExperience() - LevelPolicy.totalExperienceToReach(account.getLevel());
-        int nextLevelExperience = LevelPolicy.requiredExperience(account.getLevel());
+        ExperienceProgress progress = ExperienceProgress.of(account);
         int ownedShieldCount = userItemRepository.sumQuantityByUserIdAndItemType(userId, ShopItemType.SHIELD);
         List<UserBuff> activeBuffs = userBuffRepository.findActiveBuffs(userId, LocalDateTime.now());
 
         return new RewardStatusResult(
                 account.getLevel(),
-                currentExperience,
-                nextLevelExperience,
-                currentExperience * 100 / nextLevelExperience,
+                progress.currentExperience(),
+                progress.nextLevelExperience(),
+                progress.percentage(),
                 account.getCurrency(),
                 account.getDday(),
                 ownedShieldCount,
@@ -70,23 +74,22 @@ public class RewardService {
     }
 
     /**
-     * 독서 세션 완료 경험치를 지급한다. 경험치 부스터 버프가 적용 중이면 배율을 곱한다.
-     * 독서 세션 보상 진입점(ReadingSessionRewardService)이 검증된 세션 값으로 호출한다.
+     * 독서 세션 1회의 독서 경험치를 지급한다. 세션이 끝난 시각에 경험치 부스터가 적용 중이었으면 배율을 곱한다.
+     * 이력에 세션 id 를 남기므로, 독서 완료 보상(ReadingSessionRewardService)이 이미 지급 여부를 확인한 뒤 호출한다.
      */
     @Transactional
-    public ReadingRewardResult grantReadingExperience(Long userId, int durationSeconds, int startPage, int endPage) {
+    public ReadingRewardResult grantReadingExperience(Long userId, ReadingSessionReader.Session session) {
         RewardAccount account = rewardLedger.lockAccount(userId);
 
-        int experience = ExperiencePolicy.readingExperience(durationSeconds, startPage, endPage);
-        boolean boosted = !userBuffRepository.findActiveBuffs(userId, LocalDateTime.now()).isEmpty();
+        int experience = ExperiencePolicy.readingExperience(
+                session.durationSeconds(), session.startPage(), session.endPage());
+        boolean boosted = !userBuffRepository.findActiveBuffs(userId, session.endedAt()).isEmpty();
         if (boosted) {
             experience = ExperiencePolicy.boostedExperience(experience);
         }
-        if (experience == 0) {
-            return new ReadingRewardResult(0, boosted, 0, account.getLevel());
-        }
 
-        int promotionReward = rewardLedger.addExperience(account, experience, TransactionReason.READING_COMPLETE);
+        int promotionReward = rewardLedger.addExperienceFor(
+                account, experience, TransactionReason.READING_COMPLETE, session.id());
         return new ReadingRewardResult(experience, boosted, promotionReward, account.getLevel());
     }
 }

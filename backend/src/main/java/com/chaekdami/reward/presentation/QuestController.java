@@ -2,11 +2,8 @@ package com.chaekdami.reward.presentation;
 
 import com.chaekdami.reward.application.QuestResult;
 import com.chaekdami.reward.application.QuestService;
-import com.chaekdami.reward.presentation.dto.QuestRewardResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 퀘스트 API. 로그인 구현 전까지 사용자는 X-User-Id 헤더로 식별한다.
+ * 퀘스트 API. 퀘스트 보상은 달성 시 독서 완료 보상에서 자동 지급되므로 수령 API 는 없다.
  */
 @RestController
 @RequestMapping("/api/quests")
@@ -26,14 +23,5 @@ public class QuestController {
     @GetMapping
     public List<QuestResult> today(@RequestHeader("X-User-Id") Long userId) {
         return questService.getTodayQuests(userId);
-    }
-
-    /**
-     * 완료된 퀘스트의 보상 수령.
-     */
-    @PostMapping("/{userQuestId}/reward")
-    public QuestRewardResponse claimReward(@RequestHeader("X-User-Id") Long userId,
-                                           @PathVariable Long userQuestId) {
-        return QuestRewardResponse.from(questService.claimReward(userId, userQuestId));
     }
 }
