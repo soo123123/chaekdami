@@ -192,6 +192,8 @@ export type ReadingRecordResult = {
   round: number;
   /** 이번 저장으로 이 회차가 완독 상태인지 */
   isCompleted: boolean;
+  /** 저장된 독서 세션 번호. 독서 완료 화면이 보상(POST /api/rewards/reading-sessions/{id})을 받을 때 쓴다. Mock 저장이면 없음 */
+  sessionId?: number | null;
 };
 
 /* ------------------------------------------------------------------ */

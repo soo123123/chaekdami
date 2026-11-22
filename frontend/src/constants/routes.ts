@@ -66,9 +66,11 @@ export const toCommunity = (bookId?: number): Href =>
  * - durationMinutes / pagesRead: '오늘의 독서 기록' 표시용 (없으면 FE2 화면이 예시 값을 보여준다)
  * - round / isCompleted: 회독 수와 이번 저장 후 완독 여부 (완독이면 독후감 작성 버튼 활성화)
  * - remainingPages: 완독 전일 때 남은 페이지 (독후감 버튼 안내 문구용)
+ * - sessionId: 저장된 독서 세션 번호. 완료 화면이 이 번호로 보상을 받는다 (없으면 보상 호출 안 함)
  */
 export const toReadingComplete = (record: {
   readingRecordId: number;
+  sessionId?: number;
   bookId: number;
   durationMinutes?: number;
   pagesRead?: number;
@@ -85,6 +87,7 @@ export const toReadingComplete = (record: {
   if (record.round !== undefined) params.round = String(record.round);
   if (record.isCompleted !== undefined) params.isCompleted = record.isCompleted ? '1' : '0';
   if (record.remainingPages !== undefined) params.remainingPages = String(record.remainingPages);
+  if (record.sessionId !== undefined) params.sessionId = String(record.sessionId);
   return { pathname: ROUTES.fe2.readingComplete, params };
 };
 

@@ -143,6 +143,7 @@ export function ReadingEndScreen() {
     if (bookId === null) return; // 위에서 책 정보가 없으면 저장되지 않으므로 실제로는 오지 않는다
     router.replace(toReadingComplete({
       readingRecordId: saved.readingRecordId,
+      sessionId: saved.sessionId ?? undefined,
       bookId,
       durationMinutes: Math.round(record.readingTime / 60),
       pagesRead: Math.max(record.endPage - record.startPage, 0),

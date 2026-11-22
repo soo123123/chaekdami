@@ -23,7 +23,6 @@ import { clearTokens, getRefreshToken } from '@/utils/tokenStorage';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { ROUTES } from '@/constants/routes';
 import { getDday } from '../api/ddayApi';
-import { summarizeDday } from '../api/ddayStreak';
 import { getMyProfile } from '../api/userApi';
 import { getQuests, getRewardStatus } from '../api/rewardApi';
 
@@ -202,7 +201,7 @@ export default function MyPageScreen() {
           xp: reward.xp,
           maxXp: Math.max(1, reward.requiredXp),
           currency: reward.currency,
-          dday: summarizeDday(dday?.records ?? {}).currentStreak,
+          dday: dday?.currentStreak ?? reward.dday,
           questMinutes: minuteQuest?.progress ?? 0,
           questTarget: Math.max(1, minuteQuest?.target ?? 1),
           questTitle: minuteQuest?.title ?? '오늘의 독서',

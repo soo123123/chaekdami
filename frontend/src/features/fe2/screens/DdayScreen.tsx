@@ -154,6 +154,8 @@ export default function DdayScreen() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [records, setRecords] = useState<ReadingRecords>({});
+  // 연속 일수는 서버 계산 값을 쓴다 (방어한 날 +0). 응답 전에는 null
+  const [serverStreak, setServerStreak] = useState<{ current: number; longest: number } | null>(null);
 
   const [saving, setSaving] = useState(false);
 
@@ -185,6 +187,7 @@ export default function DdayScreen() {
 
           setGoals(data.goals ?? []);
           setRecords(data.records ?? {});
+          setServerStreak({ current: data.currentStreak ?? 0, longest: data.longestStreak ?? 0 });
         } catch (e) {
           notify('불러오기 실패', failureMessage(e, 'D-day 기록을 불러오지 못했습니다.'));
         }
@@ -198,16 +201,17 @@ export default function DdayScreen() {
     }, [])
   );
 
-  const persist = async (nextGoals: Goal[], nextRecords: ReadingRecords) => {
+  // 목표만 저장한다. 달력 기록은 서버가 독서 완료 보상·방어권 자동 차감으로만 기록한다.
+  const persist = async (nextGoals: Goal[]) => {
     setSaving(true);
 
     try {
       const data = await saveDday({
         goals: nextGoals.map(toGoalInput),
-        records: nextRecords,
       });
       setGoals(data.goals ?? []);
       setRecords(data.records ?? {});
+      setServerStreak({ current: data.currentStreak ?? 0, longest: data.longestStreak ?? 0 });
       return true;
     } catch (e) {
       notify('저장 실패', failureMessage(e, 'D-day 기록을 저장하지 못했습니다.'));
@@ -276,10 +280,13 @@ export default function DdayScreen() {
     };
   }, [year, month, records, today]);
 
-  const summary = useMemo(
-    () => summarizeDday(records, today),
-    [records, today]
-  );
+  // 읽은 날·방어한 날 집계는 달력으로 계산하고, 연속 일수는 서버 값으로 덮어쓴다
+  const summary = useMemo(() => {
+    const counts = summarizeDday(records, today);
+    return serverStreak
+      ? { ...counts, currentStreak: serverStreak.current, longestStreak: serverStreak.longest }
+      : counts;
+  }, [records, today, serverStreak]);
 
   const sortedGoals = useMemo(() => {
     return [...goals].sort(
@@ -365,7 +372,7 @@ export default function DdayScreen() {
         ? [...goals, nextGoal]
         : goals.map((goal) => (goal.id === editingId ? nextGoal : goal));
 
-    const saved = await persist(nextGoals, records);
+    const saved = await persist(nextGoals);
     if (!saved) return;
 
     const date = parseDate(targetDate);
@@ -383,8 +390,7 @@ export default function DdayScreen() {
 
     const remove = () => {
       void persist(
-        goals.filter((goal) => goal.id !== editingId),
-        records
+        goals.filter((goal) => goal.id !== editingId)
       ).then((saved) => {
         if (saved) setModalOpen(false);
       });
@@ -408,25 +414,11 @@ export default function DdayScreen() {
     }
   };
 
-  // 날짜를 누르면 기록 상태를 변경할 수 있음
-  // 미달성 -> 직접 독서 -> 아이템 사용 -> 미달성
-  const changeRecord = (date: string) => {
+  // 달력은 보기 전용: 날짜를 누르면 선택 표시만 한다.
+  // 기록은 서버가 쓴다 (독서 완료 보상 -> 읽음, 놓친 날 방어권 자동 차감 -> 방어)
+  const selectDay = (date: string) => {
     if (date > today) return;
-
     setSelectedDate(date);
-
-    const next = { ...records };
-    const current = next[date];
-
-    if (!current) {
-      next[date] = 'read';
-    } else if (current === 'read') {
-      next[date] = 'protected';
-    } else {
-      delete next[date];
-    }
-
-    void persist(goals, next);
   };
 
   const renderDay = (day: number | null, index: number) => {
@@ -455,7 +447,7 @@ export default function DdayScreen() {
       <TouchableOpacity
         key={date}
         style={styles.dayContainer}
-        onPress={() => changeRecord(date)}
+        onPress={() => selectDay(date)}
         activeOpacity={0.8}
       >
         <View
@@ -686,7 +678,7 @@ export default function DdayScreen() {
           </View>
 
           <Text style={styles.calendarHint}>
-            날짜를 누르면 독서 완료 → 아이템 사용 → 미달성 순서로 변경돼요.
+            독서 완료 화면에서 보상을 받으면 자동으로 기록돼요. 놓친 날은 방어권이 있으면 자동으로 막아줘요.
           </Text>
         </View>
 

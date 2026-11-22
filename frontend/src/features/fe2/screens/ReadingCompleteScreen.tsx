@@ -7,6 +7,7 @@ import { CompleteBanner } from '../components/readingComplete/CompleteBanner';
 import { QuestProgressCard } from '../components/readingComplete/QuestProgressCard';
 import { ReadingResultCard } from '../components/readingComplete/ReadingResultCard';
 import { RewardCoinCard } from '../components/readingComplete/RewardCoinCard';
+import { RewardStateNotice } from '../components/readingComplete/RewardStateNotice';
 import { StreakLevelCard } from '../components/readingComplete/StreakLevelCard';
 import { COMPLETE_COLORS } from '../components/readingComplete/theme';
 import { WriteReviewButton } from '../components/readingComplete/WriteReviewButton';
@@ -19,7 +20,7 @@ import { useReadingComplete } from '../hooks/useReadingComplete';
  */
 export default function ReadingCompleteScreen() {
   const insets = useSafeAreaInsets();
-  const { params, data } = useReadingComplete();
+  const { params, data, retryReward } = useReadingComplete();
 
   // 홈 위에 쌓인 화면(서재·책 상세 등)을 모두 닫고 홈으로 간다
   const goHome = () => router.dismissTo(ROUTES.home);
@@ -52,10 +53,11 @@ export default function ReadingCompleteScreen() {
       showsVerticalScrollIndicator={false}
     >
       <CompleteBanner />
-      <StreakLevelCard streak={data.streak} level={data.level} />
+      <RewardStateNotice state={data.rewardState} onRetry={retryReward} />
+      <StreakLevelCard streak={data.streak} level={data.level} rewardState={data.rewardState} />
       <ReadingResultCard record={data.record} />
       <QuestProgressCard quests={data.quests} />
-      <RewardCoinCard coin={data.rewardCoin} />
+      <RewardCoinCard coin={data.rewardCoin} rewardState={data.rewardState} />
       {readingRecordId !== null ? (
         <WriteReviewButton review={data.review} round={params.round} onWrite={writeReview} onOpen={openReview} />
       ) : null}

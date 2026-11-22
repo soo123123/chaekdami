@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Image,
@@ -20,6 +20,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import {
+  activateExpBooster,
+  formatBuffEndTime,
   getRewardStatus,
   getShopItems,
   purchaseItem,
@@ -83,21 +85,21 @@ function toProduct(item: ShopItemResult): Product {
     description:
       type === 'shield'
         ? `D-day를 ${item.bundle}일 보호해요.`
-        : `경험치 2배 ${item.bundle}회를 받아요.`,
+        : `30분 동안 경험치 2배, ${item.bundle}개가 들어 있어요.`,
     quantity: item.bundle,
     price: item.price,
     image: imageFor(type, item.bundle),
   };
 }
 
-function errorMessage(error: unknown) {
+function errorMessage(error: unknown, fallback = '구매에 실패했어요.') {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message;
     if (typeof message === 'string' && message.length > 0) {
       return message;
     }
   }
-  return '구매에 실패했어요.';
+  return fallback;
 }
 
 function CoinIcon({ size = 24 }: { size?: number }) {
@@ -205,42 +207,47 @@ export default function ShopScreen() {
     useState<Record<string, number>>({});
   const [message, setMessage] =
     useState<string | null>(null);
+  // 경험치 부스터가 끝나는 시각 (적용 중이 아니면 null)
+  const [buffEndAt, setBuffEndAt] =
+    useState<string | null>(null);
+  const [usingBooster, setUsingBooster] = useState(false);
+
+  // 재화·상품·보유 수량·부스터 상태를 다시 불러온다 (진입 시, 부스터 사용 후)
+  const loadShop = useCallback(async (isActive: () => boolean = () => true) => {
+    try {
+      const [reward, items] = await Promise.all([
+        getRewardStatus(),
+        getShopItems(),
+      ]);
+
+      if (!isActive()) return;
+
+      if (typeof reward?.currency === 'number') {
+        setCoins(reward.currency);
+      }
+      setBuffEndAt(reward.expBuffActive ? reward.expBuffExpiredAt : null);
+
+      setProducts(items.map(toProduct));
+
+      const owned: Record<string, number> = {};
+      for (const item of items) {
+        if (item.ownedQuantity > 0) {
+          owned[String(item.id)] = item.ownedQuantity;
+        }
+      }
+      setInventory(owned);
+    } catch (error) {
+      console.warn('상점 조회 실패:', error);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
-
-    async function loadShop() {
-      try {
-        const [reward, items] = await Promise.all([
-          getRewardStatus(),
-          getShopItems(),
-        ]);
-
-        if (!active) return;
-
-        if (typeof reward?.currency === 'number') {
-          setCoins(reward.currency);
-        }
-
-        setProducts(items.map(toProduct));
-        const owned: Record<string, number> = {};
-        for (const item of items) {
-          if (item.ownedQuantity > 0) {
-            owned[String(item.id)] = item.ownedQuantity;
-          }
-        }
-        setInventory(owned);
-      } catch (error) {
-        console.warn('상점 조회 실패:', error);
-      }
-    }
-
-    loadShop();
-
+    void loadShop(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadShop]);
 
   const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
@@ -249,6 +256,32 @@ export default function ShopScreen() {
       setMessage(text);
     } else {
       Alert.alert('재화 상점', text);
+    }
+  };
+
+  // 보유한 EXP 부스터 합계 (묶음 상품별 보유 수량을 더한다)
+  const boosterCount = products
+    .filter((product) => product.type === 'exp')
+    .reduce((sum, product) => sum + (inventory[product.id] ?? 0), 0);
+  const buffEndTime = formatBuffEndTime(buffEndAt);
+
+  const handleUseBooster = async () => {
+    if (usingBooster || boosterCount <= 0) return;
+    setUsingBooster(true);
+    try {
+      const result = await activateExpBooster();
+      setBuffEndAt(result.buffEndAt);
+      await loadShop();
+      const endTime = formatBuffEndTime(result.buffEndAt);
+      showMessage(
+        endTime
+          ? `EXP 부스터를 사용했어요. ${endTime}까지 독서 경험치가 2배예요.`
+          : 'EXP 부스터를 사용했어요.'
+      );
+    } catch (error) {
+      showMessage(errorMessage(error, '부스터를 사용하지 못했어요.'));
+    } finally {
+      setUsingBooster(false);
     }
   };
 
@@ -441,6 +474,34 @@ export default function ShopScreen() {
               )}
               onProductPress={setSelectedProduct}
             />
+
+            {/* EXP 부스터 사용 */}
+            <View style={styles.boosterCard}>
+              <View style={styles.boosterText}>
+                <Text style={styles.boosterTitle}>
+                  보유한 EXP 부스터 {boosterCount}개
+                </Text>
+                <Text style={styles.boosterDescription}>
+                  {buffEndTime
+                    ? `부스터 적용 중 (~${buffEndTime}) · 지금 쓰면 30분 연장돼요.`
+                    : '사용하면 30분 동안 독서 경험치가 2배가 돼요.'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.boosterButton,
+                  (boosterCount <= 0 || usingBooster) && styles.boosterButtonDisabled,
+                ]}
+                onPress={handleUseBooster}
+                disabled={boosterCount <= 0 || usingBooster}
+                accessibilityRole="button"
+                accessibilityLabel="EXP 부스터 사용하기"
+              >
+                <Text style={styles.boosterButtonText}>
+                  {usingBooster ? '사용 중…' : '사용하기'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.decorateCard}>
               <Image
@@ -936,6 +997,43 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     textAlign: 'center',
     marginTop: 10,
+  },
+  boosterCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    backgroundColor: COLORS.paleGreen,
+    padding: 14,
+    marginTop: 12,
+  },
+  boosterText: {
+    flex: 1,
+    gap: 3,
+  },
+  boosterTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.green,
+  },
+  boosterDescription: {
+    fontSize: 12,
+    color: COLORS.muted,
+    lineHeight: 17,
+  },
+  boosterButton: {
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: COLORS.green,
+  },
+  boosterButtonDisabled: {
+    opacity: 0.4,
+  },
+  boosterButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   inventoryCard: {
     borderRadius: 18,

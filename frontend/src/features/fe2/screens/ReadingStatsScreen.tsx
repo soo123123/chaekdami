@@ -21,7 +21,6 @@ import {
   type ReadingStats,
 } from '../api/readingStatsApi';
 import { getDday } from '../api/ddayApi';
-import { summarizeDday } from '../api/ddayStreak';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -322,7 +321,7 @@ export default function ReadingStatsScreen() {
 
         if (active) {
           setStats(result);
-          setStreakDays(summarizeDday(dday?.records ?? {}).currentStreak);
+          setStreakDays(dday?.currentStreak ?? 0);
           setUsingSample(false);
         }
       } catch (error) {

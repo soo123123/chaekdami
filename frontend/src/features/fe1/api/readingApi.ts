@@ -94,6 +94,8 @@ type BeRecord = {
 };
 
 type BeSession = {
+  /** 세션 번호 (저장 응답에만 있음) */
+  id?: number;
   readingRecordId: number;
   readingTime: number;
   startedAt: string | null;
@@ -382,6 +384,7 @@ const httpReadingApi: ReadingApi = {
       readingRecordId: session.readingRecordId ?? recordId!,
       round,
       isCompleted: session.status === 'COMPLETED',
+      sessionId: session.id ?? null,
     };
     return saved;
   },

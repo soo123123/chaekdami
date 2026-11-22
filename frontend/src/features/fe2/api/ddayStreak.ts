@@ -18,6 +18,11 @@ function isActive(records: DdayRecordMap, date: string): boolean {
   return records[date] === 'read' || records[date] === 'protected';
 }
 
+/**
+ * 달력 기록 집계 (읽은 날·방어한 날·유지한 날 수).
+ * 연속 일수(currentStreak, longestStreak)는 서버 값(GET /api/dday)을 쓴다.
+ * 여기서 계산하는 연속 일수는 방어한 날도 +1로 세서 서버와 다를 수 있으니 화면에 쓰지 않는다.
+ */
 export function summarizeDday(records: DdayRecordMap, today = dateString(new Date())) {
   const dates = Object.keys(records).filter((date) => isActive(records, date)).sort();
 

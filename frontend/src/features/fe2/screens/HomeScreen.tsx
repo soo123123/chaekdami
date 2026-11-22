@@ -19,7 +19,6 @@ import { ROUTES, toReadingStart } from '@/constants/routes';
 import { readingApi } from '@/features/fe1/api/readingApi';
 import type { RegisteredBook } from '@/features/fe1/types/reading';
 import { getDday } from '../api/ddayApi';
-import { summarizeDday } from '../api/ddayStreak';
 import { getQuests, getRewardStatus } from '../api/rewardApi';
 import { getTodayReading } from '../api/todayReadingApi';
 
@@ -120,13 +119,13 @@ export default function HomeScreen() {
       }
 
       const reward = rewardResult.status === 'fulfilled' ? rewardResult.value : null;
-      const records = ddayResult.status === 'fulfilled' ? ddayResult.value.records ?? {} : {};
+      const streakDays = ddayResult.status === 'fulfilled' ? ddayResult.value.currentStreak ?? 0 : 0;
       const remainingXp = reward
         ? Math.max(0, reward.requiredXp - reward.xp)
         : 0;
 
       setSummaryCards({
-        ddayValue: `${summarizeDday(records).currentStreak}일`,
+        ddayValue: `${streakDays}일`,
         ddayLabel: '연속 독서',
         currency: (reward?.currency ?? 0).toLocaleString(),
         level: `Lv. ${reward?.level ?? 1}`,

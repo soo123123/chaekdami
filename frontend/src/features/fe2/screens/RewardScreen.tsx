@@ -17,9 +17,8 @@ import { HIT_SLOP } from '@/constants/layout';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getDday } from '../api/ddayApi';
-import { summarizeDday } from '../api/ddayStreak';
 import { getReadingStats } from '../api/readingStatsApi';
-import { getRewardStatus } from '../api/rewardApi';
+import { formatBuffEndTime, getRewardStatus } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
 
 type RewardStatus = {
@@ -28,6 +27,8 @@ type RewardStatus = {
   requiredXp?: number;
   currency?: number;
   dday?: number;
+  expBuffActive?: boolean;
+  expBuffExpiredAt?: string | null;
 };
 
 function formatReadingTime(totalMinutes: number) {
@@ -281,7 +282,6 @@ export default function RewardScreen() {
         setDemo(true);
       }
 
-      const records = ddayResult.status === 'fulfilled' ? ddayResult.value.records ?? {} : {};
       setActivity((previous) => ({
         completedBooks: statsResult.status === 'fulfilled'
           ? statsResult.value.completedBooks
@@ -289,7 +289,12 @@ export default function RewardScreen() {
         totalMinutes: statsResult.status === 'fulfilled'
           ? statsResult.value.totalMinutes
           : previous.totalMinutes,
-        streak: summarizeDday(records).currentStreak,
+        // 서버가 계산한 연속 일수 (D-day 조회 실패 시 보상 상태 값)
+        streak: ddayResult.status === 'fulfilled'
+          ? ddayResult.value.currentStreak ?? 0
+          : rewardResult.status === 'fulfilled'
+            ? rewardResult.value.dday
+            : previous.streak,
       }));
 
       setLoading(false);
@@ -329,6 +334,9 @@ export default function RewardScreen() {
   );
 
   const remainingXp = Math.max(0, requiredXp - xp);
+  const buffEndTime = reward.expBuffActive
+    ? formatBuffEndTime(reward.expBuffExpiredAt)
+    : null;
 
   const progress = Math.min(
     100,
@@ -440,6 +448,11 @@ export default function RewardScreen() {
               {remainingXp.toLocaleString()} exp
               남았어요!
             </Text>
+            {buffEndTime ? (
+              <Text style={styles.boosterText}>
+                EXP 부스터 적용 중 (~{buffEndTime})
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -730,6 +743,12 @@ const styles = StyleSheet.create({
     color: '#66645F',
     marginTop: 8,
     lineHeight: 20,
+  },
+  boosterText: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.green,
   },
 
   demoText: {
