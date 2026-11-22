@@ -32,7 +32,7 @@
 | <a id="issue-bug-1"></a>ISSUE-BUG-1 | 높음 | 열림 | 독서 종료 저장은 앱이 ① 세션 저장 → ② 문장 저장을 차례로 부른다. ②가 실패하면 저장 전체를 실패로 보여준다 | "다시 시도하기"를 누르면 ①부터 다시 보내 **같은 독서가 세션 2건**이 된다. 보상도 세션마다 받을 수 있다 | 앱 `useReadingEnd.saveReadingRecord` → `readingApi.saveReadingRecord` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 |
 | <a id="issue-bug-2"></a>ISSUE-BUG-2 | 중간 | 열림 | 세션과 문장이 서로 다른 요청으로 저장된다. 서버의 세션 요청 `sentence` 필드와 `SentenceService.recordFromSession`은 쓰이지 않는다 | 세션만 저장되고 문장이 빠질 수 있다 | `ReadingSessionService.create`, 앱 `readingApi.ts` | [reading/api](./domains/reading/api.md#post-apireading-sessions), [review/rules](./domains/review/rules.md#1-문장과-모음집) | 003 |
 | <a id="issue-data-1"></a>ISSUE-DATA-1 | 중간 | 열림 | 책 삭제는 세션 → 기록 → 책만 지운다. `ReviewCleanupService.deleteAllOfBook`은 있지만 호출되지 않는다 | 지운 책의 문장·리뷰·독후감·좋아요·신고가 남고, 리뷰는 ISBN 한줄평 목록에 계속 보인다 | `BookService.deleteBook` | [reading/data](./domains/reading/data.md#삭제), [review/data](./domains/review/data.md#삭제) | 003 |
-| <a id="issue-data-2"></a>ISSUE-DATA-2 | 중간 | 열림 | 회원 탈퇴 시 review·reward·dday 리스너만 데이터를 지운다 | 탈퇴한 사용자의 서재·독서 기록·세션이 남는다 | `UserWithdrawnEvent` (reading 리스너 없음) | [reading/data](./domains/reading/data.md#삭제), [user/rules](./domains/user/rules.md#5-회원-탈퇴) | 003 |
+| <a id="issue-data-2"></a>ISSUE-DATA-2 | 중간 | 열림 | 회원 탈퇴 시 review·reward·dday 리스너만 데이터를 지운다 | 탈퇴한 사용자의 서재·독서 기록·세션·인증이 남는다 | `UserWithdrawnEvent` (reading 리스너 없음) | [reading/data](./domains/reading/data.md#삭제), [user/rules](./domains/user/rules.md#5-회원-탈퇴) | 003 |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
 | <a id="issue-limit-1"></a>ISSUE-LIMIT-1 | 중간 | 열림 | 서버는 독서 시간이 3분~2시간인지만 검증한다 | 사용자가 종료 화면에서 독서 시간을 늘려 입력할 수 있다 | `ReadingSession.of` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
 | <a id="issue-limit-2"></a>ISSUE-LIMIT-2 | 낮음 | 열림 | 타이머는 앱 메모리에서 돈다 | 독서 중 앱이 완전히 종료되면 측정 시간이 사라진다 | 앱 `useReadingTimer` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
@@ -44,9 +44,9 @@
 
 | ID | 할 일 | 지금 상태 | 위치 | 문서 |
 |---|---|---|---|---|
-| <a id="todo-1"></a>TODO-1 | 독서 인증 사진 | 앱은 `POST /api/reading-photos/verify`를 부르지만 백엔드에 없음 → Mock (`PHOTO_VERIFY_USE_MOCK = true`). 업로드·판정 방식 미정. contract-check의 유일한 불일치 | 앱 `photoVerifyApi.ts` | [reading/overview](./domains/reading/overview.md#현재-상태) |
+| <a id="todo-1"></a>TODO-1 | 독서 인증 앱 연결 | 서버 API는 있음 (`POST`·`GET /api/reading-records/{id}/certifications`, PR #13). 앱은 아직 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock 사용 (`PHOTO_VERIFY_USE_MOCK = true`). 주소·요청 형식이 달라 앱 수정 필요 (스펙). contract-check의 유일한 불일치 | 앱 `photoVerifyApi.ts` | [reading/api](./domains/reading/api.md#독서-인증) |
 | <a id="todo-2"></a>TODO-2 | 세션 요청의 사진 연결 | `photos` 저장 안 함, 앱이 보내는 `photoVerificationId`는 서버 DTO에 칸이 없어 무시 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
-| <a id="todo-3"></a>TODO-3 | 사진 인증 추가 보상 연결 | 지급 로직은 있으나 인증 조회 임시 구현이 항상 false | `PendingPhotoCertificationChecker` | [reward/rules](./domains/reward/rules.md#2-경험치) |
+| <a id="todo-3"></a>TODO-3 | 사진 인증 추가 보상 연결 | 지급 로직은 있으나 인증 조회 임시 구현이 항상 false. 인증 결과는 `certifications`에 저장되지만 세션과 연결되지 않음 | `PendingPhotoCertificationChecker` | [reward/rules](./domains/reward/rules.md#2-경험치) |
 | <a id="todo-4"></a>TODO-4 | AI 기능 (책 추천, 독후감 피드백, 문장 인증) | 없음. `book_reports.revision`만 준비 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | 주간 퀘스트 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
 | <a id="todo-6"></a>TODO-6 | 랭킹, 레벨 해금 | 없음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
@@ -80,6 +80,7 @@
 | <a id="ask-2"></a>ASK-2 | 세션 최대 2시간을 유지하나? | [reading/rules](./domains/reading/rules.md#3-독서-세션) |
 | <a id="ask-3"></a>ASK-3 | 목록 페이지 번호를 통일하나? (review는 0부터, 도서 검색은 1부터) | [review/rules](./domains/review/rules.md#6-공통) |
 | <a id="ask-4"></a>ASK-4 | 책을 삭제하면 보상 내역도 지우나? | ISSUE-DATA-3 |
+| <a id="ask-5"></a>ASK-5 | 독서 인증 판정을 얼마나 엄격하게 하나? (`UNVERIFIED`도 보상을 주나, 쪽 번호 허용 오차 ±3쪽 유지, 앱 업로드 타임아웃 30초 정도) | [reading/rules](./domains/reading/rules.md#5-독서-인증) |
 
 ## 4. 해결됨
 

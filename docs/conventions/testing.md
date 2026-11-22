@@ -26,6 +26,8 @@
 | `YES24_API_KEY` | YES24 도서 검색 | ✅ |
 | `JWT_SECRET` | JWT 서명 | ✅ |
 | `MAIL_PASSWORD` | 비밀번호 재설정 메일 발송 | 메일 기능 |
+| `OCR_PROVIDER` | 독서 인증 AI 선택: `gemini` 또는 `mock`(기본) | |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | 독서 인증 Gemini 키·모델 (`OCR_PROVIDER=gemini`일 때 키 필수) | 인증 AI |
 | `EXPO_PUBLIC_API_BASE_URL` | 앱이 부를 서버 주소 | 실기기 테스트 시 |
 
 프로필 기본값은 `dev`다 (`spring.profiles.active=dev`). 로컬 DB를 쓰려면 `local` 프로필로 실행한다.
@@ -41,6 +43,7 @@ cd backend
 
 - 테이블은 JPA가 만든다 (`ddl-auto=update`). 마이그레이션 파일은 없다.
 - Supabase 무료 플랜은 오래 안 쓰면 일시정지된다. 연결 오류가 나면 대시보드에서 Restore project.
+- Supabase Session pooler는 전체 연결이 15개뿐이라 서버 하나당 DB 연결을 3개로 제한한다 (`spring.datasource.hikari.maximum-pool-size`).
 
 ### 프론트엔드
 
@@ -57,7 +60,7 @@ npx expo start --tunnel      # 같은 와이파이가 아닐 때 실기기
 | 상수 | 현재 | 뜻 |
 |---|---|---|
 | `FE1_USE_DEV_MOCK` | `false` | `true`면 서재·검색·독서·한줄평이 Mock 사용 |
-| `PHOTO_VERIFY_USE_MOCK` | `true` | 독서 인증 사진 검증 Mock (백엔드 API 없음) |
+| `PHOTO_VERIFY_USE_MOCK` | `true` | 독서 인증 사진 검증 Mock (앱이 아직 서버 인증 API에 연결 안 됨, [TODO-1](../known-issues.md#todo-1)) |
 | `REVIEW_USE_DEV_MOCK` (`fe2/api/reviewApi.ts`) | `false` | 독후감 Mock |
 
 ## 4. 테스트

@@ -61,3 +61,22 @@
 | 월간 | 이번 달을 7일씩 1~3주, 4주는 22일~말일 | `ReadingStatsService.month` |
 | 하루 | 오늘을 05·08·11·14·17·20시 시작 6구간 (라벨 06시~21시) | `ReadingStatsService.DAILY_START_HOURS` |
 | 목표 달성 | `goalBooks`·`goalTarget` 항상 0 | ⏳ [TODO-12](../../known-issues.md#todo-12) |
+
+## 5. 독서 인증
+
+판정: 실패 사유가 하나라도 있으면 `FAILED`, 없고 확인 불가 사유가 있으면 `UNVERIFIED`, 둘 다 없으면 `PASSED`. 억울한 실패를 줄이려고 느슨하게 판정한다.
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 실패: 책 페이지 아님 | AI가 "책 페이지가 아니다"라고 **확실히** 판단한 경우만 (판단 못 하면 통과) | `CertificationVerifier.verify` | ✅ |
+| 실패: 같은 사진 재사용 | 내 최근 인증 50건과 글자 3글자 조각이 90% 이상 겹치면 | `CertificationVerifier.DUPLICATE_SIMILARITY`, `CertificationService` | ✅ |
+| 확인 불가: 글자 부족 | 읽은 글자(정규화 후)가 20자 미만 | `CertificationVerifier.MIN_TEXT_LENGTH` | ✅ |
+| 확인 불가: 쪽 번호 범위 밖 | 읽은 범위 ±3쪽 밖. `startPage`·`endPage`를 둘 다 보냈을 때만 비교, 쪽 번호를 못 찾으면 통과 | `CertificationVerifier.PAGE_MARGIN` | ✅ ❓ [ASK-5](../../known-issues.md#ask-5) |
+| 문장 확인 | 문장의 3글자 조각 60% 이상이 사진에 있으면 찾은 것. 판정에는 영향 없음 | `CertificationVerifier.SENTENCE_MATCH` | ✅ |
+| AI 선택 | `OCR_PROVIDER=gemini` + `GEMINI_API_KEY`면 Gemini, 아니면 Mock (항상 책 페이지, 쪽 번호 없음) | `GeminiPageTextExtractor`, `MockPageTextExtractor` | ✅ |
+| AI 장애 | 한도 초과·시간 초과(30초) 등은 빈 결과로 처리 → 글자 부족으로 `UNVERIFIED` | `GeminiPageTextExtractor.extract` | ✅ |
+| 사진 크기 | 최대 10MB. AI에 보내기 전 긴 쪽 1600px로 줄임 (HEIC는 원본) | `application.properties`, `GeminiPageTextExtractor.MAX_SIDE` | ✅ |
+| 사진 저장 | 저장하지 않음 (`image_url` 항상 `null`) | `CertificationService` | ✅ |
+| 소유권 | 남의 회차면 404 | `CertificationService` | ✅ |
+| 보상 연결 | 인증 결과가 보상(사진 인증 +20 EXP)에 아직 연결 안 됨 | `PendingPhotoCertificationChecker` | ⏳ [TODO-3](../../known-issues.md#todo-3) |
+| 앱 연결 | 앱은 아직 이 API를 부르지 않음 | 앱 `photoVerifyApi.ts` | ⏳ [TODO-1](../../known-issues.md#todo-1) |

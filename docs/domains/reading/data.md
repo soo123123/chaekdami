@@ -11,6 +11,7 @@ erDiagram
   users ||--o{ books : "개인 서재"
   books ||--o{ reading_records : "회차 (다회독)"
   reading_records ||--o{ reading_sessions : "타이머 세션"
+  reading_records ||--o{ certifications : "독서 인증"
 ```
 
 | 관계 | 설명 |
@@ -18,6 +19,7 @@ erDiagram
 | users 1 : N books | 같은 책도 사용자마다 별도 행. 서로의 서재는 보이지 않는다 |
 | books 1 : N reading_records | 완독한 책을 다시 읽으면 기존 기록을 덮지 않고 새 회차를 만든다 |
 | reading_records 1 : N reading_sessions | 회차 동안 타이머를 켤 때마다 쌓인다. 총 독서 시간 = 세션 합 |
+| reading_records 1 : N certifications | 회차에 올린 인증 사진의 판정 결과. 세션과는 연결되지 않는다 |
 
 `reading_records.user_id`·`reading_sessions.user_id`는 조회 편의용으로 함께 저장한다 (항상 책 주인과 같다).
 
@@ -82,11 +84,29 @@ UNIQUE `uk_reading_records_book_id_round` (book_id, round)
 
 INDEX `idx_reading_sessions_reading_record_id`, `idx_reading_sessions_user_id_started_at` (오늘·이번 주 통계용)
 
+## certifications
+
+엔티티: `Certification`. 사진 파일은 저장하지 않고 AI가 읽은 결과만 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| id | bigint | PK | 인증 번호 |
+| user_id | bigint | not null, INDEX `idx_certifications_user_id` | |
+| reading_record_id | bigint | FK → reading_records, INDEX `idx_certifications_reading_record_id` | |
+| image_url | varchar | | 사진 주소. 사진 저장소가 없어 지금은 항상 `null` |
+| extracted_text | text | | AI가 읽은 글자 |
+| normalized_text | text | | 소문자·글자·숫자만 남긴 값 (같은 사진 재사용 비교용) |
+| detected_page | int | | 사진에서 찾은 쪽 번호 |
+| book_page | boolean | | AI 판단: 책 페이지인가 |
+| status | varchar(20) | not null | `PASSED` · `UNVERIFIED` · `FAILED` |
+| message | varchar(1000) | | 판정 이유 (여러 개면 줄바꿈으로 구분) |
+| created_at | timestamp | not null | |
+
 ## 삭제
 
 | 상황 | 처리 | 상태 |
 |---|---|---|
-| 책 삭제 | 세션 → 기록 → 책 순서로 삭제 (`BookService.deleteBook`) | ✅ |
+| 책 삭제 | 인증 → 세션 → 기록 → 책 순서로 삭제 (`BookService.deleteBook`) | ✅ |
 | 책 삭제 시 문장·리뷰·독후감·좋아요·신고 | 지우지 않음 | ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) |
 | 책 삭제 시 보상 내역 | 지우지 않음 | ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) |
 | 회원 탈퇴 | reading 데이터를 지우는 리스너 없음 | ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) |
@@ -96,4 +116,5 @@ INDEX `idx_reading_sessions_reading_record_id`, `idx_reading_sessions_user_id_st
 | 시점 | 변경 |
 |---|---|
 | be/feat/book-reading | `books`를 사용자별 개인 서재로 (`user_id`, `item_id`, UNIQUE 추가), `reading_records`·`reading_sessions` 추가 |
-| fix/fe1 (작업 트리) | 세션 최소 시간 3분 검사 추가 (테이블 변경 없음) |
+| fix/fe1@56aa7f5 | 세션 최소 시간 3분 검사 추가 (테이블 변경 없음) |
+| main@f781a9e (PR #13) | `certifications` 추가 |

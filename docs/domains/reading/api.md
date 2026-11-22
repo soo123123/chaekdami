@@ -14,7 +14,7 @@
 | POST | `/api/books` | 서재에 책 등록 (+1회차 자동 생성) | 201 | ✅ |
 | GET | `/api/books` | 내 서재 목록 (`?status=` 필터) | 200 | ✅ |
 | GET | `/api/books/{bookId}` | 내 서재 책 상세 | 200 | ✅ |
-| DELETE | `/api/books/{bookId}` | 서재에서 제거 (기록·세션 포함) | 204 | ✅ |
+| DELETE | `/api/books/{bookId}` | 서재에서 제거 (기록·세션·인증 포함) | 204 | ✅ |
 | POST | `/api/books/{bookId}/reading-records` | 새 회차 시작 (다회독) | 201 | ✅ |
 | GET | `/api/books/{bookId}/reading-records` | 책의 회차별 기록 (최신 먼저) | 200 | ✅ |
 | GET | `/api/reading-records/{id}` | 독서 기록 상세 | 200 | ✅ |
@@ -24,7 +24,8 @@
 | GET | `/api/reading-records/{id}/sessions` | 회차의 세션 목록 (최근 먼저) | 200 | ✅ |
 | GET | `/api/me/reading-today` | 오늘 독서 요약 | 200 | ✅ |
 | GET | `/api/me/reading-stats` | 독서 통계 | 200 | ✅ |
-| POST | `/api/reading-records/{id}/certifications` | 독서 인증 사진 | — | ⏳ [TODO-1](../../known-issues.md#todo-1) 미구현 |
+| POST | `/api/reading-records/{id}/certifications` | 독서 인증 (사진 → AI 글자 추출 → 판정) | 201 | ✅ 앱 미연결 ⏳ [TODO-1](../../known-issues.md#todo-1) |
+| GET | `/api/reading-records/{id}/certifications` | 회차의 인증 목록 (최신 먼저) | 200 | ✅ |
 
 ---
 
@@ -136,7 +137,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 
 ### GET /api/books/{bookId} · DELETE /api/books/{bookId}
 
-남의 책이면 404 (존재 여부를 숨긴다). 삭제는 세션 → 기록 → 책 순서로 지우고 204.
+남의 책이면 404 (존재 여부를 숨긴다). 삭제는 인증 → 세션 → 기록 → 책 순서로 지우고 204.
 
 ## 독서 기록
 
@@ -240,6 +241,49 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 
 > ⚠️ [ISSUE-LIMIT-3](../../known-issues.md#issue-limit-3)
 
+## 독서 인증
+
+> ⏳ [TODO-1](../../known-issues.md#todo-1) — 서버 API는 있지만 앱은 아직 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock을 쓴다.
+
+### POST /api/reading-records/{id}/certifications
+
+책 페이지 사진을 올리면 AI가 글자·쪽 번호·책 페이지 여부를 읽고, 서버 규칙으로 판정해 저장한다. `multipart/form-data`. 판정 규칙: [rules.md](./rules.md#5-독서-인증)
+
+| 필드 | 필수 | 설명 |
+|---|---|---|
+| `image` | ✅ | 사진 파일 (JPEG·PNG·GIF·WEBP·HEIC, 최대 10MB) |
+| `startPage`, `endPage` | | 이번에 읽은 범위. **둘 다 보내야** 쪽 번호를 비교한다 |
+| `sentence` | | 인상 깊은 문장. 사진에 있는지만 알려주고 판정에는 영향 없음 |
+
+### CertificationResponse (등록·목록 공통)
+
+```json
+{
+  "id": 12,
+  "readingRecordId": 5,
+  "status": "PASSED",
+  "bookPage": true,
+  "detectedPage": 42,
+  "sentenceFound": true,
+  "messages": ["페이지 번호는 확인하지 못했어요."],
+  "extractedText": "…",
+  "createdAt": "2026-11-22T18:30:00"
+}
+```
+
+| 필드 | 설명 |
+|---|---|
+| `status` | `PASSED` 통과 · `UNVERIFIED` 확인 불가 · `FAILED` 실패 |
+| `bookPage` | AI가 책 페이지로 봤는지. 판단 못 하면 `null` |
+| `detectedPage` | 사진에서 찾은 쪽 번호. 못 찾으면 `null` |
+| `sentenceFound` | 문장을 찾았는지. 문장을 안 보냈거나 **목록 조회면 항상 `null`** |
+| `messages` | 판정 이유·안내 문구. 화면에 그대로 보여줘도 된다 |
+| `extractedText` | AI가 읽은 글자 |
+
+### GET /api/reading-records/{id}/certifications
+
+회차의 인증 목록 (최신 먼저). 남의 기록이면 404.
+
 ## 오늘·통계
 
 ### GET /api/me/reading-today
@@ -303,6 +347,7 @@ reading은 도메인 에러 코드 enum이 없다. HTTP 상태별 공통 코드�
 | 400 | `VALIDATION_ERROR` | 종료 페이지는 전체 쪽수(N)를 넘을 수 없습니다. | 세션 페이지 |
 | 400 | `VALIDATION_ERROR` | 메모는 200자 이하 / 하루 목표 페이지는 1 이상 | 기록 수정 |
 | 400 | `VALIDATION_ERROR` | YES24_API_KEY 환경변수가 설정되지 않았습니다. | 서버 설정 누락 |
+| 400 | `VALIDATION_ERROR` | 인증 사진을 올려주세요. / 이미지 파일만 올릴 수 있습니다. / 사진을 읽지 못했습니다. 다시 올려주세요. | 독서 인증 사진 |
 | 404 | `NOT_FOUND` | 책을 찾을 수 없습니다: {bookId} | 없거나 남의 책 |
 | 404 | `NOT_FOUND` | 독서 기록을 찾을 수 없습니다: {id} | 없거나 남의 기록 |
 | 404 | `NOT_FOUND` | YES24에서 책을 찾을 수 없습니다: {itemId} | YES24에 없는 상품 |

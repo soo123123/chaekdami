@@ -13,6 +13,7 @@
 | 독서 기록 (reading record) | 책 한 권을 **한 번** 읽는 회차. 다회독이면 회차마다 1건 | [rules.md](./rules.md#2-독서-기록회차) |
 | 독서 세션 (reading session) | 타이머 한 번의 독서. 시간·시작/끝 페이지 | [rules.md](./rules.md#3-독서-세션) |
 | 독서율 | 현재 페이지 ÷ 전체 쪽수 × 100. 저장하지 않고 계산 | [rules.md](./rules.md#2-독서-기록회차) |
+| 독서 인증 (certification) | 책 페이지 사진을 AI가 읽고 통과·확인 불가·실패로 판정. 회차에 쌓인다 | [rules.md](./rules.md#5-독서-인증) |
 | 오늘·통계 | 홈의 오늘 독서, 통계 화면의 주·월·하루 시간 | [api.md](./api.md#오늘통계) |
 
 식별자(`itemId` · `bookId` · `readingRecordId` · `readingSessionId`) 구분은 [glossary.md](../../glossary.md)
@@ -22,11 +23,14 @@
 ```
 backend/src/main/java/com/chaekdami/reading/
 ├── presentation/    BookController, ReadingRecordController, ReadingSessionController,
-│                    TodayReadingController, ReadingExceptionHandler, dto/{request,response}
+│                    TodayReadingController, CertificationController, ReadingExceptionHandler,
+│                    dto/{request,response}
 ├── application/     BookSearchService, BookService, ReadingRecordService, ReadingSessionService,
-│                    TodayReadingService, ReadingStatsService
-├── domain/          Book, ReadingRecord, ReadingSession, ReadingStatus
-└── infrastructure/  BookRepository, ReadingRecordRepository, ReadingSessionRepository, yes24/Yes24Client
+│                    TodayReadingService, ReadingStatsService, CertificationService, CertificationVerifier
+├── domain/          Book, ReadingRecord, ReadingSession, ReadingStatus, Certification, CertificationStatus
+└── infrastructure/  BookRepository, ReadingRecordRepository, ReadingSessionRepository,
+                     CertificationRepository, yes24/Yes24Client,
+                     ai/{PageTextExtractor, GeminiPageTextExtractor, MockPageTextExtractor}
 ```
 
 프론트 (FE1): `frontend/src/features/fe1/` — `api/readingApi.ts`, 화면 `BookSearch` · `BookInfo` · `BookRegister` · `ManualRegister` · `Library` · `LibraryCustomize` · `BookDetail` · `ReadingStart` · `ReadingEnd`
@@ -64,12 +68,12 @@ backend/src/main/java/com/chaekdami/reading/
 
 ## 현재 상태
 
-- ✅ 검색, 서재(등록·목록·상세·삭제·상태 필터), 독서 기록(회차·페이지·목표·메모·완독·다회독), 세션 저장·목록, 오늘·통계
+- ✅ 검색, 서재(등록·목록·상세·삭제·상태 필터), 독서 기록(회차·페이지·목표·메모·완독·다회독), 세션 저장·목록, 오늘·통계, 독서 인증(서버)
 - ⚠️ [ISSUE-BUG-1](../../known-issues.md#issue-bug-1) 문장 저장 실패 후 재시도하면 세션이 중복 저장됨
 - ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 세션과 문장이 따로 저장됨
 - ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) 책 삭제 시 독후활동 데이터가 남음
 - ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) 탈퇴 시 서재 데이터가 남음
-- ⏳ [TODO-1](../../known-issues.md#todo-1) 독서 인증 사진 — 앱은 `POST /api/reading-photos/verify`를 부르지만 백엔드 API 없음 (앱 Mock)
+- ⏳ [TODO-1](../../known-issues.md#todo-1) 독서 인증 앱 연결 — 서버 API는 있지만 앱은 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock 사용
 - ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos`·`photoVerificationId` 저장 안 함
 - ⏳ [TODO-7](../../known-issues.md#todo-7) 서재 테마 저장 API 없음 (기기에만 저장)
 - ⏳ [TODO-11](../../known-issues.md#todo-11) 바코드 스캔 검색 미구현
