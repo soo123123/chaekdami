@@ -11,7 +11,7 @@
 팀이 원격 DB를 함께 쓰기 위해 Supabase(PostgreSQL)를 선택했다. 각자 DB를 띄우지 않아도 된다.
 
 ## 지금 방식
-- `spring.profiles.active=dev` → Supabase Session pooler 연결, 비밀번호는 `DB_PASSWORD`
+- `spring.profiles.active=dev` → Supabase Session pooler 연결, 주소·사용자명·비밀번호는 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`
 - `local` 프로필은 `LOCAL_DB_*` 환경변수로 로컬 DB 사용
 - 테이블은 JPA `ddl-auto=update`로 생성 (마이그레이션 파일 없음)
 
