@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading — 독서
 
@@ -43,6 +43,9 @@ backend/src/main/java/com/chaekdami/reading/
 | review → reading | 책·독서 기록 조회 (완독 여부, ISBN 등) | port `BookReader`, `ReadingRecordReader` (JDBC) |
 | reward → reading | 세션 조회 (보상 계산) | port `ReadingSessionReader` |
 | reading → review | 오늘 저장한 문장 수 | 직접 참조 `SentenceRepository` (`TodayReadingService`) |
+| reading → review | 세션 저장 때 문장 저장 | port `SessionSentenceRecorder` → `SentenceServiceSessionSentenceRecorder` |
+| reading → review | 책 삭제 때 독후활동 삭제 | port `BookActivityCleaner` → `ReviewBookActivityCleaner` |
+| user → reading | 회원 탈퇴 때 서재 삭제 | 이벤트 `UserWithdrawnEvent` → `ReadingCleanupListener` |
 | 앱 | 세션 저장 응답의 `id`로 독서 완료 보상 요청 | [architecture.md](../../architecture.md#41-독서--보상) |
 
 ## 프론트 화면 흐름 (FE1)
@@ -69,10 +72,8 @@ backend/src/main/java/com/chaekdami/reading/
 ## 현재 상태
 
 - ✅ 검색, 서재(등록·목록·상세·삭제·상태 필터), 독서 기록(회차·페이지·목표·메모·완독·다회독), 세션 저장·목록, 오늘·통계, 독서 인증(서버)
-- ⚠️ [ISSUE-BUG-1](../../known-issues.md#issue-bug-1) 문장 저장 실패 후 재시도하면 세션이 중복 저장됨
-- ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 세션과 문장이 따로 저장됨
-- ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) 책 삭제 시 독후활동 데이터가 남음
-- ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) 탈퇴 시 서재 데이터가 남음
+- ✅ 세션과 문장을 한 번에 저장, 책 삭제·탈퇴 시 관련 데이터 정리 (스펙 003)
+- ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) 응답만 끊긴 뒤 다시 저장하면 세션 중복
 - ⏳ [TODO-23](../../known-issues.md#todo-23) 독서 인증 429 임시 규칙 (통과, 보상 제외)
 - ⏳ [TODO-24](../../known-issues.md#todo-24) AI 장애를 앱에 따로 알리지 않음
 - ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos` 저장 안 함

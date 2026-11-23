@@ -16,4 +16,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     // 이 YES24 책을 이미 내 서재에 담았는지 확인
     boolean existsByUserIdAndItemId(Long userId, Long itemId);
+
+    // 회원 탈퇴 때 그 사용자의 서재 책 전부 삭제 (스펙 003 R4)
+    void deleteAllByUserId(Long userId);
 }

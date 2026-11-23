@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 문제 · 할 일 · 질문
 
@@ -29,10 +29,7 @@
 |---|---|---|---|---|---|---|---|
 | <a id="issue-sec-1"></a>ISSUE-SEC-1 | 높음 | 열림 | 메일 비밀번호가 `application-dev.properties`에 평문으로 있고 git에 커밋돼 있다 | 저장소를 볼 수 있는 누구나 메일 계정을 쓸 수 있다 | `backend/src/main/resources/application-dev.properties` | [user/overview](./domains/user/overview.md#현재-상태) | — |
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
-| <a id="issue-bug-1"></a>ISSUE-BUG-1 | 높음 | 열림 | 독서 종료 저장은 앱이 ① 세션 저장 → ② 문장 저장을 차례로 부른다. ②가 실패하면 저장 전체를 실패로 보여준다 | "다시 시도하기"를 누르면 ①부터 다시 보내 **같은 독서가 세션 2건**이 된다. 보상도 세션마다 받을 수 있다 | 앱 `useReadingEnd.saveReadingRecord` → `readingApi.saveReadingRecord` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 |
-| <a id="issue-bug-2"></a>ISSUE-BUG-2 | 중간 | 열림 | 세션과 문장이 서로 다른 요청으로 저장된다. 서버의 세션 요청 `sentence` 필드와 `SentenceService.recordFromSession`은 쓰이지 않는다 | 세션만 저장되고 문장이 빠질 수 있다 | `ReadingSessionService.create`, 앱 `readingApi.ts` | [reading/api](./domains/reading/api.md#post-apireading-sessions), [review/rules](./domains/review/rules.md#1-문장과-모음집) | 003 |
-| <a id="issue-data-1"></a>ISSUE-DATA-1 | 중간 | 열림 | 책 삭제는 세션 → 기록 → 책만 지운다. `ReviewCleanupService.deleteAllOfBook`은 있지만 호출되지 않는다 | 지운 책의 문장·리뷰·독후감·좋아요·신고가 남고, 리뷰는 ISBN 한줄평 목록에 계속 보인다 | `BookService.deleteBook` | [reading/data](./domains/reading/data.md#삭제), [review/data](./domains/review/data.md#삭제) | 003 |
-| <a id="issue-data-2"></a>ISSUE-DATA-2 | 중간 | 열림 | 회원 탈퇴 시 review·reward·dday 리스너만 데이터를 지운다 | 탈퇴한 사용자의 서재·독서 기록·세션·인증이 남는다 | `UserWithdrawnEvent` (reading 리스너 없음) | [reading/data](./domains/reading/data.md#삭제), [user/rules](./domains/user/rules.md#5-회원-탈퇴) | 003 |
+| <a id="issue-bug-3"></a>ISSUE-BUG-3 | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
 | <a id="issue-limit-1"></a>ISSUE-LIMIT-1 | 중간 | 열림 | 서버는 독서 시간이 3분~2시간인지만 검증한다 | 사용자가 종료 화면에서 독서 시간을 늘려 입력할 수 있다 | `ReadingSession.of` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
 | <a id="issue-limit-2"></a>ISSUE-LIMIT-2 | 낮음 | 열림 | 타이머는 앱 메모리에서 돈다 | 독서 중 앱이 완전히 종료되면 측정 시간이 사라진다 | 앱 `useReadingTimer` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
@@ -88,3 +85,7 @@
 | TODO-1 독서 인증 앱 연결 | 앱이 `POST /api/reading-records/{id}/certifications`로 사진을 보냄 (가장 최근 회차, 45초). `PASSED`만 통과 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
 | TODO-3 사진 인증 추가 보상 연결 | 세션 저장 때 인증을 세션에 연결하고 `CertificationPhotoChecker`가 조회. 429 통과는 제외 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
 | ASK-5 독서 인증 판정 엄격도 | `UNVERIFIED`는 통과 아님(다시 찍기, 보상 없음). 앱은 쪽 범위를 보내지 않아 쪽 번호 비교 안 함(±3쪽 규칙은 범위를 보내는 호출에만). 앱 대기 45초, 서버 AI 호출은 한 번 다시 시도 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
+| ISSUE-BUG-1 문장 저장 실패 후 재시도 시 세션 중복 | 세션·문장을 한 요청·한 트랜잭션으로 저장, 앱은 문장 API를 따로 부르지 않음 (응답만 끊긴 경우는 ISSUE-BUG-3) | 2026-11-22 | [003](./specs/003-session-sentence-and-cleanup/) |
+| ISSUE-BUG-2 세션과 문장이 따로 저장됨 | 세션 저장이 port `SessionSentenceRecorder`로 `SentenceService.recordFromSession` 호출 (쪽 번호 = `endPage`) | 2026-11-22 | [003](./specs/003-session-sentence-and-cleanup/) |
+| ISSUE-DATA-1 책 삭제 시 독후활동 남음 | 책 삭제가 port `BookActivityCleaner`로 `ReviewCleanupService.deleteAllOfBook` 호출 (같은 트랜잭션) | 2026-11-22 | [003](./specs/003-session-sentence-and-cleanup/) |
+| ISSUE-DATA-2 탈퇴 시 reading 데이터 남음 | `ReadingCleanupListener`가 인증·세션·기록·책 삭제 (탈퇴와 같은 트랜잭션) | 2026-11-22 | [003](./specs/003-session-sentence-and-cleanup/) |

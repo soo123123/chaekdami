@@ -1,5 +1,6 @@
 package com.chaekdami.reading.application;
 
+import com.chaekdami.reading.application.port.SessionSentenceRecorder;
 import com.chaekdami.reading.domain.Book;
 import com.chaekdami.reading.domain.Certification;
 import com.chaekdami.reading.domain.CertificationStatus;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.chaekdami.user.application.exception.InvalidRequestException;
 
 import java.util.Optional;
 
@@ -25,6 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,6 +49,8 @@ class ReadingSessionServiceTest {
     private ReadingSessionRepository readingSessionRepository;
     @Mock
     private CertificationRepository certificationRepository;
+    @Mock
+    private SessionSentenceRecorder sessionSentenceRecorder;
     @InjectMocks
     private ReadingSessionService service;
 
@@ -168,5 +175,42 @@ class ReadingSessionServiceTest {
         service.create(USER_ID, requestWith(null));
 
         verify(certificationRepository, never()).findByIdAndUserId(anyLong(), anyLong());
+    }
+
+    // ---- 세션 저장 때 문장 저장 (스펙 003 R1) ----
+
+    private CreateReadingSessionRequest requestWithSentence(String sentence, int endPage) {
+        return new CreateReadingSessionRequest(BOOK_ID, 600, 0, endPage, sentence, null, null);
+    }
+
+    @Test
+    void 문장이_있으면_세션_회차의_문장으로_저장하고_쪽_번호는_끝_페이지다() {
+        sessionSaveAssignsId();
+
+        service.create(USER_ID, requestWithSentence("새는 알에서 나오려고 투쟁한다.", 42));
+
+        verify(sessionSentenceRecorder).record(eq(USER_ID), any(), eq("새는 알에서 나오려고 투쟁한다."), eq(42));
+    }
+
+    @Test
+    void 문장이_없어도_포트에_넘기고_빈_문장_판단은_포트가_한다() {
+        sessionSaveAssignsId();
+
+        ReadingSessionResponse response = service.create(USER_ID, requestWithSentence(null, 10));
+
+        assertThat(response.readingTime()).isEqualTo(600);
+        verify(sessionSentenceRecorder).record(eq(USER_ID), any(), isNull(), eq(10));
+    }
+
+    @Test
+    void 문장_규칙을_어기면_예외가_그대로_나가_세션_저장도_취소된다() {
+        sessionSaveAssignsId();
+        doThrow(new InvalidRequestException("sentence", "문장은 500자 이하여야 합니다."))
+                .when(sessionSentenceRecorder).record(any(), any(), any(), any());
+
+        assertThatThrownBy(() -> service.create(USER_ID, requestWithSentence("가".repeat(501), 10)))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("문장은 500자 이하여야 합니다.");
+        // 실제 DB에서는 @Transactional이 세션 저장·인증 연결까지 롤백한다 (같은 트랜잭션)
     }
 }

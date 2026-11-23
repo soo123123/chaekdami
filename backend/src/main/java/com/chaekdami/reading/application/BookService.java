@@ -1,5 +1,6 @@
 package com.chaekdami.reading.application;
 
+import com.chaekdami.reading.application.port.BookActivityCleaner;
 import com.chaekdami.reading.domain.Book;
 import com.chaekdami.reading.domain.ReadingRecord;
 import com.chaekdami.reading.domain.ReadingStatus;
@@ -30,6 +31,7 @@ public class BookService {
     private final ReadingRecordRepository readingRecordRepository;
     private final ReadingSessionRepository readingSessionRepository;
     private final CertificationRepository certificationRepository;
+    private final BookActivityCleaner bookActivityCleaner;
 
     // 내 서재에 책 등록 (YES24 책, 수동 책 공통) + 1회차 독서 기록(읽기 전) 자동 생성
     @Transactional
@@ -95,10 +97,12 @@ public class BookService {
         return BookResponse.from(book, latest);
     }
 
-    // 서재에서 제거 (딸린 세션 → 독서 기록 순서로 함께 삭제)
+    // 서재에서 제거: 독후활동(문장·리뷰·독후감·좋아요·신고) → 인증 → 세션 → 독서 기록 → 책 순서로 함께 삭제
+    // 한 트랜잭션이라 하나라도 실패하면 전부 취소된다 (스펙 003 R3)
     @Transactional
     public void deleteBook(Long userId, Long bookId) {
         Book book = findMyBook(userId, bookId);
+        bookActivityCleaner.deleteAllOfBook(bookId);
         certificationRepository.deleteAllByReadingRecordBookId(bookId);
         readingSessionRepository.deleteAllByReadingRecordBookId(bookId);
         readingRecordRepository.deleteAllByBookId(bookId);

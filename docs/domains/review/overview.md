@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # review — 독후활동
 
@@ -45,15 +45,14 @@ backend/src/main/java/com/chaekdami/review/
 | review → user | 작성자 닉네임 | `UserNicknameReader` |
 | review → user | 현재 사용자 | `user.application.CurrentUser` |
 | user → review | 회원 탈퇴 시 독후활동 삭제 | 이벤트 `UserWithdrawnEvent` → `ReviewCleanupListener` |
-| reading → review | 책 삭제 시 독후활동 삭제 | `ReviewCleanupService.deleteAllOfBook`이 있지만 호출되지 않음 ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) |
-| reading → review | 세션 저장 시 문장 저장 | `SentenceService.recordFromSession`이 있지만 호출되지 않음 ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) |
+| reading → review | 책 삭제 시 독후활동 삭제 | reading port `BookActivityCleaner` → `ReviewBookActivityCleaner` → `ReviewCleanupService.deleteAllOfBook` (책 삭제와 같은 트랜잭션) |
+| reading → review | 세션 저장 시 문장 저장 | reading port `SessionSentenceRecorder` → `SentenceServiceSessionSentenceRecorder` → `SentenceService.recordFromSession` (세션 저장과 같은 트랜잭션) |
 | review → (없음) | `ReviewCreatedEvent`, `SentenceCreatedEvent`, `BookReport*Event` 발행 | 받는 곳 없음 (보상 연동용으로 남겨 둠) ⏳ [TODO-14](../../known-issues.md#todo-14) |
 
 ## 현재 상태
 
 - ✅ 문장 CRUD·모음집, 리뷰, 독후감, 독후활동 통합 저장, 한줄평 목록·별점 통계, 좋아요·신고·블라인드, 커뮤니티, 관리자
-- ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) 책 삭제 시 독후활동이 남음
-- ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 세션 문장 저장 미연결
+- ✅ 세션 저장 때 문장 저장, 책 삭제 시 독후활동 정리 (스펙 003)
 - ⏳ [TODO-9](../../known-issues.md#todo-9) 리뷰 삭제 API 없음 (한줄평만 `oneLine: ""`으로 지움)
 - ⏳ [TODO-4](../../known-issues.md#todo-4) AI 독후감 피드백 — `book_reports.revision`만 준비
 - ⏳ [TODO-13](../../known-issues.md#todo-13) 커뮤니티·모음집·독후감 개별·관리자 API를 앱이 아직 부르지 않음

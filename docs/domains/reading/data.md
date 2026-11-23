@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading 데이터
 
@@ -109,10 +109,9 @@ INDEX `idx_reading_sessions_reading_record_id`, `idx_reading_sessions_user_id_st
 
 | 상황 | 처리 | 상태 |
 |---|---|---|
-| 책 삭제 | 인증 → 세션 → 기록 → 책 순서로 삭제 (`BookService.deleteBook`) | ✅ |
-| 책 삭제 시 문장·리뷰·독후감·좋아요·신고 | 지우지 않음 | ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) |
+| 책 삭제 | 독후활동(문장·리뷰·독후감·그 리뷰의 좋아요·신고) → 인증 → 세션 → 기록 → 책 순서로 한 트랜잭션에서 삭제 (`BookService.deleteBook`, port `BookActivityCleaner` → `ReviewCleanupService.deleteAllOfBook`). 다른 사용자의 같은 ISBN 데이터는 지우지 않음 | ✅ |
 | 책 삭제 시 보상 내역 | 지우지 않음 | ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) |
-| 회원 탈퇴 | reading 데이터를 지우는 리스너 없음 | ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) |
+| 회원 탈퇴 | 인증 → 세션 → 기록 → 책 순서로 삭제, 탈퇴와 같은 트랜잭션 (`ReadingCleanupListener` → `ReadingCleanupService.deleteAllOfUser`) | ✅ |
 
 ## 변경 이력
 

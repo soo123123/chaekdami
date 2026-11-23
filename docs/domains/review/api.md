@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 > 원본: `docs/review-api-for-frontend.md` (커밋 `209eec7`)를 옮기고 현재 코드와 대조해 보정했다.
 
 # review API (독후활동)
@@ -863,7 +863,7 @@ Content-Type: application/json
 | --- | --- |
 | 문장 `content` | 앞뒤 공백을 지운 뒤 1~500자 |
 | 문장 `pageNumber` | 생략 가능. 1 이상, 그 책의 전체 쪽수 이하 |
-| 세션 `sentence` | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 독서 종료 저장(`POST /api/reading-sessions`)의 문장 필드. `SentenceService.recordFromSession`은 있지만 **세션 저장이 호출하지 않아 저장되지 않는다.** 현재 앱은 이 필드를 보내지 않고 문장 API로 따로 저장한다. 연결 후 규칙은 문장 `content` 와 같고 쪽 번호는 저장되지 않는다 ([known-issues](../../known-issues.md)) |
+| 세션 `sentence` | 독서 종료 저장(`POST /api/reading-sessions`)의 문장 필드. 세션과 함께 `SentenceService.recordFromSession`으로 저장된다. 규칙은 문장 `content`와 같고, 쪽 번호는 세션 `endPage`(1 미만이면 없음). 앱은 독서 종료 때 문장 API를 따로 부르지 않는다 |
 | 별점 `rating` | 1 이상 5 이하 정수. 리뷰를 만들 때 필수 |
 | 한줄평 `oneLine` | 최대 100자. 줄바꿈 불가. 빈 문자열이면 한줄평 삭제 |
 | 리뷰 `isSpoiler` | 생략하면 false |

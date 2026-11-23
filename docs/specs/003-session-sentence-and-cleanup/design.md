@@ -1,4 +1,4 @@
-> 상태: draft · 작성: 2026-11-22 · 기준: main@82df578 (+ 스펙 004 작업) · 담당: BE1 · 승인: BE1, BE3, FE1
+> 상태: in-progress (2026-11-22 승인, 구현·docs 완료, 사람 확인 남음) · 작성: 2026-11-22 · 기준: main@82df578 (+ 스펙 004 작업) · 담당: BE1 · 승인: BE1, BE3, FE1
 > 요구사항: [requirements.md](./requirements.md)
 
 # 003 · 세션 문장 저장과 삭제 데이터 정리 — Design
@@ -98,13 +98,13 @@
 
 ## ④ 고칠 docs 문서
 
-- [ ] `docs/domains/reading/api.md` — `POST /api/reading-sessions`의 `sentence`(저장됨, 쪽 번호 = `endPage`, 400), ISSUE-BUG-1·2 표시 제거
-- [ ] `docs/domains/reading/rules.md` — 세션 저장 규칙(문장 함께 저장, 한 트랜잭션)
-- [ ] `docs/domains/reading/data.md` — 삭제 표 (책 삭제 시 독후활동, 탈퇴 시 reading 데이터)
-- [ ] `docs/domains/review/*` — 세션 저장으로 문장이 만들어짐, 책 삭제 시 정리가 실제로 불림
-- [ ] `docs/architecture.md` — 새 port 2개, `ReadingCleanupListener`, ISSUE-DATA-2 표시 제거
-- [ ] `docs/known-issues.md` — ISSUE-BUG-1·BUG-2·DATA-1·DATA-2 해결. 새 문제: 응답만 끊긴 뒤 다시 시도하면 세션 2건 (R5.2)
-- [ ] `docs/specs/README.md` — 003 상태
+- [x] `docs/domains/reading/api.md` — `POST /api/reading-sessions`의 `sentence`(저장됨, 쪽 번호 = `endPage`, 400), ISSUE-BUG-1·2 표시 제거
+- [x] `docs/domains/reading/rules.md` — 세션 저장 규칙(문장 함께 저장, 한 트랜잭션)
+- [x] `docs/domains/reading/data.md` — 삭제 표 (책 삭제 시 독후활동, 탈퇴 시 reading 데이터)
+- [x] `docs/domains/review/*` — 세션 저장으로 문장이 만들어짐, 책 삭제 시 정리가 실제로 불림
+- [x] `docs/architecture.md` — 새 port 2개, `ReadingCleanupListener`, ISSUE-DATA-2 표시 제거
+- [x] `docs/known-issues.md` — ISSUE-BUG-1·BUG-2·DATA-1·DATA-2 해결. 새 문제: 응답만 끊긴 뒤 다시 시도하면 세션 2건 (R5.2)
+- [x] `docs/specs/README.md` — 003 상태
 
 ## ⑤ 남은 질문 (❓)
 

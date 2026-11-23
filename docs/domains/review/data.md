@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # review 데이터
 
@@ -103,7 +103,7 @@ UNIQUE `uk_review_reports_review_id_user_id`
 | 상황 | 처리 | 상태 |
 |---|---|---|
 | 회원 탈퇴 | `ReviewCleanupListener`가 이 사용자의 독후활동 삭제 | ✅ |
-| 책 삭제 | `ReviewCleanupService.deleteAllOfBook`이 있지만 호출 안 됨 → 남음 | ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) |
+| 책 삭제 | reading 책 삭제가 `ReviewCleanupService.deleteAllOfBook`을 같은 트랜잭션에서 불러 그 책(`book_id`)의 좋아요·신고 → 리뷰 → 독후감 → 문장 삭제 | ✅ |
 
 ## 변경 이력
 

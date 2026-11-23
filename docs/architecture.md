@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 아키텍처
 
@@ -47,18 +47,21 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  user -- "UserWithdrawnEvent" --> review & reward & dday
+  user -- "UserWithdrawnEvent" --> review & reward & dday & reading
   review -- "port: BookReader, ReadingRecordReader (JDBC)" --> reading
   review -- "UserNicknameReader" --> user
   reward -- "port: ReadingSessionReader" --> reading
   reward -- "직접: DdayService, DdayRecordRepository" --> dday
   dday -- "직접: StreakService, StreakCalculator" --> reward
   reading -. "직접: SentenceRepository (오늘 메모 수)" .-> review
+  reading -- "port: SessionSentenceRecorder, BookActivityCleaner" --> review
 ```
 
 | 연결 | 방식 | 위치 |
 |---|---|---|
-| 회원 탈퇴 → 독후활동·보상·D-day 삭제 | 이벤트 `UserWithdrawnEvent` | `*CleanupListener` |
+| 회원 탈퇴 → 독후활동·보상·D-day·서재 삭제 | 이벤트 `UserWithdrawnEvent` | `*CleanupListener` (reading은 `ReadingCleanupListener`) |
+| 독서 세션 저장 → 문장 저장 | port (`SessionSentenceRecorder`), 같은 트랜잭션 | `review/infrastructure/SentenceServiceSessionSentenceRecorder` |
+| 책 삭제 → 독후활동 삭제 | port (`BookActivityCleaner`), 같은 트랜잭션 | `review/infrastructure/ReviewBookActivityCleaner` |
 | 독후활동 → 책·독서 기록 조회 | port (`BookReader`, `ReadingRecordReader`) + JDBC 구현 | `review/application/port`, `review/infrastructure/Jdbc*` |
 | 보상 → 독서 세션 조회 | port (`ReadingSessionReader`) | `reward/infrastructure/ReadingSessionRepositoryReader` |
 | 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 세션에 연결된 독서 인증 조회 | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` |
@@ -66,8 +69,6 @@ flowchart LR
 | 독서 → 문장 수 | 직접 참조 | `TodayReadingService` |
 | 독후활동 이벤트 (`ReviewCreatedEvent` 등) | 발행만 하고 받는 곳 없음 | `review/application/event` |
 
-> ⚠️ [ISSUE-DATA-2](./known-issues.md#issue-data-2) 회원 탈퇴 시 reading 데이터(서재·기록·세션)를 지우는 리스너는 없다.
->
 > ⏳ [TODO-19](./known-issues.md#todo-19) reward ↔ dday 직접 참조
 
 ## 4. 핵심 흐름

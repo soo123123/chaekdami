@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading 규칙
 
@@ -46,7 +46,9 @@
 | 현재 페이지 갱신 | 끝 페이지가 현재 페이지보다 크면 갱신. **뒤로 가지 않음** (앞부분 재독은 저장되지만 현재 페이지 유지) | `ReadingRecord.applySession` | ✅ |
 | 상태 갱신 | 읽기 전이면 읽는 중으로, 끝 페이지가 마지막 쪽이면 완독 | `ReadingRecord.applySession` | ✅ |
 | 보상 | 세션 저장은 보상을 주지 않는다. 독서 완료 화면이 보상 API를 부른다 | [reward/rules.md](../reward/rules.md#1-독서-완료-보상) | ✅ |
-| 문장·사진 | 요청에 있어도 저장하지 않음 | `ReadingSessionService` | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) ⏳ [TODO-2](../../known-issues.md#todo-2) |
+| 문장 | 요청의 `sentence`를 이 회차 문장으로 저장 (쪽 번호 = `endPage`). 빈 문장은 저장 안 함, 규칙 위반(500자 초과)이면 세션까지 취소 | `ReadingSessionService.create` → port `SessionSentenceRecorder` → `SentenceService.recordFromSession` | ✅ |
+| 한 트랜잭션 | 세션·인증 연결·문장을 함께 저장, 하나라도 실패하면 전부 취소 | `ReadingSessionService.create` | ✅ ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) |
+| 사진 | `photos`는 받기만 하고 저장하지 않음 | `ReadingSessionService` | ⏳ [TODO-2](../../known-issues.md#todo-2) |
 | 시간 입력 | 앱이 보낸 `readingTime`을 범위만 검증 | `ReadingSession.of` | ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1) |
 | 앱 종료 시 | 타이머 중 앱이 완전히 종료되면 측정 시간 유실 | 앱 `useReadingTimer` | ⚠️ [ISSUE-LIMIT-2](../../known-issues.md#issue-limit-2) |
 | "상태 변경 5분" | 옛 기획의 문구, 의미 미정 | — | ❓ [ASK-1](../../known-issues.md#ask-1) |

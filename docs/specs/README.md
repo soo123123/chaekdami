@@ -50,5 +50,5 @@
 | 000 | [harness-bootstrap](./000-harness-bootstrap/) — docs 지식 베이스와 스펙 체계 만들기 | in-progress | BE1 |
 | 001 | [reward-integration](./001-reward-integration/) — 보상(BE2) 병합과 프론트 연결 | in-progress (실기기 확인 8.1·8.3~8.5 남음) | FE1·FE2·BE2 |
 | 002 | [reading-reward](./002-reading-reward/) — 독서 보상 연결 (초기안) | superseded → 001 | FE1 |
-| 003 | [session-sentence-and-cleanup](./003-session-sentence-and-cleanup/) — 세션 문장 저장과 삭제 데이터 정리 | requirements approved · design draft | BE1·BE3·FE1 |
+| 003 | [session-sentence-and-cleanup](./003-session-sentence-and-cleanup/) — 세션 문장 저장과 삭제 데이터 정리 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·BE3·FE1 |
 | 004 | [reading-certification-app](./004-reading-certification-app/) — 독서 인증 앱 연결과 사진 인증 보상 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·FE1·BE2 |

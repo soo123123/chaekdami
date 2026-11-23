@@ -22,4 +22,7 @@ public interface CertificationRepository extends JpaRepository<Certification, Lo
 
     // 서재에서 책을 지울 때 함께 삭제
     void deleteAllByReadingRecordBookId(Long bookId);
+
+    // 회원 탈퇴 때 그 사용자의 인증 전부 삭제 (스펙 003 R4)
+    void deleteAllByUserId(Long userId);
 }
