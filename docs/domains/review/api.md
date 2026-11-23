@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
 > 원본: `docs/review-api-for-frontend.md` (커밋 `209eec7`)를 옮기고 현재 코드와 대조해 보정했다.
 
 # review API (독후활동)
@@ -85,6 +85,7 @@ Authorization: Bearer {accessToken}
 | POST | `/api/books/{bookId}/review` | 리뷰 작성 | 필요 | 201 |
 | GET | `/api/books/{bookId}/review` | 내 리뷰 조회 | 필요 | 200 |
 | PATCH | `/api/reviews/{reviewId}` | 리뷰 수정 | 필요 | 200 |
+| DELETE | `/api/reviews/{reviewId}` | 리뷰 삭제 | 필요 | 204 |
 | GET | `/api/book-reports/{bookReportId}` | 독후감 조회 | 필요 | 200 |
 | PATCH | `/api/book-reports/{bookReportId}` | 독후감 수정 | 필요 | 200 |
 | DELETE | `/api/book-reports/{bookReportId}` | 독후감 삭제 | 필요 | 204 |
@@ -493,6 +494,23 @@ Content-Type: application/json
 ```
 
 성공 `200`. 리뷰 객체다.
+
+### 리뷰 삭제
+
+`DELETE /api/reviews/{reviewId}`
+
+별점과 한줄평을 함께 지운다. 이 리뷰에 달린 좋아요와 신고도 같이 지워진다. 블라인드된 리뷰도 작성자는 지울 수 있다.
+
+요청
+
+```
+DELETE /api/reviews/1
+Authorization: Bearer {accessToken}
+```
+
+성공 `204`. 본문이 없다. 리뷰가 없거나 다른 사람의 리뷰면 404 `REVIEW_NOT_FOUND` 다.
+
+지운 뒤에는 한줄평 목록, 별점 통계, 커뮤니티에 나오지 않는다. 같은 책에 리뷰를 다시 쓸 수 있다.
 
 ### 독후감 조회
 
