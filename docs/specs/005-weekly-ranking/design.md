@@ -90,7 +90,7 @@
 | `backend/.../reward/presentation/RankingController.java` | 새로 만듦. `GET /api/rewards/rankings/weekly/experience`, `/weekly/reading-time` |
 | `backend/src/test/.../reward/domain/RankingWeekTest.java` | 주 경계: 월요일 0시, 일요일 23:59, 서버 UTC일 때 |
 | `backend/src/test/.../reward/application/RankingServiceTest.java` | 동점 순위, 내 순위(30위 밖·0점), 닉네임 없는 사용자 제외, 계정 없을 때 레벨 1, 독서 시간 랭킹 |
-| `frontend/...` | 없음 (화면은 범위 밖) |
+| (프론트) | 없음. 화면은 범위 밖 |
 
 ## ④ 고칠 docs 문서
 
