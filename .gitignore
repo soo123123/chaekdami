@@ -45,3 +45,6 @@ __pycache__/
 
 # Claude 개인 설정 (팀 공용은 .claude/settings.json)
 .claude/settings.local.json
+
+### 하네스: known-issues main 작업 공간 ###
+.worktrees/

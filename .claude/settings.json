@@ -1,5 +1,13 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          { "type": "command", "command": "python3 -B \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-news.py\"", "timeout": 20 }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
