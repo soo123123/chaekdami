@@ -10,6 +10,20 @@ path = rel_path((data.get("tool_input") or {}).get("file_path"))
 if path is None:
     sys.exit(0)
 
+KI_WT = ".worktrees/known-issues/"
+if path == KI_WT + "docs/known-issues.md":
+    # main 작업 공간: 그 작업 공간을 기준으로 문서 검사를 돌린다
+    import os
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/harness/docs-check.py")], cwd=ROOT,
+                       env={**os.environ, "CHAEKDAMI_ROOT": str(ROOT / KI_WT)},
+                       capture_output=True, text=True, timeout=30)
+    if r.returncode != 0:
+        post_context("main 작업 공간의 known-issues 수정 후 docs-check(main 기준)에서 문제가 보고됐다. "
+                     "이번 수정 때문에 생긴 항목이면 push 전에 고친다.\n\n" + (r.stdout + r.stderr).strip())
+    sys.exit(0)
+if path.startswith(".worktrees/"):
+    sys.exit(0)
+
 is_docs = path.startswith("docs/") or path in ("AGENTS.md", "CLAUDE.md", "README.md")
 is_api = bool(
     re.match(r"backend/src/main/java/.+/presentation/[^/]+Controller\.java$", path)

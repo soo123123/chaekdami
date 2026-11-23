@@ -5,7 +5,8 @@
   2. 링크: 문서 안 상대 링크의 대상 파일이 있음
   3. API 누락: 백엔드의 모든 API가 docs/domains/*/api.md 어딘가에 적혀 있음
   4. 비밀값: 키·비밀번호로 보이는 문자열이 없음
-  5. 문제 ID: 문서에 쓴 ISSUE-·TODO-·ASK- ID가 known-issues.md에 있음 (열린 문제가 어느 문서에도 안 나오면 경고)
+  5. 문제 ID: 문서에 쓴 ISSUE-·TODO-·ASK- ID가 known-issues.md(이 브랜치 또는 origin/main)에 있음 (열린 문제가 어느 문서에도 안 나오면 경고)
+  6. known-issues 위치: main 이 아닌 브랜치가 docs/known-issues.md 를 고치지 않음 (main 에서만 고친다, decisions/0008)
 
 사용: python3 scripts/harness/docs-check.py
 종료 코드: 문제가 하나라도 있으면 1
@@ -28,10 +29,20 @@ SECRET = [
 ISSUE_ID = re.compile(r"\b((?:ISSUE-[A-Z]+|TODO|ASK)-\d+)\b")
 API_ROW = re.compile(r"`((?:GET|POST|PUT|PATCH|DELETE)?\s*/[^`\s]*)`")
 
+
+def _git(*args):
+    """git 결과 문자열. git 이 없거나 실패하면 None (검사는 건너뛴다)."""
+    import subprocess
+    try:
+        r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=10)
+    except Exception:
+        return None
+    return r.stdout if r.returncode == 0 else None
+
 def main():
     files = sorted(p for p in DOCS.rglob("*.md") if "_templates" not in p.parts)
     files += [ROOT / "AGENTS.md", ROOT / "README.md"]
-    problems = {"상태 줄": [], "링크": [], "API 누락": [], "비밀값": [], "문제 ID": []}
+    problems = {"상태 줄": [], "링크": [], "API 누락": [], "비밀값": [], "문제 ID": [], "known-issues 위치": []}
     warnings = []
     used_ids = {}
 
@@ -65,13 +76,26 @@ def main():
         if normalize(path) not in documented:
             problems["API 누락"].append(f"{method} {path}  ({f})")
 
+    # known-issues 는 main 에서만 고친다 (decisions/0008). 브랜치의 사본은 오래됐을 수 있어 origin/main 의 ID 도 인정한다
     registry = DOCS / "known-issues.md"
+    registry_texts = [registry.read_text(encoding="utf-8")] if registry.exists() else []
+    main_text = _git("show", "origin/main:docs/known-issues.md")
+    if main_text:
+        registry_texts.append(main_text)
     defined = set()
-    if registry.exists():
-        for line in registry.read_text(encoding="utf-8").splitlines():
+    for text in registry_texts:
+        for line in text.splitlines():
             m = re.match(r'^\|\s*(?:<a id="[^"]*"></a>)?((?:ISSUE-[A-Z]+|TODO|ASK)-\d+)\s*\|', line)
             if m:
                 defined.add(m.group(1))
+    branch = (_git("symbolic-ref", "-q", "--short", "HEAD") or "").strip()
+    if branch and branch != "main":
+        changed = (_git("diff", "--name-only", "origin/main...HEAD", "--", "docs/known-issues.md") or "") \
+            + (_git("diff", "--name-only", "HEAD", "--", "docs/known-issues.md") or "")
+        if changed.strip():
+            problems["known-issues 위치"].append(
+                f"{branch} 브랜치에서 docs/known-issues.md 를 고쳤다. main 에서만 고친다 "
+                "(scripts/harness/known-issues.py, decisions/0008). 브랜치의 수정은 되돌린다")
     for issue_id, where in sorted(used_ids.items()):
         if issue_id not in defined:
             problems["문제 ID"].append(f"{issue_id} — known-issues.md에 없음 ({where})")

@@ -29,7 +29,7 @@ description: 책다듬이에서 스펙 없이 코드가 바뀌었을 때(PR 병�
    - `rules.md`: 규칙 · 값 · 코드 위치 · 상태
    - `overview.md`: 핵심 개념, 코드 위치, 현재 상태
    - 환경변수가 늘었으면 `docs/conventions/testing.md` (이름만, 값은 쓰지 않는다)
-4. `known-issues.md`: 해결·변경된 항목을 고치고, 새로 생긴 문제·질문은 issue-log 절차로 기록
+4. `known-issues.md`: 해결·변경된 항목 수정과 새 문제·질문 기록 모두 issue-log 절차로 한다. 병합된 스펙의 "🚧 진행 중 작업" 행은 지운다 (main 작업 공간에서 고치고 `scripts/harness/known-issues.py push`로 바로 main에 올림. 브랜치 사본은 고치지 않는다)
 5. 값은 한 곳에만 쓰고 나머지는 링크한다 (`docs/README.md`)
 6. 검사: `python3 scripts/harness/docs-check.py`, `python3 scripts/harness/contract-check.py`
 7. 보고: 고친 파일 표, 남은 일, 커밋할 파일과 커밋 메시지 제안 (커밋은 사람이 한다)
