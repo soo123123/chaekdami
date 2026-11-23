@@ -39,7 +39,6 @@
 |---|---|---|---|---|---|
 | 005 | TODO-6 | BE2 | feature/be2-ranking | `backend/.../reward/domain/RankingWeek.java`, `backend/.../reward/application/RankingService.java`, `backend/.../reward/application/WeeklyRankingResult.java`, `backend/.../reward/application/port/UserNicknameReader.java`, `backend/.../reward/application/port/WeeklyReadingTimeReader.java`, `backend/.../reward/infrastructure/RewardUserNicknameReader.java`, `backend/.../reward/infrastructure/ReadingSessionTimeReader.java`, `backend/.../reward/infrastructure/ReadingSessionTimeQueryRepository.java`, `backend/.../reward/infrastructure/RewardTransactionRepository.java`, `backend/.../reward/infrastructure/RewardAccountRepository.java`, `backend/.../reward/presentation/RankingController.java`, `backend/src/test/.../reward/domain/RankingWeekTest.java`, `backend/src/test/.../reward/application/RankingServiceTest.java` | 2026-11-23 |
 | 006 | TODO-9 | BE3 | feature/be3-review-delete | `backend/src/main/java/com/chaekdami/review/presentation/ReviewController.java`, `backend/src/main/java/com/chaekdami/review/application/ReviewService.java`, `backend/src/main/java/com/chaekdami/review/infrastructure/ReviewLikeRepository.java`, `backend/src/main/java/com/chaekdami/review/infrastructure/ReviewReportRepository.java`, `backend/src/test/java/com/chaekdami/review/application/ReviewServiceTest.java`, `backend/src/test/java/com/chaekdami/review/application/ReadingReviewServiceTest.java`, `backend/http/review.http` | 2026-11-23 |
-| 007 | TODO-10 | BE3 | feature/be3-admin-users | `backend/src/main/java/com/chaekdami/user/domain/User.java`, `backend/src/main/java/com/chaekdami/user/domain/UserStatus.java`, `backend/src/main/java/com/chaekdami/user/domain/UserErrorCode.java`, `backend/src/main/java/com/chaekdami/user/infrastructure/UserRepository.java`, `backend/src/main/java/com/chaekdami/user/application/UserService.java`, `backend/src/main/java/com/chaekdami/user/application/UserAdminService.java`, `backend/src/main/java/com/chaekdami/user/application/result/AdminUserResult.java`, `backend/src/main/java/com/chaekdami/user/application/exception/AccountSuspendedException.java`, `backend/src/main/java/com/chaekdami/user/presentation/UserAdminController.java`, `backend/src/main/java/com/chaekdami/user/presentation/dto/SuspendRequest.java`, `backend/src/main/java/com/chaekdami/user/presentation/dto/ChangeRoleRequest.java`, `backend/src/main/java/com/chaekdami/user/presentation/dto/ApiErrorResponse.java`, `backend/src/main/java/com/chaekdami/user/presentation/GlobalExceptionHandler.java`, `backend/src/test/java/com/chaekdami/user/domain/UserTest.java`, `backend/src/test/java/com/chaekdami/user/application/UserAdminServiceTest.java`, `backend/src/test/java/com/chaekdami/user/application/UserServiceLoginAttemptTest.java`, `backend/http/admin-users.http` | 2026-11-23 |
 
 ---
 
@@ -47,7 +46,6 @@
 
 | ID | 담당 | 심각도 | 상태 | 지금 구현 | 문제 | 위치 | 문서 | 스펙 |
 |---|---|---|---|---|---|---|---|---|
-| <a id="issue-sec-1"></a>ISSUE-SEC-1 | BE3 | 높음 | 진행 중 (fix/be3-mail-password) | 메일 비밀번호가 `application-dev.properties`에 평문으로 있고 git에 커밋돼 있다 | 저장소를 볼 수 있는 누구나 메일 계정을 쓸 수 있다 | `backend/src/main/resources/application-dev.properties` | [user/overview](./domains/user/overview.md#현재-상태) | — |
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 공통 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-4"></a>ISSUE-BUG-4 | FE2 | 중간 | 열림 | 독서 완료 화면의 "독서 집중도"는 전달 경로가 없어 예시 값(94%, 집중 모드 사용)을 보여준다 | 실제와 관계없는 집중도가 사용자에게 보인다. 미팅(2026-11-23) 결정: 표시를 없앤다 | 앱 `useReadingComplete`(`EXAMPLE.focusPercent`), `ReadingResultCard` | [reward/overview](./domains/reward/overview.md#현재-상태) | 불필요 |
@@ -72,7 +70,6 @@
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | FE2 (+FE1) | (확정) 독서 알림 | 열림 | 없음. 기획(2026-11-23): 오늘 독서하지 않았으면 특정 시간부터 자정까지 반복 알림 (듀오링고 방식), 마이페이지에서 설정. 구현 방식은 ASK-7 (서버 푸시면 +BE3·BE2) | — | [overview](./overview.md#3-주요-기능과-현재-상태) |
 | <a id="todo-9"></a>TODO-9 | BE3 (+FE1) | 리뷰(별점) 삭제 | 진행 중 (스펙 006) | API 없음. 한줄평만 빈 문자열로 지움 | `ReviewController` | [review/rules](./domains/review/rules.md#2-리뷰별점한줄평) |
-| <a id="todo-10"></a>TODO-10 | BE3 | 관리자 사용자 관리 | 진행 중 (스펙 007) | 리뷰 블라인드만 있음 | — | [user/overview](./domains/user/overview.md#현재-상태) |
 | <a id="todo-11"></a>TODO-11 | FE1 | 바코드 스캔 검색 | 열림 | 앱에 "준비 중" 안내 | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-12"></a>TODO-12 | BE1 (+BE2, FE2) | 독서 통계 목표·D-day 완료 권수 연결 | 열림 | 통계 `goalBooks`·`goalTarget` 항상 0, D-day 완료 권수는 사용자 입력 | `ReadingStatsService`, `DdayService` | [reading/api](./domains/reading/api.md#get-apimereading-stats), [dday/rules](./domains/dday/rules.md#1-목표) |
 | <a id="todo-13"></a>TODO-13 | FE1·FE2 (완독은 미정) | 앱에서 아직 안 쓰는 API 연결 | 열림 | 완독, 독후감 개별, 커뮤니티 요약·항목, 문장 모음집, 관리자 API를 앱이 부르지 않음 (`contract-check.py --all`) | 앱 | [review/overview](./domains/review/overview.md#현재-상태) |
@@ -113,6 +110,8 @@
 ## 4. 해결됨
 
 | ID | 해결 | 날짜 | 스펙 |
+| ISSUE-SEC-1 메일 비밀번호 평문 커밋 | `application-dev.properties`의 평문 줄을 지우고 `application.properties`의 `${MAIL_PASSWORD}`로 통일. 비밀번호는 교체하지 않기로 함 (사람 결정 2026-11-23): 이전 커밋(`4f29537` 등)에 남은 값은 계속 유효 | 2026-11-23 | — |
+| TODO-10 관리자 사용자 관리 | `/api/admin/users` 목록·검색·상세, 이용 정지(기한 선택·사유)·해제, 역할 변경. 정지·역할 변경 시 세션 무효화, 정지된 회원 로그인 403 `ACCOUNT_SUSPENDED`. 자기 자신·ADMIN 대상 변경 금지. 앱 화면 없이 http로만 사용 | 2026-11-23 | [007](./specs/007-admin-users/) |
 |---|---|---|---|
 | TODO-1 독서 인증 앱 연결 | 앱이 `POST /api/reading-records/{id}/certifications`로 사진을 보냄 (가장 최근 회차, 45초). `PASSED`만 통과 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
 | TODO-3 사진 인증 추가 보상 연결 | 세션 저장 때 인증을 세션에 연결하고 `CertificationPhotoChecker`가 조회. 429 통과는 제외 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
