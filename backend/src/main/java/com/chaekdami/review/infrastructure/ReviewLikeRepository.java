@@ -41,4 +41,8 @@ public interface ReviewLikeRepository extends JpaRepository<ReviewLike, Long> {
     @Modifying(flushAutomatically = true)
     @Query("delete from ReviewLike l where l.review.id in (select r.id from Review r where r.bookId = :bookId)")
     int deleteAllOnBook(@Param("bookId") Long bookId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from ReviewLike l where l.review.id = :reviewId")
+    int deleteAllOnReview(@Param("reviewId") Long reviewId);
 }

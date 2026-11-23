@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # user 규칙
 
@@ -51,3 +51,21 @@
 |---|---|---|---|
 | 확인 | 현재 비밀번호 필요 | `WithdrawRequest` | ✅ |
 | 다른 도메인 데이터 | 같은 트랜잭션에서 review·reward·dday·reading 리스너가 먼저 삭제 | `UserWithdrawnEvent` | ✅ |
+
+## 6. 관리자
+
+관리자 API는 [api.md](./api.md#관리자-api). 스펙 [007](../../specs/007-admin-users/).
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 권한 | `/api/admin/**`는 `ADMIN`만 (아니면 403) | `SecurityConfig` | ✅ |
+| 첫 관리자 | API로 만들 수 없음. DB에서 `users.role`을 직접 `ADMIN`으로 | — | ✅ |
+| 정지 판단 | `status = SUSPENDED`이고 끝 시각이 없거나 지금보다 뒤일 때만 정지. 끝 시각이 지나면 해제하지 않아도 풀림 (스케줄러 없음). `status`가 NULL이면 ACTIVE | `User.isSuspendedAt` | ✅ |
+| 정지 시 세션 | `token_version` +1, Refresh Token 전부 폐기 (전체 로그아웃과 같음) | `UserService.invalidateSessions` | ✅ |
+| 정지된 회원 로그인 | 비밀번호가 맞을 때만 403 `ACCOUNT_SUSPENDED` + 끝 시각. 틀리면 401 (정지 사실을 드러내지 않음) | `UserService.login` | ✅ |
+| 정지된 회원 재설정 | 비밀번호 재설정 요청·재설정 가능. 정지는 그대로 | `UserService` | ✅ |
+| 정지 사유 | 선택, 200자까지. 관리자 상세에서만 보임 | `User.MAX_SUSPENSION_REASON_LENGTH` | ✅ |
+| 다시 정지 | 사유·끝 시각·정지 시각·관리자를 새 값으로 | `User.suspend` | ✅ |
+| 역할 변경 | 바뀌면 세션 무효화 (다시 로그인해야 새 역할). 같은 역할이면 아무것도 안 함 | `UserAdminService.changeRole` | ✅ |
+| 관리자 보호 | 자기 자신·ADMIN 대상의 정지·역할 변경은 400. 해제는 ADMIN에게도 가능 | `UserAdminService` | ✅ |
+| 정지 이력 | 마지막 정지 정보만 남김. 해제하면 지움 | `User.unsuspend` | ✅ |

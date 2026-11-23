@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # review — 독후활동
 
@@ -51,8 +51,7 @@ backend/src/main/java/com/chaekdami/review/
 
 ## 현재 상태
 
-- ✅ 문장 CRUD·모음집, 리뷰, 독후감, 독후활동 통합 저장, 한줄평 목록·별점 통계, 좋아요·신고·블라인드, 커뮤니티, 관리자
+- ✅ 문장 CRUD·모음집, 리뷰(삭제 포함, 스펙 006), 독후감, 독후활동 통합 저장, 한줄평 목록·별점 통계, 좋아요·신고·블라인드, 커뮤니티, 관리자
 - ✅ 세션 저장 때 문장 저장, 책 삭제 시 독후활동 정리 (스펙 003)
-- ⏳ [TODO-9](../../known-issues.md#todo-9) 리뷰 삭제 API 없음 (한줄평만 `oneLine: ""`으로 지움)
 - ⏳ [TODO-4](../../known-issues.md#todo-4) AI 독후감 피드백 — `book_reports.revision`만 준비
 - ⏳ [TODO-13](../../known-issues.md#todo-13) 커뮤니티·모음집·독후감 개별·관리자 API를 앱이 아직 부르지 않음

@@ -43,6 +43,10 @@ public interface ReviewReportRepository extends JpaRepository<ReviewReport, Long
     @Query("delete from ReviewReport r where r.review.id in (select v.id from Review v where v.bookId = :bookId)")
     int deleteAllOnBook(@Param("bookId") Long bookId);
 
+    @Modifying(flushAutomatically = true)
+    @Query("delete from ReviewReport r where r.review.id = :reviewId")
+    int deleteAllOnReview(@Param("reviewId") Long reviewId);
+
     interface ReasonCount {
 
         Long getReviewId();

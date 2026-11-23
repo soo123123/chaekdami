@@ -8,6 +8,8 @@ import com.chaekdami.review.application.port.ReadingRecordReader;
 import com.chaekdami.review.application.result.ReviewResult;
 import com.chaekdami.review.domain.Review;
 import com.chaekdami.review.domain.ReviewErrorCode;
+import com.chaekdami.review.infrastructure.ReviewLikeRepository;
+import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
 import com.chaekdami.user.application.CurrentUser;
 import com.chaekdami.user.application.exception.InvalidRequestException;
@@ -29,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -38,6 +42,8 @@ import static org.mockito.Mockito.when;
 class ReviewServiceTest {
 
     private final ReviewRepository reviewRepository = mock(ReviewRepository.class);
+    private final ReviewLikeRepository reviewLikeRepository = mock(ReviewLikeRepository.class);
+    private final ReviewReportRepository reviewReportRepository = mock(ReviewReportRepository.class);
     private final ReadingRecordReader readingRecordReader = mock(ReadingRecordReader.class);
     private final BookReader bookReader = mock(BookReader.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
@@ -45,8 +51,9 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        reviewService = new ReviewService(reviewRepository, readingRecordReader,
-                new OwnedResources(readingRecordReader, bookReader), new CurrentUser(), eventPublisher);
+        reviewService = new ReviewService(reviewRepository, reviewLikeRepository, reviewReportRepository,
+                readingRecordReader, new OwnedResources(readingRecordReader, bookReader), new CurrentUser(),
+                eventPublisher);
         signIn(1L);
         when(bookReader.find(7L)).thenReturn(Optional.of(book(7L, 1L, "9791162540640", 400)));
         when(reviewRepository.findByBookId(7L)).thenReturn(Optional.empty());
@@ -146,6 +153,58 @@ class ReviewServiceTest {
                 () -> reviewService.update(5L, new ReviewWriteCommand(1, null, null, null)));
 
         assertEquals(ReviewErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    void deleteRemovesLikesAndReportsBeforeTheReview() {
+        Review mine = review(1L);
+        when(reviewRepository.findById(5L)).thenReturn(Optional.of(mine));
+
+        reviewService.delete(5L);
+
+        var order = inOrder(reviewLikeRepository, reviewReportRepository, reviewRepository);
+        order.verify(reviewLikeRepository).deleteAllOnReview(5L);
+        order.verify(reviewReportRepository).deleteAllOnReview(5L);
+        order.verify(reviewRepository).delete(mine);
+    }
+
+    @Test
+    void deleteOfMissingReviewIsNotFound() {
+        when(reviewRepository.findById(5L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> reviewService.delete(5L));
+
+        assertEquals(ReviewErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
+        verifyNothingDeleted();
+    }
+
+    @Test
+    void deleteOfSomeoneElsesReviewIsNotFoundAndDeletesNothing() {
+        when(reviewRepository.findById(5L)).thenReturn(Optional.of(review(2L)));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> reviewService.delete(5L));
+
+        assertEquals(ReviewErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
+        verifyNothingDeleted();
+    }
+
+    @Test
+    void blindedReviewCanStillBeDeletedByItsAuthor() {
+        Review blinded = review(1L);
+        ReflectionTestUtils.setField(blinded, "isBlinded", true);
+        when(reviewRepository.findById(5L)).thenReturn(Optional.of(blinded));
+
+        reviewService.delete(5L);
+
+        verify(reviewLikeRepository).deleteAllOnReview(5L);
+        verify(reviewReportRepository).deleteAllOnReview(5L);
+        verify(reviewRepository).delete(blinded);
+    }
+
+    private void verifyNothingDeleted() {
+        verify(reviewLikeRepository, never()).deleteAllOnReview(anyLong());
+        verify(reviewReportRepository, never()).deleteAllOnReview(anyLong());
+        verify(reviewRepository, never()).delete(any());
     }
 
     static Review review(Long userId) {

@@ -2,11 +2,14 @@ package com.chaekdami.user.application;
 
 import com.chaekdami.config.JwtTokenProvider;
 import com.chaekdami.user.application.command.LoginCommand;
+import com.chaekdami.user.application.exception.AccountSuspendedException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
 import com.chaekdami.user.application.exception.TooManyAttemptsException;
+import com.chaekdami.user.application.result.IssuedTokens;
 import com.chaekdami.user.domain.AuthAttempt;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
+import com.chaekdami.user.domain.UserErrorCode;
 import com.chaekdami.user.infrastructure.AuthAttemptRepository;
 import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
@@ -17,11 +20,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,10 +36,12 @@ import static org.mockito.Mockito.when;
 class UserServiceLoginAttemptTest {
 
     private UserService userService;
+    private User user;
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
-        User user = User.builder()
+        user = User.builder()
                 .email("reader@chaekdami.local")
                 .passwordHash("stored-hash")
                 .nickname("reader")
@@ -44,7 +52,7 @@ class UserServiceLoginAttemptTest {
         UserRepository userRepository = mock(UserRepository.class);
         when(userRepository.findByEmail("reader@chaekdami.local")).thenReturn(Optional.of(user));
 
-        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
         Map<String, AuthAttempt> store = new HashMap<>();
@@ -80,5 +88,38 @@ class UserServiceLoginAttemptTest {
         }
         assertThrows(TooManyAttemptsException.class, () -> userService.login(command));
         assertThrows(TooManyAttemptsException.class, () -> userService.login(command));
+    }
+
+    @Test
+    void suspendedUserWithCorrectPasswordIsToldUntilWhen() {
+        LocalDateTime until = LocalDateTime.now().plusDays(3);
+        user.suspend("신고 누적", until, 9L, LocalDateTime.now());
+        when(passwordEncoder.matches("right-password", "stored-hash")).thenReturn(true);
+
+        AccountSuspendedException exception = assertThrows(AccountSuspendedException.class,
+                () -> userService.login(new LoginCommand("reader@chaekdami.local", "right-password", "127.0.0.1")));
+
+        assertEquals(UserErrorCode.ACCOUNT_SUSPENDED, exception.getErrorCode());
+        assertEquals(until, exception.getSuspendedUntil());
+    }
+
+    @Test
+    void suspendedUserWithWrongPasswordLooksLikeAnyWrongPassword() {
+        user.suspend("신고 누적", null, 9L, LocalDateTime.now());
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> userService.login(new LoginCommand("reader@chaekdami.local", "wrong-password", "127.0.0.1")));
+    }
+
+    @Test
+    void expiredSuspensionDoesNotBlockLogin() {
+        user.suspend("신고 누적", LocalDateTime.now().plusDays(1), 9L, LocalDateTime.now().minusDays(2));
+        ReflectionTestUtils.setField(user, "suspendedUntil", LocalDateTime.now().minusSeconds(1));
+        when(passwordEncoder.matches("right-password", "stored-hash")).thenReturn(true);
+
+        IssuedTokens tokens = userService.login(
+                new LoginCommand("reader@chaekdami.local", "right-password", "127.0.0.1"));
+
+        assertNotNull(tokens.accessToken());
     }
 }

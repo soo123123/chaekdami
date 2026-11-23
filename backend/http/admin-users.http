@@ -1,0 +1,62 @@
+@baseUrl = http://localhost:8080
+# 관리자 계정. ADMIN 지정은 처음 한 번 DB에서 직접 한다: update users set role = 'ADMIN' where email = '...';
+@adminEmail = admin@chaekdami.local
+@adminPassword = password123
+@userId = 2
+
+### 1. 관리자 로그인 (adminToken 저장)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("adminToken", response.body.accessToken);
+%}
+
+### 2. 회원 목록 (가입일 최신순, page는 0부터, size 최대 100)
+GET {{baseUrl}}/api/admin/users?page=0&size=20
+Authorization: Bearer {{adminToken}}
+
+### 3. 회원 검색 (이메일·닉네임 부분 일치, 대소문자 무시) + 역할·상태 필터 (role: USER|ADMIN, status: ACTIVE|SUSPENDED)
+GET {{baseUrl}}/api/admin/users?query=tester&role=USER&status=ACTIVE
+Authorization: Bearer {{adminToken}}
+
+### 4. 회원 상세 (없으면 404 USER_NOT_FOUND)
+GET {{baseUrl}}/api/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### 5. 기한 있는 정지 (until이 지나면 자동으로 풀림. 과거 시각이면 400 VALIDATION_ERROR)
+PUT {{baseUrl}}/api/admin/users/{{userId}}/suspension
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "신고 누적",
+  "until": "2026-12-31T23:59:59"
+}
+
+### 6. 무기한 정지 (until 생략). 정지하면 그 회원의 토큰은 바로 무효
+PUT {{baseUrl}}/api/admin/users/{{userId}}/suspension
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "운영 정책 위반"
+}
+
+### 7. 정지 해제 (정지 상태가 아니어도 200)
+DELETE {{baseUrl}}/api/admin/users/{{userId}}/suspension
+Authorization: Bearer {{adminToken}}
+
+### 8. ADMIN 지정 (그 회원은 다시 로그인해야 적용. 자기 자신·ADMIN 대상은 400)
+PATCH {{baseUrl}}/api/admin/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
