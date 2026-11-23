@@ -49,6 +49,9 @@ backend/src/main/java/com/chaekdami/reward/
 - ✅ 보상 상태, 독서 완료 보상, 일일 퀘스트, 상점, 부스터, 방어권 자동 정산
 - ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) 책 삭제 시 보상 내역이 지워진 세션을 가리킨 채 남음
 - ⏳ [TODO-5](../../known-issues.md#todo-5) 주간 퀘스트 — `QuestType.WEEKLY` 값만 있음
-- ⏳ [TODO-6](../../known-issues.md#todo-6) 랭킹, 레벨 해금 — 미구현
+- ⚠️ [ISSUE-BUG-4](../../known-issues.md#issue-bug-4) 독서 완료 화면의 집중도가 예시 값
+- ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) 독서 시간이 부스터보다 길면 부스터 미적용 (원인 확인 필요)
+- ⏳ [TODO-6](../../known-issues.md#todo-6) 주간 독서 랭킹, 레벨 해금 — 미구현
+- ⏳ [TODO-25](../../known-issues.md#todo-25) 홈 보유 아이템 표시 · [TODO-26](../../known-issues.md#todo-26) 부스터 남은 시간 표시 · [TODO-28](../../known-issues.md#todo-28) 랜덤박스 · [TODO-29](../../known-issues.md#todo-29) 칭호
 - ⏳ [TODO-19](../../known-issues.md#todo-19) reward ↔ dday 직접 참조
 - 결정 배경: [decisions/0003](../../decisions/0003-reward-on-complete-screen.md), [decisions/0004](../../decisions/0004-dday-records.md)

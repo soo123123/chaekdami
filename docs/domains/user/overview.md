@@ -44,4 +44,5 @@ backend/src/main/java/com/chaekdami/
 
 - ✅ 가입, 로그인, 재발급, 로그아웃(단일·전체), 비밀번호 변경·재설정, 내 정보, 탈퇴, 로그인·재설정 요청 제한
 - ⚠️ [ISSUE-SEC-1](../../known-issues.md#issue-sec-1) `application-dev.properties`에 메일 비밀번호가 평문으로 커밋돼 있음
+- ⚠️ [ISSUE-BUG-5](../../known-issues.md#issue-bug-5) 앱 로그인 화면 상단이 실제 기기에서 카메라 영역에 잘림
 - ⏳ [TODO-10](../../known-issues.md#todo-10) 관리자 기능은 리뷰 블라인드만 (사용자 관리 없음)
