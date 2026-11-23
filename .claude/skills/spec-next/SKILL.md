@@ -21,6 +21,9 @@ description: 책다듬이 스펙의 작업 목록(tasks.md)을 이어서 구현�
 - design의 "수정할 파일" 범위 안에서만 고친다
 - 작업에 적힌 검증 명령을 실행한다. 없으면 `AGENTS.md` 5장에서 해당하는 것
 - 끝나면 체크박스를 `- [x]`로 바꾼다. 다음 작업으로 넘어가기 전에 무엇을 했고 무엇으로 확인했는지 짧게 보고한다
+- **범위 확인**: 작업 하나를 끝낼 때마다 `python3 scripts/harness/known-issues.py drift`를 돌려 보고에 넣는다
+  - 📌 등록 범위 밖 수정: 설계가 바뀌는 수정(새 클래스·다른 도메인·API·DB)이면 3장(S10)으로 멈춘다. 사소한 추가(테스트·상수 한두 줄)면 사용자에게 알리고 "🚧 진행 중 작업"의 건드리는 곳에 더해 push한다
+  - 🔀 main에서 먼저 바뀐 내 파일: 사용자에게 알리고 main을 받아 맞출지 묻는다 (병합은 사람이 한다)
 
 ## 3. 설계와 다르면 멈춘다 (S10)
 
@@ -36,6 +39,7 @@ description: 책다듬이 스펙의 작업 목록(tasks.md)을 이어서 구현�
 - `docs/domains/*`를 지금 코드에 맞게 고친다 (구현이 끝난 뒤에만)
 - 도메인 문서에서 해결된 ISSUE·TODO 표시 줄을 지운다. `known-issues.md` 4장 이동은 PR이 main에 병합된 뒤 issue-log 절차(main 작업 공간, `scripts/harness/known-issues.py`)로 한다. 브랜치의 `docs/known-issues.md`는 고치지 않는다
 - `python3 scripts/harness/docs-check.py`, `python3 scripts/harness/contract-check.py`
+- PR 전에 `python3 scripts/harness/known-issues.py drift`를 한 번 더 돌린다. 범위 밖 수정이 남아 있으면 표를 맞추고, main에서 먼저 바뀐 파일이 있으면 사용자에게 main을 받아 맞추도록 안내한다
 - 상태를 `done`으로 바꾼다
 
 ## 하지 않는 것

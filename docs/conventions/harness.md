@@ -19,7 +19,7 @@ AI(Claude)가 이 저장소 규칙([AGENTS.md](../../AGENTS.md))을 지키도록
 |---|---|---|---|---|
 | H1 | Claude가 문서(`docs/`, `AGENTS.md` 등)나 API 관련 파일(백엔드 `*Controller.java`, 프론트 `api/*.ts`, `constants/*.ts`)을 고친 직후 | `docs-check`, (API 파일이면) `contract-check` 실행 | 문제가 있을 때만 Claude에게 알림. **막지 않음** | AGENTS 5장 |
 | H2 | Claude가 셸 명령을 실행하기 전 | `git commit` · `git push` · `git merge` · `gh pr merge` 차단 (`git merge-base` 같은 조회 명령은 통과). `known-issues.py push`는 막지 않음 | 막고 사용자에게 명령을 안내하게 함 | AGENTS 7장 |
-| H4 | Claude Code 세션을 시작·재개할 때 | `known-issues.py news --quiet` 실행 | main의 known-issues가 지난 확인 이후 바뀌었으면 Claude가 첫 답변에서 알려줌 (내 파트 먼저). 바뀐 것이 없거나 네트워크가 안 되면 조용히 넘어감. **막지 않음** | AGENTS 4장 |
+| H4 | Claude Code 세션을 시작·재개할 때 | `known-issues.py news --quiet`, `drift --quiet` 실행 | main의 known-issues가 지난 확인 이후 바뀌었으면 알려줌 (내 파트 먼저). 지금 브랜치가 스펙 작업이면 등록 범위 밖 수정과 main에서 먼저 바뀐 내 파일도 알려줌. 알릴 것이 없거나 네트워크가 안 되면 조용히 넘어감. **막지 않음** | AGENTS 4장 |
 | H3 | Claude가 파일을 쓰기 전 | `frontend/ios·android/`, `.env` 류 비밀 파일 차단 / 브랜치의 `docs/known-issues.md` 차단(main 작업 공간에서 고치게 함) / 승인 이후 스펙의 requirements·design 수정은 **사람에게 확인** | 막거나 확인 창 | AGENTS 4·6·7장, S11 |
 
 - 스크립트: `guard-git.py`(H2), `guard-files.py`(H3), `check-after-edit.py`(H1), `session-news.py`(H4), 공통 `_hook.py`
@@ -35,7 +35,7 @@ Claude에게 아래처럼 말하면 해당 skill을 따른다. `/이름`으로 �
 | 이름 | 이렇게 말하면 | 하는 일 |
 |---|---|---|
 | `new-spec` | "새 스펙: ○○" | 스펙 필요 여부 판단 → 다음 번호 → requirements 작성 → 목록 추가 → ✋ 확인 요청 → design + 겹침 확인 → ✋ → 진행 중 작업 등록 |
-| `spec-next` | "스펙 004 다음 작업" | 승인 확인 → 겹침 확인 → tasks 첫 미완료 작업 구현·검증·체크 → 설계와 다르면 멈추고 보고 → 마지막에 docs 반영 |
+| `spec-next` | "스펙 004 다음 작업" | 승인 확인 → 겹침 확인 → tasks 첫 미완료 작업 구현·검증·체크 → 범위 확인(drift) → 설계와 다르면 멈추고 보고 → 마지막에 docs 반영 |
 | `docs-sync` | "PR 확인해줘", "병합했으니 문서 맞춰줘" | 병합 전 PR 확인(대상 브랜치·충돌·영향) / 병합 후 바뀐 코드를 `docs/domains`에 반영 |
 | `issue-log` | "문제로 기록해줘", "문제점 알려줘", "내 파트 할 일" | 최신 main 목록 조회 / 분류 → ID 붙여 main 작업 공간에 기록 → main에 바로 push → 도메인 문서에 표시 줄 |
 
@@ -46,6 +46,7 @@ Claude에게 아래처럼 말하면 해당 skill을 따른다. `/이름`으로 �
 | `python3 scripts/harness/docs-check.py` | 상태 줄, 링크, 문서에 빠진 API, 비밀값, 문제 ID 연결(origin/main ID 포함), 브랜치가 known-issues를 고쳤는지 |
 | `python3 scripts/harness/known-issues.py show·open·push·discard` | known-issues를 main 작업 공간에서 고치고 바로 main에 올림 ([git.md](./git.md#known-issues-올리기)) |
 | `python3 scripts/harness/known-issues.py news·part` | 지난 확인 이후 바뀐 것 요약 / 내 파트 저장 |
+| `python3 scripts/harness/known-issues.py drift` | 스펙 브랜치가 등록한 건드리는 곳 밖을 고쳤는지, 갈라진 뒤 main에서 내 파일이 먼저 바뀌었는지 |
 | `python3 scripts/harness/known-issues.py paths·overlap` | design ③ 경로 뽑기 / "🚧 진행 중 작업" 표와 건드릴 파일 겹침 확인 |
 | `python3 scripts/harness/contract-check.py` | 앱이 부르는 `/api` 경로가 백엔드에 있는지 (`--all`: 앱이 안 쓰는 API도) |
 

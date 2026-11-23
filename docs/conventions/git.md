@@ -52,8 +52,10 @@ feat: 회원가입 및 로그인 기본 API 구현
 | 올리기 | `python3 scripts/harness/known-issues.py push -m "docs: TODO-N 완독 보상 기록"` |
 
 | 건드릴 파일 겹침 확인 | `python3 scripts/harness/known-issues.py overlap --design docs/specs/NNN-.../design.md` |
+| 작업 중 범위 확인 (스펙 브랜치에서) | `python3 scripts/harness/known-issues.py drift` — 등록 범위 밖 수정, main에서 먼저 바뀐 내 파일 |
 
 - known-issues 맨 위 **"🚧 진행 중 작업"** 표에는 스펙마다 건드리는 파일(design ③)이 있다. design이 승인되면 등록하고, PR이 병합되면 지운다. 새 작업을 시작하기 전에 겹침을 확인하고, 겹치면 담당자끼리 순서를 정한다.
+- 스펙 브랜치 이름에 스펙 번호를 넣으면(`feature/005-...`) `drift`가 어느 스펙인지 알아낸다. 아니면 `--spec 005`.
 - 이 파일 하나만 바꾼 커밋만 올라간다. 다른 사람이 먼저 올렸으면 스크립트가 받아서 다시 쌓고, 같은 ID가 생기면 멈춘다.
 - **기능 브랜치에서는 `docs/known-issues.md`를 고치지 않는다.** 고치면 PR 병합 때 충돌한다 (`docs-check`가 잡는다). 브랜치를 main에 맞추면 최신 목록이 저절로 들어온다.
 - 도메인 문서의 ID 표시 줄(`> ⏳ [TODO-N](...)`)은 평소처럼 브랜치·PR로 들어간다.

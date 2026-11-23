@@ -18,6 +18,9 @@ known-issues 는 팀 전체가 같은 내용을 봐야 해서 기능 브랜치·
                   요약하고, 확인 시점을 지금으로 바꾼다. 내 파트 항목을 먼저 보여준다
   part [BE1|BE2|BE3|FE1|FE2]
                   내 파트를 이 컴퓨터에만 저장 (인자 없으면 지금 값 출력)
+  drift [--design D] [--spec NNN] [--quiet]
+                  지금 스펙 브랜치가 ① 등록한 건드리는 곳 밖의 파일을 고쳤는지
+                  ② 브랜치가 갈라진 뒤 main 에서 내 파일이 먼저 바뀌었는지 확인
 
 사용 예:
   python3 scripts/harness/known-issues.py open
@@ -457,9 +460,123 @@ def cmd_news(args):
         print("  (내 파트를 정하면 내 파트 항목을 먼저 보여준다: known-issues.py part BE1)")
 
 
+# ---------------------------------------------------------------- 작업 중 범위 확인 (drift)
+
+def docs_plan_paths(design):
+    """design.md ④ '고칠 docs 문서'의 경로 (계획된 문서 수정이라 범위 밖으로 보지 않는다)."""
+    text = Path(design).read_text(encoding="utf-8")
+    m = re.search(r"^## ④.*?$(.*?)^## ", text, re.S | re.M)
+    return [x for code in CODE.findall(m.group(1)) for x in expand(code)] if m else []
+
+
+def _lines(*args):
+    return [x for x in git(*args, check=False).stdout.splitlines() if x.strip()]
+
+
+def find_my_spec(args, rows):
+    """(스펙 번호, design 경로, 진행 중 표의 내 행) — 인자 → 표의 브랜치 → 브랜치 이름 순으로 찾는다."""
+    branch = git("symbolic-ref", "-q", "--short", "HEAD", check=False).stdout.strip()
+    spec = args.spec
+    if not spec and args.design:
+        m = re.search(r"specs/(\d{3})-", args.design)
+        spec = m.group(1) if m else None
+    row = None
+    if not spec:
+        row = next((r for r in rows if r["branch"].strip("`") == branch), None)
+        spec = row["spec"] if row else None
+    if not spec:
+        m = re.search(r"(?:^|/)(\d{3})-", branch)
+        spec = m.group(1) if m else None
+    if spec and not row:
+        row = next((r for r in rows if r["spec"].lstrip("0") == spec.lstrip("0")), None)
+    design = args.design
+    if not design and spec:
+        found = sorted((ROOT / "docs/specs").glob(f"{spec}-*/design.md"))
+        design = str(found[0]) if found else None
+    return spec, design, row, branch
+
+
+def cmd_drift(args):
+    def say(msg):
+        if not args.quiet:
+            print(msg)
+
+    try:
+        ok = subprocess.run(["git", "fetch", "-q", REMOTE, BRANCH], cwd=ROOT, capture_output=True,
+                            timeout=args.timeout).returncode == 0
+    except subprocess.TimeoutExpired:
+        ok = False
+    if not ok:
+        say("main 을 받지 못했다 (네트워크 확인). 마지막으로 받은 origin/main 기준으로 본다.")
+    main_ref = f"{REMOTE}/{BRANCH}"
+    rows = in_progress_rows(git("show", f"{main_ref}:{FILE}", check=False).stdout)
+    spec, design, row, branch = find_my_spec(args, rows)
+    if not spec or branch in ("", BRANCH):
+        say("스펙 작업 브랜치가 아니다 (브랜치 이름에 스펙 번호가 없고 진행 중 작업 표에도 없음). --spec 으로 정해 줄 수 있다.")
+        return
+
+    registered = row["paths"] if row else []
+    planned = design_paths(design) if design and Path(design).exists() else []
+    scope = registered or planned
+    docs_ok = docs_plan_paths(design) if design and Path(design).exists() else []
+
+    base = git("merge-base", "HEAD", main_ref, check=False).stdout.strip()
+    if not base:
+        say(f"{branch} 와 main 의 공통 조상을 찾지 못했다.")
+        return
+    changed = set(_lines("diff", "--name-only", f"{base}", "HEAD")) | set(_lines("diff", "--name-only", "HEAD"))
+    changed |= {f for f in _lines("ls-files", "--others", "--exclude-standard")
+                if f.startswith(("backend/", "frontend/src/", "docs/"))}
+    own = f"docs/specs/{spec}-"
+    def ignored(f):
+        return (f.startswith(own) or f == FILE or f == "docs/specs/README.md"
+                or any(overlaps(f, d) for d in docs_ok))
+
+    outside = sorted(f for f in changed if not ignored(f) and not any(overlaps(f, p) for p in scope))
+
+    mine = scope + sorted(changed)
+    main_changed = _lines("diff", "--name-only", base, main_ref)
+    moved = []
+    for f in main_changed:
+        if f == FILE or f.startswith(own):
+            continue
+        if any(overlaps(f, p) for p in mine):
+            commits = _lines("log", "--format=%h %an: %s", f"{base}..{main_ref}", "--", f)
+            moved.append((f, commits))
+
+    if args.quiet and not outside and not moved and row:
+        return
+    head = f"🔎 스펙 {spec} 작업 범위 확인 ({branch}, main@{git('rev-parse', '--short', main_ref).stdout.strip()} 기준)"
+    print(head)
+    if not row:
+        print("  ⚠️ 진행 중 작업 표에 이 스펙이 없다. design 이 승인됐으면 등록한다 (known-issues.py paths → open → push).")
+        if not planned:
+            print("  ⚠️ design ③ 경로도 찾지 못해 범위 밖 수정은 확인하지 못했다.")
+    if outside:
+        print(f"  📌 등록한 건드리는 곳 밖에서 고친 파일 {len(outside)}개:")
+        for f in outside:
+            print(f"     {f}")
+        print("     → 설계가 바뀌는 수정이면 멈추고 보고(S10) 후 design·표를 고친다. 사소하면(테스트 등) 표의 건드리는 곳에만 더해 push 한다.")
+    if moved:
+        print(f"  🔀 이 브랜치가 갈라진 뒤 main 에서 먼저 바뀐 내 파일 {len(moved)}개 (충돌 가능):")
+        for f, commits in moved:
+            print(f"     {f}")
+            for c in commits[:2]:
+                print(f"        {c}")
+        print("     → PR 전에 main 을 받아 맞춘다 (병합은 사람이 한다).")
+    if row and not outside and not moved:
+        print("  ✅ 등록 범위 밖 수정 없음, main 에서 먼저 바뀐 내 파일 없음")
+
+
 def main():
     p = argparse.ArgumentParser(description="known-issues.md 를 main 에서만 고치고 바로 올린다.")
     sub = p.add_subparsers(dest="cmd", required=True)
+    sp = sub.add_parser("drift")
+    sp.add_argument("--design")
+    sp.add_argument("--spec")
+    sp.add_argument("--quiet", action="store_true", help="문제가 없거나 스펙 브랜치가 아니면 출력하지 않는다")
+    sp.add_argument("--timeout", type=float, default=20)
+    sp.set_defaults(func=cmd_drift)
     sp = sub.add_parser("news")
     sp.add_argument("--quiet", action="store_true", help="바뀐 것이 없거나 받지 못하면 아무것도 출력하지 않는다")
     sp.add_argument("--no-update", action="store_true", help="확인 시점을 바꾸지 않는다")
