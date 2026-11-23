@@ -1,3 +1,4 @@
+> 기준: fix/be3-mail-password · 최종 확인: 2026-11-23 · 담당: BE3
 > 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # user — 회원과 인증
