@@ -87,7 +87,7 @@
 | <a id="todo-15"></a>TODO-15 | 백엔드 공통 | 에러 코드 방식 통일 | review는 이름, reward는 번호, reading은 HTTP 공통 코드 | [conventions/api](./conventions/api.md#5-에러-코드-표) |
 | <a id="todo-16"></a>TODO-16 | BE1·BE2·BE3 | `X-User-Id` 헤더 제거 | reading·reward·dday 컨트롤러가 헤더로 사용자를 받음 (필터가 토큰 사용자로 채움) | `JwtAuthenticationFilter` |
 | <a id="todo-17"></a>TODO-17 | BE1 | YES24 장애를 502로 | 지금은 500 `INTERNAL_ERROR` | `Yes24Client` |
-| <a id="todo-18"></a>TODO-18 | 백엔드 공통 | DB 마이그레이션 도입 | `ddl-auto=update` — 컬럼 삭제·이름 변경이 반영되지 않음 | `application.properties` |
+| <a id="todo-18"></a>TODO-18 | 백엔드 공통 | DB 마이그레이션 도입 | `ddl-auto=update` — 컬럼 삭제·이름 변경이 반영되지 않음. enum 값 추가·변경 때 이미 있는 CHECK 제약(`*_check`)도 바뀌지 않아, 오래된 DB(Supabase·로컬)에서만 저장이 실패함 (SQLState 23514). 예: `TransactionReason.PHOTO_CERTIFICATION` 추가 뒤 사진 인증 세션 저장 시 `reward_transactions_reason_check` 위반 → 보상 트랜잭션 전체 롤백·500. 도입 전까지는 enum을 바꾸면 해당 DB 제약도 SQL로 함께 고침 (enum 칸 10개) | `application.properties`, `@Enumerated` 필드 |
 | <a id="todo-19"></a>TODO-19 | BE2 | reward ↔ dday 직접 참조 정리 | 서로 직접 부름 | [architecture](./architecture.md#3-도메인끼리-연결) |
 | <a id="todo-20"></a>TODO-20 | 프론트 공통 | 프론트 ESLint 설정 | 설정 없음 | `frontend/` |
 | <a id="todo-21"></a>TODO-21 | 백엔드 공통 | DB 없이 도는 컨텍스트 테스트 | `ChaekdamiApplicationTests.contextLoads`가 DB 비밀번호 없으면 실패 | `backend/src/test` |
