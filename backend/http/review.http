@@ -120,6 +120,10 @@ Content-Type: application/json
   "rating": 4
 }
 
+### 12-1. 리뷰 삭제 (좋아요·신고도 함께 삭제, 블라인드된 리뷰도 가능, 성공 204)
+DELETE {{baseUrl}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{accessToken}}
+
 ### 13. 회차 독후활동 화면 조회 (리뷰와 독후감, 없으면 null)
 GET {{baseUrl}}/api/reading-records/{{readingRecordId}}/review
 Authorization: Bearer {{accessToken}}

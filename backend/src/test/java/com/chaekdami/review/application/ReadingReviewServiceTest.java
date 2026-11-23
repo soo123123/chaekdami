@@ -14,6 +14,8 @@ import com.chaekdami.review.domain.BookReport;
 import com.chaekdami.review.domain.Review;
 import com.chaekdami.review.domain.ReviewErrorCode;
 import com.chaekdami.review.infrastructure.BookReportRepository;
+import com.chaekdami.review.infrastructure.ReviewLikeRepository;
+import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
 import com.chaekdami.user.application.CurrentUser;
 import org.junit.jupiter.api.AfterEach;
@@ -55,8 +57,8 @@ class ReadingReviewServiceTest {
     void setUp() {
         OwnedResources ownedResources = new OwnedResources(readingRecordReader, bookReader);
         CurrentUser currentUser = new CurrentUser();
-        ReviewService reviewService = new ReviewService(reviewRepository, readingRecordReader, ownedResources,
-                currentUser, eventPublisher);
+        ReviewService reviewService = new ReviewService(reviewRepository, mock(ReviewLikeRepository.class),
+                mock(ReviewReportRepository.class), readingRecordReader, ownedResources, currentUser, eventPublisher);
         BookReportService bookReportService = new BookReportService(bookReportRepository, currentUser, eventPublisher);
         service = new ReadingReviewService(reviewRepository, reviewService, bookReportService, ownedResources,
                 currentUser);
