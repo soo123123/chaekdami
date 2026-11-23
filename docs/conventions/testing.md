@@ -21,7 +21,7 @@
 
 | 이름 | 쓰는 곳 | 필수 |
 |---|---|---|
-| `DB_PASSWORD` | dev 프로필 DB 비밀번호 | dev |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | dev 프로필 DB (Supabase Session pooler 주소·사용자명·비밀번호) | dev |
 | `LOCAL_DB_URL`, `LOCAL_DB_USERNAME`, `LOCAL_DB_PASSWORD` | local 프로필 DB | local |
 | `YES24_API_KEY` | YES24 도서 검색 | ✅ |
 | `JWT_SECRET` | JWT 서명 | ✅ |

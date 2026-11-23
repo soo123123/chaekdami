@@ -79,3 +79,4 @@ backend/src/main/java/com/chaekdami/reading/
 - ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos` 저장 안 함
 - ⏳ [TODO-7](../../known-issues.md#todo-7) 서재 테마 저장 API 없음 (기기에만 저장)
 - ⏳ [TODO-11](../../known-issues.md#todo-11) 바코드 스캔 검색 미구현
+- ⏳ [TODO-27](../../known-issues.md#todo-27) LLM 책 추천 (검색 화면) 미구현
