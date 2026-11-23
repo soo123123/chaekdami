@@ -69,7 +69,7 @@
 | <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | FE2 (+FE1) | (확정) 독서 알림 | 열림 | 없음. 기획(2026-11-23): 오늘 독서하지 않았으면 특정 시간부터 자정까지 반복 알림 (듀오링고 방식), 마이페이지에서 설정. 구현 방식은 ASK-7 (서버 푸시면 +BE3·BE2) | — | [overview](./overview.md#3-주요-기능과-현재-상태) |
-| <a id="todo-9"></a>TODO-9 | BE3 (+FE1) | 리뷰(별점) 삭제 | 열림 | API 없음. 한줄평만 빈 문자열로 지움 | `ReviewController` | [review/rules](./domains/review/rules.md#2-리뷰별점한줄평) |
+| <a id="todo-9"></a>TODO-9 | BE3 (+FE1) | 리뷰(별점) 삭제 | 진행 중 (스펙 006) | API 없음. 한줄평만 빈 문자열로 지움 | `ReviewController` | [review/rules](./domains/review/rules.md#2-리뷰별점한줄평) |
 | <a id="todo-10"></a>TODO-10 | BE3 | 관리자 사용자 관리 | 열림 | 리뷰 블라인드만 있음 | — | [user/overview](./domains/user/overview.md#현재-상태) |
 | <a id="todo-11"></a>TODO-11 | FE1 | 바코드 스캔 검색 | 열림 | 앱에 "준비 중" 안내 | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-12"></a>TODO-12 | BE1 (+BE2, FE2) | 독서 통계 목표·D-day 완료 권수 연결 | 열림 | 통계 `goalBooks`·`goalTarget` 항상 0, D-day 완료 권수는 사용자 입력 | `ReadingStatsService`, `DdayService` | [reading/api](./domains/reading/api.md#get-apimereading-stats), [dday/rules](./domains/dday/rules.md#1-목표) |
