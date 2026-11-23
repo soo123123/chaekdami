@@ -1,5 +1,9 @@
 
-import React, { useCallback, useState } from 'react';
+import React, {
+  useCallback,
+  useState,
+} from 'react';
+
 import {
   View,
   Text,
@@ -10,6 +14,7 @@ import {
   useWindowDimensions,
   type ImageSourcePropType,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 
@@ -18,8 +23,14 @@ import { Icon, type IconName } from '@/components/common/Icon';
 import { ROUTES, toReadingStart } from '@/constants/routes';
 import { readingApi } from '@/features/fe1/api/readingApi';
 import type { RegisteredBook } from '@/features/fe1/types/reading';
+
 import { getDday } from '../api/ddayApi';
-import { getQuests, getRewardStatus } from '../api/rewardApi';
+import {
+  getQuests,
+  getRewardStatus,
+  getShopItems,
+} from '../api/rewardApi';
+
 import { getTodayReading } from '../api/todayReadingApi';
 
 const GREEN = '#315E49';
@@ -32,22 +43,9 @@ const images = {
   record: require('../../../../assets/images/home/reading-record.png'),
   profile: require('../../../../assets/images/mypage/profile-cat.png'),
   current: require('../../../../assets/images/books/current-book.png'),
-  recent1: require('../../../../assets/images/books/recent-book-1.png'),
-  recent2: require('../../../../assets/images/books/recent-book-2.png'),
-  recent3: require('../../../../assets/images/books/recent-book-3.png'),
-  recent4: require('../../../../assets/images/books/recent-book-4.png'),
-  recent5: require('../../../../assets/images/books/recent-book-5.png'),
-  recent6: require('../../../../assets/images/books/recent-book-6.png'),
+  shield: require('../../../../assets/images/shop/shop-shield-1.png'),
+  expBooster: require('../../../../assets/images/shop/shop-exp-1.png'),
 };
-
-const recentFallbacks = [
-  images.recent1,
-  images.recent2,
-  images.recent3,
-  images.recent4,
-  images.recent5,
-  images.recent6,
-];
 
 type SummaryItem = {
   icon: IconName;
@@ -57,12 +55,28 @@ type SummaryItem = {
   onPress: () => void;
 };
 
+type InventoryStatus = {
+  shieldCount: number;
+  boosterCount: number;
+};
+
 function progressOf(book: RegisteredBook) {
-  if (!book.totalPages || book.totalPages <= 0) return 0;
-  return Math.min(100, Math.round((book.currentPage / book.totalPages) * 100));
+  if (!book.totalPages || book.totalPages <= 0) {
+    return 0;
+  }
+
+  return Math.min(
+    100,
+    Math.round(
+      (book.currentPage / book.totalPages) * 100
+    )
+  );
 }
 
-function coverOf(url: string | undefined, fallback: ImageSourcePropType) {
+function coverOf(
+  url: string | undefined,
+  fallback: ImageSourcePropType
+) {
   return url ? { uri: url } : fallback;
 }
 
@@ -71,14 +85,17 @@ export default function HomeScreen() {
 
   const compact = width < 600;
   const narrow = width < 380;
+
   const [questItems, setQuestItems] = useState<
     { title: string; completed: boolean }[]
   >([]);
+
   const [todayReading, setTodayReading] = useState({
     readingMinutes: 0,
     pagesRead: 0,
     memoCount: 0,
   });
+
   const [summaryCards, setSummaryCards] = useState({
     ddayValue: '0일',
     ddayLabel: '연속 독서',
@@ -86,88 +103,178 @@ export default function HomeScreen() {
     level: 'Lv. 1',
     levelLabel: '다음 레벨까지 0 XP',
   });
-  const [currentBook, setCurrentBook] = useState<RegisteredBook | null>(null);
-  const [recentBooks, setRecentBooks] = useState<RegisteredBook[]>([]);
 
-  const loadToday = useCallback(() => {
-    let active = true;
+  const [currentBook, setCurrentBook] =
+    useState<RegisteredBook | null>(null);
 
-    async function load() {
-      const [todayResult, questResult, rewardResult, ddayResult, booksResult] =
-        await Promise.allSettled([
+  const [inventoryStatus, setInventoryStatus] =
+    useState<InventoryStatus>({
+      shieldCount: 0,
+      boosterCount: 0,
+    });
+
+  const [inventoryLoading, setInventoryLoading] =
+    useState(true);
+
+  const [inventoryError, setInventoryError] =
+    useState(false);
+
+  /**
+   * 홈 화면에 진입할 때마다 데이터를 다시 조회한다.
+   * 상점에서 아이템을 구매한 뒤 돌아와도 수량이 갱신된다.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function load() {
+        setInventoryLoading(true);
+        setInventoryError(false);
+
+        const [
+          todayResult,
+          questResult,
+          rewardResult,
+          ddayResult,
+          booksResult,
+          shopResult,
+        ] = await Promise.allSettled([
           getTodayReading(),
           getQuests(),
           getRewardStatus(),
           getDday(),
           readingApi.getLibraryBooks(),
+          getShopItems(),
         ]);
 
-      if (!active) return;
+        if (!active) {
+          return;
+        }
 
-      if (todayResult.status === 'fulfilled') {
-        setTodayReading(todayResult.value);
-      }
+        if (todayResult.status === 'fulfilled') {
+          setTodayReading(todayResult.value);
+        }
 
-      if (questResult.status === 'fulfilled') {
-        const quests = questResult.value;
-        setQuestItems(
-          quests.slice(0, 3).map((quest) => ({
-            title: quest.title,
-            completed: quest.completed,
-          }))
-        );
-      }
+        if (questResult.status === 'fulfilled') {
+          const quests = questResult.value;
 
-      const reward = rewardResult.status === 'fulfilled' ? rewardResult.value : null;
-      const streakDays = ddayResult.status === 'fulfilled' ? ddayResult.value.currentStreak ?? 0 : 0;
-      const remainingXp = reward
-        ? Math.max(0, reward.requiredXp - reward.xp)
-        : 0;
+          setQuestItems(
+            quests.slice(0, 3).map((quest) => ({
+              title: quest.title,
+              completed: quest.completed,
+            }))
+          );
+        }
 
-      setSummaryCards({
-        ddayValue: `${streakDays}일`,
-        ddayLabel: '연속 독서',
-        currency: (reward?.currency ?? 0).toLocaleString(),
-        level: `Lv. ${reward?.level ?? 1}`,
-        levelLabel: `다음 레벨까지 ${remainingXp.toLocaleString()} XP`,
-      });
+        const reward =
+          rewardResult.status === 'fulfilled'
+            ? rewardResult.value
+            : null;
 
-      if (booksResult.status === 'fulfilled') {
-        const books = booksResult.value;
-        const reading = books.find((book) => book.status === 'READING');
-        setCurrentBook(reading ?? null);
-        setRecentBooks(
-          books
-            .filter(
-              (book) =>
-                book.bookId !== reading?.bookId &&
-                (book.status === 'COMPLETED' ||
-                  book.status === 'READING' ||
-                  book.currentPage > 0)
+
+        const remainingXp = reward
+          ? Math.max(
+              0,
+              reward.requiredXp - reward.xp
             )
-            .slice(0, 6)
+          : 0;
+
+        setSummaryCards({
+          ddayValue: `${
+            (ddayResult.status === 'fulfilled' ? ddayResult.value.currentStreak ?? 0 : 0)
+          }일`,
+          ddayLabel: '연속 독서',
+          currency: (
+            reward?.currency ?? 0
+          ).toLocaleString(),
+          level: `Lv. ${reward?.level ?? 1}`,
+          levelLabel: `다음 레벨까지 ${remainingXp.toLocaleString()} XP`,
+        });
+
+        if (booksResult.status === 'fulfilled') {
+          const books = booksResult.value;
+
+          const reading = books.find(
+            (book) => book.status === 'READING'
+          );
+
+          setCurrentBook(reading ?? null);
+        }
+
+        const shopItems =
+          shopResult.status === 'fulfilled'
+            ? shopResult.value
+            : [];
+
+        const boosterCount = shopItems
+          .filter(
+            (item) =>
+              item.type === 'EXPERIENCE_BOOSTER'
+          )
+          .reduce(
+            (sum, item) =>
+              sum + (item.ownedQuantity ?? 0),
+            0
+          );
+
+        const shieldCountFromShop = shopItems
+          .filter((item) => item.type === 'SHIELD')
+          .reduce(
+            (sum, item) =>
+              sum + (item.ownedQuantity ?? 0),
+            0
+          );
+
+        setInventoryStatus({
+          shieldCount:
+            reward?.ownedShieldCount ??
+            shieldCountFromShop,
+          boosterCount,
+        });
+
+        setInventoryError(
+          rewardResult.status === 'rejected' ||
+          shopResult.status === 'rejected'
         );
+
+        setInventoryLoading(false);
       }
-    }
 
-    void load();
+      void load();
 
-    return () => {
-      active = false;
-    };
-  }, []);
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
-  useFocusEffect(loadToday);
-
-  const recordItems: { icon: IconName; value: string; label: string }[] = [
-    { icon: 'clock', value: `${todayReading.readingMinutes}분`, label: '독서 시간' },
-    { icon: 'book', value: `${todayReading.pagesRead}쪽`, label: '읽은 페이지' },
-    { icon: 'pencil', value: `${todayReading.memoCount}개`, label: '작성한 메모' },
+  const recordItems: {
+    icon: IconName;
+    value: string;
+    label: string;
+  }[] = [
+    {
+      icon: 'clock',
+      value: `${todayReading.readingMinutes}분`,
+      label: '독서 시간',
+    },
+    {
+      icon: 'book',
+      value: `${todayReading.pagesRead}쪽`,
+      label: '읽은 페이지',
+    },
+    {
+      icon: 'pencil',
+      value: `${todayReading.memoCount}개`,
+      label: '작성한 메모',
+    },
   ];
 
   const handleStartReading = () => {
     if (currentBook) {
-      router.push(toReadingStart(currentBook.bookId));
+      router.push(
+        toReadingStart(currentBook.bookId)
+      );
       return;
     }
 
@@ -200,7 +307,10 @@ export default function HomeScreen() {
 
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.root}
+      edges={['top', 'left', 'right']}
+    >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -213,20 +323,17 @@ export default function HomeScreen() {
             compact && styles.bannerCompact,
           ]}
         >
-          {/* 배너 이미지: 카드 전체 채우기 */}
           <Image
             source={images.banner}
             style={styles.bannerBackgroundImage}
             resizeMode="stretch"
           />
 
-          {/* 글씨 가독성을 위한 상단 그라데이션 대체 레이어 */}
           <View
             pointerEvents="none"
             style={styles.bannerTextShade}
           />
 
-          {/* 제목과 설명: 배너 왼쪽 상단 고정 */}
           <View style={styles.bannerText}>
             <Text
               style={[
@@ -251,7 +358,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* 프로필: 배너 오른쪽 상단 고정 */}
           <TouchableOpacity
             style={styles.avatar}
             onPress={goToMyPage}
@@ -275,29 +381,31 @@ export default function HomeScreen() {
 
         {/* D-day / 보유 재화 / 레벨 */}
         <View style={styles.summaryRow}>
-          {([
-            {
-              icon: 'calendarOutline',
-              iconColor: GREEN,
-              value: summaryCards.ddayValue,
-              label: summaryCards.ddayLabel,
-              onPress: goToDday,
-            },
-            {
-              icon: 'coin',
-              iconColor: COIN_COLOR,
-              value: summaryCards.currency,
-              label: '보유 재화',
-              onPress: goToShop,
-            },
-            {
-              icon: 'leaf',
-              iconColor: GREEN,
-              value: summaryCards.level,
-              label: summaryCards.levelLabel,
-              onPress: goToLevel,
-            },
-          ] as { icon: IconName; iconColor: string; value: string; label: string; onPress: () => void }[]).map((item) => (
+          {(
+            [
+              {
+                icon: 'calendarOutline',
+                iconColor: GREEN,
+                value: summaryCards.ddayValue,
+                label: summaryCards.ddayLabel,
+                onPress: goToDday,
+              },
+              {
+                icon: 'coin',
+                iconColor: COIN_COLOR,
+                value: summaryCards.currency,
+                label: '보유 재화',
+                onPress: goToShop,
+              },
+              {
+                icon: 'leaf',
+                iconColor: GREEN,
+                value: summaryCards.level,
+                label: summaryCards.levelLabel,
+                onPress: goToLevel,
+              },
+            ] as SummaryItem[]
+          ).map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.summaryCard}
@@ -355,7 +463,10 @@ export default function HomeScreen() {
           {currentBook ? (
             <View style={styles.currentBookRow}>
               <Image
-                source={coverOf(currentBook.coverImageUrl, images.current)}
+                source={coverOf(
+                  currentBook.coverImageUrl,
+                  images.current
+                )}
                 style={
                   compact
                     ? styles.currentCoverCompact
@@ -365,7 +476,10 @@ export default function HomeScreen() {
               />
 
               <View style={styles.currentInfo}>
-                <Text style={styles.currentTitle} numberOfLines={2}>
+                <Text
+                  style={styles.currentTitle}
+                  numberOfLines={2}
+                >
                   {currentBook.title}
                 </Text>
 
@@ -378,7 +492,11 @@ export default function HomeScreen() {
                     <View
                       style={[
                         styles.progressFill,
-                        { width: `${progressOf(currentBook)}%` },
+                        {
+                          width: `${progressOf(
+                            currentBook
+                          )}%`,
+                        },
                       ]}
                     />
                   </View>
@@ -418,19 +536,20 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* 최근 읽은 책 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        {/* 나의 보유 아이템: 최근 읽은 책 영역 대체 */}
+        <View style={styles.inventorySection}>
+          <View style={styles.inventoryHeader}>
             <Text style={styles.sectionTitle}>
-              최근 읽은 책
+              나의 보유 아이템
             </Text>
 
             <TouchableOpacity
-              onPress={handleLibrary}
+              onPress={goToShop}
               style={styles.moreButton}
+              activeOpacity={0.75}
             >
               <Text style={styles.more}>
-                더보기
+                상점 가기
               </Text>
 
               <Icon
@@ -441,37 +560,68 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {recentBooks.length === 0 ? (
-              <Text style={styles.author}>최근 읽은 책이 없어요.</Text>
-            ) : recentBooks.map((book, index) => (
-              <TouchableOpacity
-                key={book.bookId}
-                style={styles.recentBook}
-                onPress={() => router.push(toReadingStart(book.bookId))}
-                activeOpacity={0.8}
-              >
+          <View style={styles.inventoryRow}>
+            {/* D-day 방어권 */}
+            <View style={styles.inventoryItem}>
+              <View style={styles.inventoryIconWrap}>
                 <Image
-                  source={coverOf(
-                    book.coverImageUrl,
-                    recentFallbacks[index % recentFallbacks.length]
-                  )}
-                  style={styles.recentCover}
-                  resizeMode="cover"
+                  source={images.shield}
+                  style={styles.inventoryImage}
+                  resizeMode="contain"
                 />
+              </View>
 
-                <Text
-                  style={styles.recentTitle}
-                  numberOfLines={2}
-                >
-                  {book.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+              <Text
+                style={styles.inventoryLabel}
+                numberOfLines={2}
+              >
+                D-day 방어권
+              </Text>
+
+              <Text
+                style={styles.inventoryValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {inventoryLoading
+                  ? '...'
+                  : inventoryError
+                    ? '확인 필요'
+                    : `${inventoryStatus.shieldCount.toLocaleString()}개`}
+              </Text>
+            </View>
+
+            {/* 경험치병 보유 수량 */}
+            <View style={styles.inventoryItem}>
+              <View style={styles.inventoryIconWrap}>
+                <Image
+                  source={images.expBooster}
+                  style={styles.inventoryImage}
+                  resizeMode="contain"
+                />
+              </View>
+
+              <Text
+                style={styles.inventoryLabel}
+                numberOfLines={2}
+              >
+                경험치병
+              </Text>
+
+              <Text
+                style={styles.inventoryValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {inventoryLoading
+                  ? '...'
+                  : inventoryError
+                    ? '확인 필요'
+                    : `${inventoryStatus.boosterCount.toLocaleString()}개`}
+              </Text>
+            </View>
+
+          </View>
         </View>
 
         {/* 오늘의 퀘스트 / 오늘의 독서 기록 */}
@@ -505,8 +655,11 @@ export default function HomeScreen() {
 
               <View style={styles.questList}>
                 {questItems.length === 0 ? (
-                  <Text style={styles.questItem}>오늘 퀘스트가 없어요</Text>
+                  <Text style={styles.questItem}>
+                    오늘 퀘스트가 없어요
+                  </Text>
                 ) : null}
+
                 {questItems.map((item) => (
                   <View
                     key={item.title}
@@ -636,14 +789,12 @@ const styles = StyleSheet.create({
     height: 260,
   },
 
-  // 배경 이미지는 레이아웃에 참여하지 않음
   bannerBackgroundImage: {
     ...StyleSheet.absoluteFill,
     width: '100%',
     height: '100%',
   },
 
-  // 상단 텍스트 가독성 확보
   bannerTextShade: {
     position: 'absolute',
     top: 0,
@@ -653,7 +804,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 248, 236, 0.12)',
   },
 
-  // 제목과 설명은 항상 왼쪽 상단에 고정
   bannerText: {
     position: 'absolute',
     top: 20,
@@ -691,7 +841,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
 
-  // 프로필은 항상 오른쪽 상단에 고정
   avatar: {
     position: 'absolute',
     top: 16,
@@ -834,7 +983,6 @@ const styles = StyleSheet.create({
   },
 
   progressFill: {
-    width: '45%',
     height: '100%',
     backgroundColor: GREEN,
     borderRadius: 10,
@@ -860,23 +1008,71 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  recentBook: {
-    width: 100,
-    marginRight: 12,
+  /* 나의 보유 아이템 */
+
+  inventorySection: {
+    width: '100%',
+    backgroundColor: '#FFFDF9',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    marginBottom: 16,
   },
 
-  recentCover: {
-    width: 100,
-    height: 140,
-    borderRadius: 8,
+  inventoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
 
-  recentTitle: {
+  inventoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+
+  inventoryItem: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: '#F5F6F0',
+    borderRadius: 17,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 112,
+  },
+
+  inventoryIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+
+  inventoryImage: {
+    width: 58,
+    height: 58,
+  },
+
+  inventoryLabel: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#625F59',
     textAlign: 'center',
-    fontSize: 12,
-    color: '#2D2925',
-    marginTop: 8,
-    lineHeight: 17,
+    minHeight: 30,
+  },
+
+  inventoryValue: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: GREEN,
+    textAlign: 'center',
+    marginTop: 7,
+    width: '100%',
   },
 
   bottomCards: {

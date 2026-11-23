@@ -15,7 +15,6 @@ import { goBackOr } from '@/utils/navigation';
 import { HIT_SLOP } from '@/constants/layout';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
 import {
   getReadingStats,
   type ReadingStats,
@@ -91,13 +90,6 @@ const SAMPLE_MONTH_DAYS = [
   120, 160, 110, 205, 135, 60, 25, 130, 75, 110,
 ];
 
-const GENRES = [
-  { name: '자기계발', percent: 40, color: C.green },
-  { name: '소설', percent: 32, color: C.beige },
-  { name: '에세이', percent: 20, color: C.orange },
-  { name: '기타', percent: 8, color: C.gray },
-];
-
 function formatMinutes(value: number): string {
   const minutes = Math.max(0, Math.round(value || 0));
   const hours = Math.floor(minutes / 60);
@@ -144,50 +136,6 @@ function getPeriodTitle(period: Period, offset: number): string {
   return (
     `${start.getMonth() + 1}/${start.getDate()}` +
     ` ~ ${end.getMonth() + 1}/${end.getDate()}`
-  );
-}
-
-function GenreDonutChart({ totalMinutes }: { totalMinutes: number }) {
-  const size = 140;
-  const center = 70;
-  const radius = 49;
-  const strokeWidth = 23;
-  const circumference = 2 * Math.PI * radius;
-
-  let accumulated = 0;
-
-  return (
-    <View style={styles.donutContainer}>
-      <Svg width={size} height={size} viewBox="0 0 140 140">
-        {GENRES.map((genre) => {
-          const offset = accumulated;
-          accumulated += genre.percent;
-
-          return (
-            <Circle
-              key={genre.name}
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={genre.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={`${circumference * genre.percent / 100} ${circumference}`}
-              strokeDashoffset={-circumference * offset / 100}
-              rotation={-90}
-              origin={`${center}, ${center}`}
-            />
-          );
-        })}
-      </Svg>
-
-      <View style={styles.donutCenter}>
-        <Text style={styles.donutSmall}>총 독서 시간</Text>
-        <Text style={styles.donutValue}>
-          {formatMinutes(totalMinutes)}
-        </Text>
-      </View>
-    </View>
   );
 }
 
@@ -571,45 +519,6 @@ export default function ReadingStatsScreen() {
           )}
         </View>
 
-        {/* 카테고리별 독서 비율 */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            카테고리별 독서 비율
-          </Text>
-
-          <View style={styles.genreContent}>
-            <GenreDonutChart totalMinutes={stats.totalMinutes} />
-
-            <View style={styles.genreLegend}>
-              {GENRES.map((genre) => (
-                <View
-                  key={genre.name}
-                  style={styles.genreRow}
-                >
-                  <View
-                    style={[
-                      styles.genreDot,
-                      { backgroundColor: genre.color },
-                    ]}
-                  />
-
-                  <Text style={styles.genreName}>
-                    {genre.name}
-                  </Text>
-
-                  <Text style={styles.genrePercent}>
-                    {genre.percent}%
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <Text style={styles.exampleNote}>
-            * 카테고리 비율은 API 연동 전 예시입니다.
-          </Text>
-        </View>
-
         {/* 하단 통계 카드 */}
         <View style={styles.bottomRow}>
           <View style={styles.infoCard}>
@@ -944,58 +853,6 @@ const styles = StyleSheet.create({
     color: '#9B948C',
     fontSize: 10,
     marginTop: 13,
-  },
-  genreContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  donutContainer: {
-    width: 140,
-    height: 140,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  donutCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  donutSmall: {
-    fontSize: 10,
-    color: C.muted,
-  },
-  donutValue: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: C.greenDark,
-  },
-  genreLegend: {
-    flex: 1,
-    gap: 4,
-  },
-  genreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1EDE7',
-  },
-  genreDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  genreName: {
-    flex: 1,
-    fontSize: 11,
-    color: C.text,
-  },
-  genrePercent: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: C.text,
   },
   bottomRow: {
     flexDirection: 'row',
