@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: fix/fe1@ef397a6 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE2
 
 # reward API
 
@@ -15,6 +15,7 @@
 | GET | `/api/quests` | 오늘의 퀘스트 목록 | 200 | ✅ |
 | GET | `/api/shop/items` | 상점 상품 목록 | 200 | ✅ |
 | POST | `/api/shop/items/{itemId}/purchase` | 상품 구매 | 200 | ✅ |
+| GET | `/api/rewards/rankings/weekly` | 이번 주 경험치 랭킹 | 200 | ✅ |
 
 퀘스트 보상 수령 API는 없다. 달성하면 독서 완료 보상에서 자동 지급된다.
 
@@ -157,6 +158,35 @@
 |---|---|
 | `purchaseId` | 재화 차감 이력(`reward_transactions`) id. 가격 0인 상품이면 `null` |
 | `updatedInventoryQuantity` | 구매 후 이 상품의 보유 수량 (묶음 수량 × 구매 수량만큼 증가) |
+
+## GET /api/rewards/rankings/weekly
+
+랭킹 화면에서 부른다. 이번 주(한국 시간 월~일)에 받은 경험치로 순위를 매긴다. 조회만 하고 데이터는 바꾸지 않는다. 규칙: [rules.md](./rules.md#8-주간-랭킹)
+
+코드: `RankingController` → `RankingService.getWeeklyRanking`
+
+```json
+{
+  "weekStartDate": "2026-11-23",
+  "weekEndDate": "2026-11-29",
+  "rankings": [
+    { "rank": 1, "nickname": "책벌레", "level": 7, "weeklyExperience": 540, "me": false },
+    { "rank": 2, "nickname": "다독왕", "level": 5, "weeklyExperience": 320, "me": true },
+    { "rank": 2, "nickname": "밤독서", "level": 9, "weeklyExperience": 320, "me": false },
+    { "rank": 4, "nickname": "새내기", "level": 1, "weeklyExperience": 15, "me": false }
+  ],
+  "myRanking": { "rank": 2, "nickname": "다독왕", "level": 5, "weeklyExperience": 320 }
+}
+```
+
+| 필드 | 설명 |
+|---|---|
+| `weekStartDate` · `weekEndDate` | 이번 주 월요일 · 일요일 (한국 날짜) |
+| `rankings` | 최대 30개. 경험치 많은 순, 같으면 같은 순위(1, 2, 2, 4). 이번 주 경험치가 0인 사용자는 없음 |
+| `rankings[].level` | 지금 레벨. 보상 계정이 없으면 1 |
+| `rankings[].me` | 내 항목이면 `true`. 사용자 번호는 내보내지 않는다 |
+| `myRanking` | 상위 30명 밖이어도 온다 |
+| `myRanking.rank` | 이번 주 경험치가 0이면 `null` (순위 없음) |
 
 ---
 

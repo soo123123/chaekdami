@@ -45,7 +45,7 @@
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE3 (+BE1 책 추천) | AI 기능 (책 추천, 독후감 피드백, 문장 인증) | 없음. `book_reports.revision`만 준비 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
-| <a id="todo-6"></a>TODO-6 | BE2 (+FE2) | 랭킹, 레벨 해금 | 없음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
+| <a id="todo-6"></a>TODO-6 | BE2 (+FE2) | 레벨 해금 | 없음 (랭킹은 스펙 005에서 구현) | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 테마 3종이 기기에만 저장됨 | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | 공통 | 푸시 알림 | 없음 | — | [overview](./overview.md#3-주요-기능과-현재-상태) |
 | <a id="todo-9"></a>TODO-9 | BE3 (+FE1) | 리뷰(별점) 삭제 | API 없음. 한줄평만 빈 문자열로 지움 | `ReviewController` | [review/rules](./domains/review/rules.md#2-리뷰별점한줄평) |

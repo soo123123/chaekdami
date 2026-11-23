@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE2
 
 # reward 규칙
 
@@ -136,3 +136,18 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 | 재화·경험치·아이템을 바꾸는 요청 | 보상 계정 행을 비관적 쓰기 잠금 | `RewardLedger.lockAccount` |
 | 잠금 대기 | 3초, 넘으면 409 `CONCURRENCY_001` | `RewardAccountRepository.LOCK_TIMEOUT_MILLIS` |
 | 계정 동시 생성 | 별도 트랜잭션으로 생성, UNIQUE 위반은 무시하고 기존 계정 사용 | `RewardAccountInitializer` |
+
+## 8. 주간 랭킹
+
+`GET /api/rewards/rankings/weekly` — `RankingService.getWeeklyRanking` · 결정 배경: [specs/005](../../specs/005-weekly-ranking/)
+
+| 규칙 | 값 | 코드 위치 |
+|---|---|---|
+| 점수 | 그 주 `reward_transactions` 중 `INCOME_EXPERIENCE` 금액 합 (독서·부스터·퀘스트·사진 인증). 재화(승급 보상 등)는 빠짐 | `RewardTransactionRepository.findTopAmounts` |
+| 한 주 | 한국 시간 월요일 0시 ≤ 지급 시각 < 다음 월요일 0시. 서버 시간대와 무관 | `RankingWeek` |
+| 어느 주인가 | 지급 시각(`created_at`) 기준. 일요일 밤 세션도 월요일에 보상받으면 새 주 | `RankingWeek.startAt`·`endAt` |
+| 상위 인원 | 30명 | `RankingService.TOP_SIZE` |
+| 동점 | 같은 순위, 다음 순위는 건너뜀 (1, 2, 2, 4). 같은 순위 안에서는 사용자 번호 작은 순 | `RankingService.rank` |
+| 내 순위 | 나보다 점수가 큰 사용자 수 + 1. 0점이면 `null` | `countUsersWithAmountGreaterThan` |
+| 탈퇴한 사용자 | 탈퇴 때 이력이 지워져 나오지 않음. 닉네임을 못 찾으면 목록에서 뺌 | `RewardCleanupService`, `RankingService.rank` |
+| 닉네임 | user 도메인을 읽기만 함 | port `UserNicknameReader` → `RewardUserNicknameReader` |
