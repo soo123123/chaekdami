@@ -1,6 +1,7 @@
 package com.chaekdami.reward.application;
 
 import com.chaekdami.reward.application.port.UserNicknameReader;
+import com.chaekdami.reward.application.port.WeeklyReadingTimeReader;
 import com.chaekdami.reward.domain.RewardAccount;
 import com.chaekdami.reward.domain.TransactionType;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
@@ -48,8 +49,43 @@ class RankingServiceTest {
     private RewardAccountRepository rewardAccountRepository;
     @Mock
     private UserNicknameReader userNicknameReader;
+    @Mock
+    private WeeklyReadingTimeReader weeklyReadingTimeReader;
     @InjectMocks
     private RankingService rankingService;
+
+    @Test
+    void 독서_시간_랭킹은_이번_주_세션_독서_시간_합으로_순위를_매긴다() {
+        given(weeklyReadingTimeReader.findTop(START, END, 30)).willReturn(List.of(
+                new WeeklyReadingTimeReader.UserSeconds(3L, 7200),
+                new WeeklyReadingTimeReader.UserSeconds(ME, 3600),
+                new WeeklyReadingTimeReader.UserSeconds(1L, 3600)));
+        given(weeklyReadingTimeReader.sumOf(ME, START, END)).willReturn(3600L);
+        given(weeklyReadingTimeReader.countUsersGreaterThan(START, END, 3600L)).willReturn(1L);
+        givenNicknames(Map.of(1L, "책벌레", ME, "다독왕", 3L, "밤독서"));
+
+        WeeklyRankingResult result = rankingService.getWeeklyReadingTimeRanking(ME, NOW, SEOUL);
+
+        assertThat(result.rankings()).containsExactly(
+                new WeeklyRankingResult.Entry(1, "밤독서", 1, 7200, false),
+                new WeeklyRankingResult.Entry(2, "다독왕", 1, 3600, true),
+                new WeeklyRankingResult.Entry(2, "책벌레", 1, 3600, false));
+        assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(2, "다독왕", 1, 3600));
+        verify(rewardTransactionRepository, never()).findTopAmounts(any(), any(), any(), any());
+    }
+
+    @Test
+    void 이번_주_독서_시간이_없으면_내_순위는_없다() {
+        given(weeklyReadingTimeReader.findTop(START, END, 30)).willReturn(List.of());
+        given(weeklyReadingTimeReader.sumOf(ME, START, END)).willReturn(0L);
+        givenNicknames(Map.of(ME, "다독왕"));
+
+        WeeklyRankingResult result = rankingService.getWeeklyReadingTimeRanking(ME, NOW, SEOUL);
+
+        assertThat(result.rankings()).isEmpty();
+        assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(null, "다독왕", 1, 0));
+        verify(weeklyReadingTimeReader, never()).countUsersGreaterThan(any(), any(), anyLong());
+    }
 
     @Test
     void 경험치가_같으면_같은_순위를_주고_다음_순위는_건너뛴다() {
@@ -59,7 +95,7 @@ class RankingServiceTest {
         given(rewardAccountRepository.findAllByUserIdIn(anyCollection()))
                 .willReturn(List.of(account(1L, 7), account(ME, 5), account(3L, 9)));
 
-        WeeklyRankingResult result = rankingService.getWeeklyRanking(ME, NOW, SEOUL);
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
         assertThat(result.weekStartDate()).isEqualTo(LocalDate.of(2026, 11, 23));
         assertThat(result.weekEndDate()).isEqualTo(LocalDate.of(2026, 11, 29));
@@ -77,7 +113,7 @@ class RankingServiceTest {
         givenMine(0, 0);
         givenNicknames(Map.of(ME, "다독왕"));
 
-        rankingService.getWeeklyRanking(ME, NOW, SEOUL);
+        rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
         verify(rewardTransactionRepository).findTopAmounts(eq(EXP), eq(START), eq(END),
                 argThat((Pageable p) -> p.getPageNumber() == 0 && p.getPageSize() == 30));
@@ -90,7 +126,7 @@ class RankingServiceTest {
         givenNicknames(Map.of(1L, "책벌레", ME, "다독왕"));
         given(rewardAccountRepository.findAllByUserIdIn(anyCollection())).willReturn(List.of(account(ME, 3)));
 
-        WeeklyRankingResult result = rankingService.getWeeklyRanking(ME, NOW, SEOUL);
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
         assertThat(result.rankings()).extracting(WeeklyRankingResult.Entry::me).containsExactly(false);
         assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(45, "다독왕", 3, 40));
@@ -102,7 +138,7 @@ class RankingServiceTest {
         givenMine(0, 0);
         givenNicknames(Map.of(1L, "책벌레", ME, "다독왕"));
 
-        WeeklyRankingResult result = rankingService.getWeeklyRanking(ME, NOW, SEOUL);
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
         assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(null, "다독왕", 1, 0));
         verify(rewardTransactionRepository, never())
@@ -115,7 +151,7 @@ class RankingServiceTest {
         givenMine(0, 0);
         givenNicknames(Map.of(1L, "책벌레", ME, "다독왕"));
 
-        WeeklyRankingResult result = rankingService.getWeeklyRanking(ME, NOW, SEOUL);
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
         assertThat(result.rankings()).containsExactly(new WeeklyRankingResult.Entry(2, "책벌레", 1, 200, false));
     }
@@ -127,7 +163,7 @@ class RankingServiceTest {
                 LocalDateTime.of(2026, 11, 22, 15, 0), LocalDateTime.of(2026, 11, 29, 15, 0))).willReturn(0L);
         givenNicknames(Map.of(ME, "다독왕"));
 
-        WeeklyRankingResult result = rankingService.getWeeklyRanking(ME, NOW, UTC);
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, UTC);
 
         assertThat(result.weekStartDate()).isEqualTo(LocalDate.of(2026, 11, 23));
     }

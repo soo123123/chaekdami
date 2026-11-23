@@ -16,7 +16,7 @@
 | 부스터 | 30분 동안 독서 경험치 2배. 겹친 시간 비율만큼 적용 | [rules.md](./rules.md#3-경험치-부스터) |
 | 방어권 | 놓친 날을 자동으로 막아 연속 기록 유지 | [dday/rules.md](../dday/rules.md) |
 | 변동 이력 | 재화·경험치가 바뀔 때마다 기록. 중복 지급 방지에도 사용 | [data.md](./data.md#reward_transactions) |
-| 주간 랭킹 | 이번 주(한국 시간 월~일) 받은 경험치 합으로 상위 30명과 내 순위 | [rules.md](./rules.md#8-주간-랭킹) |
+| 주간 랭킹 | 이번 주(한국 시간 월~일) 경험치 랭킹과 독서 시간 랭킹. 각각 상위 30명과 내 순위 | [rules.md](./rules.md#8-주간-랭킹) |
 
 ## 코드 위치
 
@@ -26,11 +26,13 @@ backend/src/main/java/com/chaekdami/reward/
 │                    QuestController, ShopController, dto/
 ├── application/     ReadingSessionRewardService(독서 완료 보상), RewardService, QuestService,
 │                    ShopService, BoosterService, StreakService, RankingService(주간 랭킹), RewardLedger(잠금·지급·이력),
-│                    port/(ReadingSessionReader, PhotoCertificationChecker, UserNicknameReader)
+│                    port/(ReadingSessionReader, PhotoCertificationChecker, UserNicknameReader,
+│                          WeeklyReadingTimeReader)
 ├── domain/          ExperiencePolicy, LevelPolicy, DailyQuest, DailyQuestPicker, StreakCalculator, RankingWeek,
 │                    RewardErrorCode, 엔티티
 └── infrastructure/  Repository, DailyQuestSeeder, ShopItemSeeder,
                      ReadingSessionRepositoryReader, CertificationPhotoChecker, RewardUserNicknameReader,
+                     ReadingSessionTimeReader(+ReadingSessionTimeQueryRepository),
                      RewardCleanupListener
 ```
 
@@ -43,6 +45,7 @@ backend/src/main/java/com/chaekdami/reward/
 | reward → reading | 세션의 독서 시간·쪽수·종료 시각 조회 | port `ReadingSessionReader` |
 | reward → reading | 사진 인증 여부 | port `PhotoCertificationChecker` → `CertificationPhotoChecker`가 `CertificationService.isPhotoCertified` 호출 |
 | reward ↔ dday | 읽은 날 기록, 방어권 정산, 연속일 계산 | 직접 참조 (`DdayService`, `StreakService`) |
+| reward → reading | 주간 독서 시간 랭킹 집계 | port `WeeklyReadingTimeReader` → `ReadingSessionTimeReader` (`ReadingSession` 읽기만) |
 | reward → user | 랭킹에 보여줄 닉네임 조회 | port `UserNicknameReader` → `RewardUserNicknameReader` (`UserRepository` 읽기만) |
 | user → reward | 회원 탈퇴 시 보상 데이터 삭제 | 이벤트 `UserWithdrawnEvent` → `RewardCleanupListener` |
 | 앱 | 세션 저장 후 독서 완료 화면에서 보상 API 호출 | [architecture.md](../../architecture.md#41-독서--보상) |

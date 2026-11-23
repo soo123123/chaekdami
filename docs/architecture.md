@@ -50,7 +50,7 @@ flowchart LR
   user -- "UserWithdrawnEvent" --> review & reward & dday & reading
   review -- "port: BookReader, ReadingRecordReader (JDBC)" --> reading
   review -- "UserNicknameReader" --> user
-  reward -- "port: ReadingSessionReader" --> reading
+  reward -- "port: ReadingSessionReader, WeeklyReadingTimeReader" --> reading
   reward -- "port: UserNicknameReader (랭킹)" --> user
   reward -- "직접: DdayService, DdayRecordRepository" --> dday
   dday -- "직접: StreakService, StreakCalculator" --> reward
@@ -66,6 +66,7 @@ flowchart LR
 | 독후활동 → 책·독서 기록 조회 | port (`BookReader`, `ReadingRecordReader`) + JDBC 구현 | `review/application/port`, `review/infrastructure/Jdbc*` |
 | 보상 → 독서 세션 조회 | port (`ReadingSessionReader`) | `reward/infrastructure/ReadingSessionRepositoryReader` |
 | 보상 랭킹 → 닉네임 조회 | port (`UserNicknameReader`) | `reward/infrastructure/RewardUserNicknameReader` |
+| 보상 랭킹 → 독서 시간 집계 | port (`WeeklyReadingTimeReader`) | `reward/infrastructure/ReadingSessionTimeReader` |
 | 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 세션에 연결된 독서 인증 조회 | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` |
 | 보상 ↔ D-day | 서로 직접 참조 (연속일 계산을 함께 씀) | `ReadingSessionRewardService`, `StreakService`, `DdayService` |
 | 독서 → 문장 수 | 직접 참조 | `TodayReadingService` |
