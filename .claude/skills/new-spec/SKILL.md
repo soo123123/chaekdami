@@ -15,9 +15,10 @@ description: 책다듬이에서 새 스펙(requirements → design → tasks)을
 
 ## 1. 현재 모습부터 읽기
 
+0. `python3 scripts/harness/known-issues.py news`로 지난 확인 이후 바뀐 것을 확인해 사용자에게 짧게 알린다
 1. `docs/glossary.md`
 2. 관련 도메인의 `docs/domains/<도메인>/overview.md`, 필요한 `api.md`·`data.md`·`rules.md`
-3. `docs/known-issues.md`에서 관련 ISSUE·TODO·ASK
+3. `python3 scripts/harness/known-issues.py show`(최신 main)에서 관련 ISSUE·TODO·ASK. 스펙을 시작하면 그 항목 상태를 `진행 중 (스펙 NNN)`으로 바꿔 issue-log 절차로 push
 4. 실제 코드 (문서와 다르면 코드가 맞다)
 
 ## 2. 번호와 폴더
@@ -43,4 +44,15 @@ description: 책다듬이에서 새 스펙(requirements → design → tasks)을
 
 - design.md는 아직 쓰지 않는다
 - 사용자에게 보여줄 것: 결정을 어떤 R로 옮겼는지, 남은 질문, "승인하면 design으로 넘어간다"
-- 승인을 받으면 상태를 `approved`로 바꾸고 `_templates/design.md`로 design을 쓴 뒤 다시 ✋ 확인. design 승인 후 `_templates/tasks.md`로 tasks를 쓴다 (마지막 작업은 항상 docs 반영)
+- 승인을 받으면 상태를 `approved`로 바꾸고 `_templates/design.md`로 design을 쓴다
+
+## 6. design 쓰고 겹침 확인 ✋
+
+- design ③ "수정할 파일"은 경로를 백틱으로 쓴다 (`backend/.../reading/application/X.java`, 폴더는 끝에 `/`). 겹침 검사가 이 칸을 읽는다
+- `python3 scripts/harness/known-issues.py overlap --design docs/specs/NNN-slug/design.md` 로 다른 사람의 진행 중 작업과 겹치는지 본다
+- 확인 요청 때 겹침 결과를 함께 보여준다. 겹치면 "어느 스펙(담당)이 어느 파일을 함께 고치는지"와 선택지(순서 정하기 / 범위 나누기 / 그대로 진행)를 적는다
+
+## 7. design 승인 후
+
+1. **진행 중 작업 등록**: `python3 scripts/harness/known-issues.py open` → 작업 공간 known-issues의 "🚧 진행 중 작업" 표에 한 줄 `| NNN | <대상 ID> | <담당> | <브랜치> | <paths 출력> | <오늘> |` (`python3 scripts/harness/known-issues.py paths --design ...`가 "건드리는 곳" 칸을 만든다). 대상 항목 상태도 `진행 중 (스펙 NNN)` → `push -m "docs: 스펙 NNN 진행 중 작업 등록"`
+2. `_templates/tasks.md`로 tasks를 쓴다 (마지막 작업은 항상 docs 반영)

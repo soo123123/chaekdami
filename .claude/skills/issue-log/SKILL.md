@@ -1,36 +1,96 @@
 ---
 name: issue-log
-description: 책다듬이의 문제점·남은 일·결정할 것을 기록하거나 찾을 때 쓴다. "이거 문제로 기록해줘", "문제점 알려줘", "남은 일 뭐 있어", "결정할 것 정리해줘", 작업 중 버그·한계·미정 사항을 발견했을 때.
+description: 책다듬이의 문제점·남은 일·결정할 것을 기록하거나 찾을 때 쓴다. "이거 문제로 기록해줘", "문제점 알려줘", "남은 일 뭐 있어", "결정할 것 정리해줘", "내 파트 할 일", "TODO-N 시작할게", "TODO-N 끝났어", 노션 총괄 보드 갱신, 작업 중 버그·한계·미정 사항을 발견했을 때.
 ---
 
 # 문제·할 일·질문 기록과 찾기
 
 유일한 목록: `docs/known-issues.md`. 규칙 원문은 그 문서 위쪽과 `AGENTS.md` 4장.
 
+**known-issues는 main에서만 고치고 바로 main에 올린다** ([decisions/0008](../../../docs/decisions/0008-known-issues-on-main.md)).
+브랜치에 있는 `docs/known-issues.md` 사본은 오래됐을 수 있으니 읽지도 고치지도 않는다 (고치면 hook이 막는다).
+
+| 명령 | 하는 일 |
+|---|---|
+| `python3 scripts/harness/known-issues.py news` | 지난 확인 이후 main에서 바뀐 것만 요약 (내 파트 먼저), 확인 시점 갱신 |
+| `python3 scripts/harness/known-issues.py part BE1` | 내 파트를 이 컴퓨터에만 저장 |
+| `python3 scripts/harness/known-issues.py show` | origin/main을 받아 최신 목록 출력 |
+| `python3 scripts/harness/known-issues.py open` | main 작업 공간(`.worktrees/known-issues/`)을 최신으로 맞추고 고칠 파일 경로 출력 |
+| `python3 scripts/harness/known-issues.py push -m "docs: 요약"` | 그 파일 수정만 커밋해 main에 push (사람 확인 없이 AI가 실행해도 된다) |
+| `python3 scripts/harness/known-issues.py discard` | 작업 공간 수정 버리기 |
+| `python3 scripts/harness/known-issues.py paths --design <design.md>` | design ③ 경로를 "건드리는 곳" 칸 형식으로 출력 |
+| `python3 scripts/harness/known-issues.py overlap --design <design.md>` (또는 `overlap <경로...>`) | 최신 main의 "🚧 진행 중 작업"과 겹치는 곳 출력 |
+
 ## 찾기
+
+1. 먼저 `python3 scripts/harness/known-issues.py news`로 **지난 확인 이후 바뀐 것**을 맨 위에 보여준다 (없으면 "새 소식 없음" 한 줄)
+   - 파트를 모르면 사용자에게 한 번 묻고 `part`로 저장한다
+2. 그다음 `show`로 최신 목록을 읽어 요청한 것을 보여준다
 
 | 요청 | 할 일 |
 |---|---|
-| "문제점 알려줘" | `known-issues.md` 1장 + `grep -rn "ISSUE-" docs/`로 문서 안 위치까지 |
+| "문제점 알려줘" | 1장 + `grep -rn "ISSUE-" docs/`로 문서 안 위치까지 |
 | "남은 일" | 2장 + `grep -rn "TODO-" docs/` |
 | "결정할 것" | 3장 + `grep -rn "ASK-" docs/` |
+| "내 파트(BE1 등) 할 일" | 담당 칸에 그 파트가 있는 행만 (주 담당 먼저, `(+파트)` 협업은 따로) |
 
-심각도·상태 순으로 정리해 보여준다.
+심각도·상태 순으로 정리해 보여준다. 도메인 문서 표시(grep)는 지금 브랜치 기준이라 main보다 늦을 수 있다.
 
 ## 기록
 
-1. **분류**: "지금 쓰면 잘못된 결과가 나오거나 위험한가?"
+1. `open`으로 작업 공간을 최신으로 맞춘다
+2. **분류**: "지금 쓰면 잘못된 결과가 나오거나 위험한가?"
    - 그렇다 → ⚠️ 문제 `ISSUE-<SEC|BUG|DATA|LIMIT>-N`
    - 아직 없어서 못 쓸 뿐 → ⏳ 할 일 `TODO-N` (기능 / 개선 표를 고른다)
    - 사람이 정해야 함 → ❓ 질문 `ASK-N`
    - 애매하면 질문으로 올린다
-2. **번호**: 같은 종류의 가장 큰 번호 + 1 (`grep -o "ISSUE-BUG-[0-9]*" docs/known-issues.md | sort -V | tail -1`). 한 번 붙인 ID는 바꾸지 않는다
-3. **행 추가**: 해당 표 형식 그대로. 행 앞에 `<a id="소문자-id"></a>`. 모든 표에 담당(주 담당 파트, 함께 할 파트는 `(+FE1)`)을 쓴다. 문제는 담당·심각도(높음·중간·낮음)·상태(열림)·지금 구현·문제·위치·문서·스펙
-4. **도메인 문서 표시**: 관련 위치 바로 아래에 한 줄만 `> ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) — 짧은 설명` (할 일 ⏳, 질문 ❓)
-5. **심각도 높음**이면 기록 직후 사용자에게 바로 알린다
-6. `python3 scripts/harness/docs-check.py`로 ID 연결 확인
+3. **번호**: 작업 공간 파일에서 같은 종류의 가장 큰 번호 + 1 (`grep -o "ISSUE-BUG-[0-9]*" .worktrees/known-issues/docs/known-issues.md | sort -V | tail -1`). 한 번 붙인 ID는 바꾸지 않는다
+4. **행 추가**: 작업 공간 파일(`.worktrees/known-issues/docs/known-issues.md`)에 해당 표 형식 그대로. 행 앞에 `<a id="소문자-id"></a>`. 모든 표에 담당(주 담당 파트, 함께 할 파트는 `(+FE1)`)을 쓴다. 문제는 담당·심각도(높음·중간·낮음)·상태(열림)·지금 구현·문제·위치·문서·스펙. 할 일은 담당·할 일·상태(열림)·지금 구현·위치(·문서). 맨 위 `최종 확인` 날짜도 고친다
+5. **push**: `push -m "docs: <ID> <짧은 요약> 기록"`. 다른 사람이 먼저 같은 번호를 올렸다고 나오면 `open` → 번호를 다시 붙이고 → 다시 push
+6. **도메인 문서 표시**: 지금 브랜치의 관련 위치 바로 아래에 한 줄만 `> ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) — 짧은 설명` (할 일 ⏳, 질문 ❓). 이 줄은 브랜치 작업과 함께 PR로 들어간다
+7. **심각도 높음**이면 기록 직후 사용자에게 바로 알린다
+8. `python3 scripts/harness/docs-check.py`로 ID 연결 확인 (origin/main의 ID도 인정한다)
 
-## 해결 처리
+## 🚧 진행 중 작업 표 (건드리는 곳)
 
-- 상태를 해결로 바꾸고 4장 "해결됨" 표로 옮긴다 (ID·해결 내용·날짜·스펙)
-- 도메인 문서의 표시 줄을 지운다
+- 스펙 design이 승인되면 한 줄 등록 (new-spec 7단계). 칸: 스펙 · 대상 ID · 담당 · 브랜치 · 건드리는 곳(백틱 경로, 쉼표로) · 갱신 날짜
+- "누가 뭘 고치고 있어?", "이 파일 건드려도 돼?" → `python3 scripts/harness/known-issues.py show`의 이 표, 또는 `python3 scripts/harness/known-issues.py overlap <경로...>`
+- PR이 main에 병합되면 행을 지운다
+
+## 상태 바꾸기·해결 처리
+
+- 스펙을 시작하면 상태를 `진행 중 (스펙 NNN)`으로 바꿔 바로 push한다
+- **해결은 코드가 main에 들어간 뒤에** 처리한다 (PR 병합 전에 해결로 옮기면 main 코드와 목록이 어긋난다). 병합 전이면 `진행 중`으로 두고, 사용자에게 "병합 후 해결 처리"가 남았다고 알린다
+- 해결: 4장 "해결됨" 표로 옮기고 (ID·해결 내용·날짜·스펙) push. 도메인 문서의 표시 줄은 브랜치 작업에서 지운다
+- 할 일(TODO)은 아래 노션 총괄 보드도 함께 바꾼다
+
+## 노션 총괄 보드 (할 일만)
+
+팀 노션 "책다듬이" 페이지의 **총괄 보드**에 할 일(TODO)을 카드로 보여준다. 기준은 known-issues다. 보드는 보기용이고, 둘이 다르면 known-issues에 맞춰 보드를 고친다.
+
+- 데이터 소스: `collection://d7aa9146-0ec8-8269-8d82-07e169595024` (보드와 간트 차트가 같이 씀). 노션 도구가 없으면 사용자에게 Notion 커넥터 연결을 요청하고, 보드 작업은 건너뛴 채 known-issues만 처리한다
+- 속성: `이름`(`TODO-N 할 일`, `(확정)` 표시는 뺌) · `내용`(`[기능|개선] 담당 <담당 칸> · 지금: <지금 구현>`, 링크·백틱 없이) · `담당자`(사람) · `상태` · `날짜`(기간)
+- 상태 값은 정확히 `Not started 🧱` · `In progress 🛠` · `Done🏠`
+- 담당자: 담당 칸의 주 담당과 `(+파트)` 협업 파트 모두. `백엔드 공통` → BE1·BE2·BE3, `프론트 공통` → FE1·FE2. 파트별 사람 ID:
+
+  | 파트 | 노션 사용자 ID |
+  |---|---|
+  | BE1 | `3e2d872b-594c-81df-84c6-0002a3fda5f0` |
+  | BE2 | `3ded872b-594c-81a1-9745-0002f60077d0` |
+  | BE3 | `157d872b-594c-81e0-9489-000200dfd5bf` |
+  | FE1 | `260d872b-594c-81de-b8b4-0002692326c3` |
+  | FE2 | `3d8d872b-594c-8181-98fc-0002bd32f01e` |
+
+- 카드 찾기: 데이터 소스를 SQL로 조회해 `이름`이 `TODO-N `으로 시작하는 행
+
+| 언제 | known-issues | 노션 보드 |
+|---|---|---|
+| 할 일 기록 | 행 추가 (상태 `열림`) | `Not started 🧱` 카드 추가. `(아이디어)` 할 일은 올리지 않는다 |
+| "TODO-N 시작할게" | 상태 `진행 중 (스펙 NNN)`, 스펙이 없으면 `진행 중` → push | **먼저 기간(시작일~종료일)을 묻고**, `In progress 🛠` + `날짜`에 그 기간 |
+| 기간 변경 요청 | 그대로 | `날짜`만 고침 |
+| "TODO-N 끝났어" | 코드가 main에 병합됐는지 확인. 병합 전이면 아무것도 바꾸지 않고 "병합 후 완료 처리"가 남았다고 알린다 | 병합 후에만 `Done🏠` |
+| 병합 확인 후 | 4장 "해결됨"으로 옮겨 push | `Done🏠` (날짜는 그대로) |
+| 할 일 내용·담당 변경 | 행 수정 | `내용`·`담당자`도 맞춤 |
+
+- 카드를 지울 때는 지울 목록을 먼저 보여주고 사용자 확인을 받는다 (노션 휴지통으로 가서 30일 안에는 되돌릴 수 있음)
+- 바꾼 뒤 사용자에게 바꾼 카드 이름과 상태를 한 줄로 알린다
