@@ -38,6 +38,7 @@
 | 스펙 | 대상 | 담당 | 브랜치 | 건드리는 곳 | 갱신 |
 |---|---|---|---|---|---|
 | 005 | TODO-6 | BE2 | feature/be2-ranking | `backend/.../reward/domain/RankingWeek.java`, `backend/.../reward/application/RankingService.java`, `backend/.../reward/application/WeeklyRankingResult.java`, `backend/.../reward/application/port/UserNicknameReader.java`, `backend/.../reward/application/port/WeeklyReadingTimeReader.java`, `backend/.../reward/infrastructure/RewardUserNicknameReader.java`, `backend/.../reward/infrastructure/ReadingSessionTimeReader.java`, `backend/.../reward/infrastructure/ReadingSessionTimeQueryRepository.java`, `backend/.../reward/infrastructure/RewardTransactionRepository.java`, `backend/.../reward/infrastructure/RewardAccountRepository.java`, `backend/.../reward/presentation/RankingController.java`, `backend/src/test/.../reward/domain/RankingWeekTest.java`, `backend/src/test/.../reward/application/RankingServiceTest.java` | 2026-11-23 |
+| 006 | TODO-9 | BE3 | feature/be3-review-delete | `backend/src/main/java/com/chaekdami/review/presentation/ReviewController.java`, `backend/src/main/java/com/chaekdami/review/application/ReviewService.java`, `backend/src/main/java/com/chaekdami/review/infrastructure/ReviewLikeRepository.java`, `backend/src/main/java/com/chaekdami/review/infrastructure/ReviewReportRepository.java`, `backend/src/test/java/com/chaekdami/review/application/ReviewServiceTest.java`, `backend/http/review.http` | 2026-11-23 |
 
 ---
 
