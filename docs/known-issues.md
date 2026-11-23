@@ -46,7 +46,7 @@
 
 | ID | 담당 | 심각도 | 상태 | 지금 구현 | 문제 | 위치 | 문서 | 스펙 |
 |---|---|---|---|---|---|---|---|---|
-| <a id="issue-sec-1"></a>ISSUE-SEC-1 | BE3 | 높음 | 열림 | 메일 비밀번호가 `application-dev.properties`에 평문으로 있고 git에 커밋돼 있다 | 저장소를 볼 수 있는 누구나 메일 계정을 쓸 수 있다 | `backend/src/main/resources/application-dev.properties` | [user/overview](./domains/user/overview.md#현재-상태) | — |
+| <a id="issue-sec-1"></a>ISSUE-SEC-1 | BE3 | 높음 | 진행 중 (fix/be3-mail-password) | 메일 비밀번호가 `application-dev.properties`에 평문으로 있고 git에 커밋돼 있다 | 저장소를 볼 수 있는 누구나 메일 계정을 쓸 수 있다 | `backend/src/main/resources/application-dev.properties` | [user/overview](./domains/user/overview.md#현재-상태) | — |
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 공통 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-4"></a>ISSUE-BUG-4 | FE2 | 중간 | 열림 | 독서 완료 화면의 "독서 집중도"는 전달 경로가 없어 예시 값(94%, 집중 모드 사용)을 보여준다 | 실제와 관계없는 집중도가 사용자에게 보인다. 미팅(2026-11-23) 결정: 표시를 없앤다 | 앱 `useReadingComplete`(`EXAMPLE.focusPercent`), `ReadingResultCard` | [reward/overview](./domains/reward/overview.md#현재-상태) | 불필요 |
