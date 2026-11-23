@@ -17,7 +17,7 @@
 
 값은 문서에 적지 않는다. 팀 공유 위치에서 받는다.
 
-> ⚠️ [ISSUE-SEC-2](../known-issues.md#issue-sec-2) 팀 노션에 비밀값이 평문으로 있다. ⚠️ [ISSUE-SEC-1](../known-issues.md#issue-sec-1) `application-dev.properties`의 메일 비밀번호가 평문이다.
+> ⚠️ [ISSUE-SEC-2](../known-issues.md#issue-sec-2) 팀 노션에 비밀값이 평문으로 있다.
 
 | 이름 | 쓰는 곳 | 필수 |
 |---|---|---|
