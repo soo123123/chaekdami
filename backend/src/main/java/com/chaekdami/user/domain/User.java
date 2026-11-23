@@ -41,6 +41,25 @@ public class User {
     @Column(name = "token_version", nullable = false)
     private long tokenVersion;
 
+    // 정지 칸은 기존 행에 추가할 수 있게 NULL을 허용한다. status가 null이면 ACTIVE로 본다.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private UserStatus status;
+
+    @Column(name = "suspended_until")
+    private LocalDateTime suspendedUntil;
+
+    @Column(name = "suspension_reason", length = MAX_SUSPENSION_REASON_LENGTH)
+    private String suspensionReason;
+
+    @Column(name = "suspended_at")
+    private LocalDateTime suspendedAt;
+
+    @Column(name = "suspended_by")
+    private Long suspendedBy;
+
+    public static final int MAX_SUSPENSION_REASON_LENGTH = 200;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -76,5 +95,35 @@ public class User {
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void changeRole(Role role) {
+        this.role = role;
+    }
+
+    /** 이미 정지돼 있으면 사유·끝 시각·정지 시각·관리자를 새 값으로 바꾼다. until이 null이면 무기한. */
+    public void suspend(String reason, LocalDateTime until, Long adminId, LocalDateTime now) {
+        this.status = UserStatus.SUSPENDED;
+        this.suspensionReason = reason;
+        this.suspendedUntil = until;
+        this.suspendedAt = now;
+        this.suspendedBy = adminId;
+    }
+
+    public void unsuspend() {
+        this.status = UserStatus.ACTIVE;
+        this.suspensionReason = null;
+        this.suspendedUntil = null;
+        this.suspendedAt = null;
+        this.suspendedBy = null;
+    }
+
+    /** 정지 상태이고 끝 시각이 없거나 아직 지나지 않았을 때만 정지다. 끝 시각이 지나면 따로 해제하지 않아도 풀린다. */
+    public boolean isSuspendedAt(LocalDateTime now) {
+        return status == UserStatus.SUSPENDED && (suspendedUntil == null || suspendedUntil.isAfter(now));
+    }
+
+    public UserStatus effectiveStatus(LocalDateTime now) {
+        return isSuspendedAt(now) ? UserStatus.SUSPENDED : UserStatus.ACTIVE;
     }
 }

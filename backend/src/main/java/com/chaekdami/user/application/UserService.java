@@ -7,6 +7,7 @@ import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
 import com.chaekdami.user.application.command.SignupCommand;
 import com.chaekdami.user.application.event.UserWithdrawnEvent;
+import com.chaekdami.user.application.exception.AccountSuspendedException;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.InvalidCredentialsException;
@@ -99,6 +100,10 @@ public class UserService implements NicknameChanger {
         }
 
         loginAttemptLimiter.clearLoginFailures(email, clientIp);
+        // 비밀번호가 맞을 때만 정지 사실을 알린다. 틀리면 위에서 401로 끝나 정지 여부가 드러나지 않는다.
+        if (user.isSuspendedAt(LocalDateTime.now())) {
+            throw new AccountSuspendedException(user.getSuspendedUntil());
+        }
         return issueTokens(user);
     }
 
@@ -145,7 +150,14 @@ public class UserService implements NicknameChanger {
 
     @Transactional
     public void logoutAll() {
-        User user = loadCurrentUser();
+        invalidateSessions(loadCurrentUser());
+    }
+
+    /**
+     * 이미 발급된 Access Token(버전 비교로 다음 요청부터 401)과 Refresh Token을 모두 못 쓰게 한다.
+     * 전체 로그아웃, 관리자의 정지·역할 변경이 쓴다.
+     */
+    void invalidateSessions(User user) {
         user.bumpTokenVersion();
         revokeAll(user.getId());
     }
