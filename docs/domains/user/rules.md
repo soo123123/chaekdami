@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # user 규칙
 
@@ -50,5 +50,4 @@
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
 | 확인 | 현재 비밀번호 필요 | `WithdrawRequest` | ✅ |
-| 다른 도메인 데이터 | 같은 트랜잭션에서 review·reward·dday 리스너가 먼저 삭제 | `UserWithdrawnEvent` | ✅ |
-| reading 데이터 | 삭제 안 됨 | — | ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) |
+| 다른 도메인 데이터 | 같은 트랜잭션에서 review·reward·dday·reading 리스너가 먼저 삭제 | `UserWithdrawnEvent` | ✅ |

@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE2
 
 # reward 규칙
 
@@ -21,7 +21,7 @@
    c. 세션 날짜 전까지 놓친 날을 방어권으로 정산
    d. 세션 날짜가 이미 "방어"였으면 방어권 1개 환불
    e. 세션 날짜를 D-day 달력에 "읽음"으로 기록
-6. 사진 인증된 세션이고 추가 보상을 아직 안 받았으면: 경험치 +20
+6. 사진 인증된 세션이고 추가 보상을 아직 안 받았으면: 경험치 +20 (사진 인증된 세션 = 세션 저장 때 연결된 독서 인증이 `PASSED`이고, AI 사용 한도 초과로 확인 없이 통과한 것이 아님 — [reading/rules](../reading/rules.md#5-독서-인증))
 7. 연속 일수 다시 계산해 계정에 반영
 8. 이 세션의 보상 내역 + 지금 상태를 응답
 ```
@@ -41,7 +41,8 @@
 | 시간 경험치 | 1분당 1 EXP (30초 이상은 1분으로 반올림) | `ExperiencePolicy.SECONDS_PER_EXPERIENCE` | ✅ |
 | 쪽수 경험치 | 5쪽당 1 EXP (나머지 3쪽 이상이면 +1) | `ExperiencePolicy.PAGES_PER_EXPERIENCE` | ✅ |
 | 읽은 쪽 수 | `endPage - startPage` | `ExperiencePolicy.readingExperience` | ✅ |
-| 사진 인증 추가 경험치 | 20 EXP, 재화 없음, 부스터 미적용 | `ExperiencePolicy.PHOTO_CERTIFICATION_EXPERIENCE` | ⏳ [TODO-3](../../known-issues.md#todo-3) |
+| 사진 인증 추가 경험치 | 20 EXP, 재화 없음, 부스터 미적용 | `ExperiencePolicy.PHOTO_CERTIFICATION_EXPERIENCE` | ✅ |
+| 사진 인증 판단 | 세션에 연결된 인증이 `PASSED` + `ai_skipped` 아님. 429로 통과한 인증은 제외 (임시 규칙) | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` | ✅ ⏳ [TODO-23](../../known-issues.md#todo-23) |
 
 예: 25분 40초, 12쪽 → 26 + 2 = **28 EXP**
 

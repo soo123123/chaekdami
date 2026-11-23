@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # review 규칙
 
@@ -14,7 +14,7 @@
 | 소유권 | 남의 회차·문장은 404 | `OwnedResources` | ✅ |
 | 모음집 공개 | **회차의 `isPublic`** (reading의 `PATCH /api/reading-records/{id}`로 변경). 기본 비공개 | `SentenceCollectionService` | ✅ |
 | 내 모음집 | 읽는 중이어도 조회 가능. 남의 모음집은 커뮤니티로만 | `SentenceCollectionService` | ✅ |
-| 세션 문장 | 세션 저장 요청의 `sentence`로 저장하는 메서드는 있으나 호출 안 됨 | `SentenceService.recordFromSession` | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) |
+| 세션 문장 | 세션 저장 요청의 `sentence`를 그 회차 문장으로 저장 (쪽 번호 = 세션 `endPage`, 1 미만이면 없음). 빈 문장은 건너뜀, 규칙 위반이면 예외로 세션까지 취소 | `SentenceService.recordFromSession` | ✅ |
 
 ## 2. 리뷰(별점·한줄평)
 

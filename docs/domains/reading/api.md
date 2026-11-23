@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading API
 
@@ -24,7 +24,7 @@
 | GET | `/api/reading-records/{id}/sessions` | 회차의 세션 목록 (최근 먼저) | 200 | ✅ |
 | GET | `/api/me/reading-today` | 오늘 독서 요약 | 200 | ✅ |
 | GET | `/api/me/reading-stats` | 독서 통계 | 200 | ✅ |
-| POST | `/api/reading-records/{id}/certifications` | 독서 인증 (사진 → AI 글자 추출 → 판정) | 201 | ✅ 앱 미연결 ⏳ [TODO-1](../../known-issues.md#todo-1) |
+| POST | `/api/reading-records/{id}/certifications` | 독서 인증 (사진 → AI 글자 추출 → 판정) | 201 | ✅ |
 | GET | `/api/reading-records/{id}/certifications` | 회차의 인증 목록 (최신 먼저) | 200 | ✅ |
 
 ---
@@ -195,7 +195,8 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
   "startPage": 108,
   "endPage": 120,
   "sentence": "사람은 책을 만들고, 책은 사람을 만든다.",
-  "photos": [{ "uri": "file:///…" }]
+  "photos": [{ "uri": "file:///…" }],
+  "photoVerificationId": 12
 }
 ```
 
@@ -204,9 +205,9 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 | `bookId` | ✅ | 서재 책 번호 |
 | `readingTime` | ✅ | 독서 시간(초), 3분~2시간 |
 | `startPage`, `endPage` | ✅ | 이번에 읽은 범위 |
-| `sentence` | | ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) 받기만 하고 저장하지 않음. **현재 앱은 이 필드를 보내지 않고**, 세션 저장 뒤 문장 API(`POST /api/reading-records/{id}/sentences`, 쪽 번호 = `endPage`)로 따로 저장한다 |
+| `sentence` | | 인상 깊은 문장. 이 세션의 회차 문장으로 **세션과 함께 저장**한다 (쪽 번호 = `endPage`, 1 미만이면 없음). 비어 있으면 저장하지 않는다. 500자 초과면 400 `VALIDATION_ERROR`(`fields[0].field`가 `sentence`)이고 세션도 저장되지 않는다. 앱은 문장 API를 따로 부르지 않는다 |
 | `photos` | | ⏳ [TODO-2](../../known-issues.md#todo-2) 받기만 하고 저장하지 않음 |
-| `photoVerificationId` | | ⏳ [TODO-2](../../known-issues.md#todo-2) 앱은 사진 인증 통과 시 보내지만 **서버 DTO에 이 필드가 없어 무시됨** |
+| `photoVerificationId` | | 통과한 독서 인증 번호(`CertificationResponse.id`). 내 인증이고 `PASSED`이고 아직 다른 세션에 안 쓰였으면 **이 세션에 연결**한다 (사진 인증 보상 판단용). 조건이 안 맞으면 무시하고 저장은 성공 ([rules.md](./rules.md#5-독서-인증)) |
 
 ```json
 // 응답 201
@@ -229,9 +230,9 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 - `startedAt`·`endedAt`은 서버 시각 기준 (`endedAt` = 저장 요청 받은 시각, `startedAt` = `endedAt - readingTime`)
 - `status`·`currentPage`·`progressRate`는 저장 후 회차 상태
 
-> ⚠️ [ISSUE-BUG-1](../../known-issues.md#issue-bug-1) — 앱은 이 API를 부른 뒤 문장 API를 따로 부른다. 문장 저장만 실패해도 앱이 전체 실패로 보여주고, "다시 시도하기"를 누르면 이 API가 다시 호출되어 **같은 독서가 세션 2건**으로 저장된다.
->
-> ⚠️ [ISSUE-BUG-2](../../known-issues.md#issue-bug-2) — 세션과 문장이 따로 저장되어 문장만 빠질 수 있다.
+- 세션·문장·인증 연결은 한 트랜잭션이다. 실패하면 아무것도 저장되지 않으므로 앱이 같은 요청을 다시 보내도 된다.
+
+> ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) — 서버는 저장했는데 응답만 끊긴 뒤 다시 보내면 세션이 2건이 된다.
 >
 > ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1) — `readingTime`은 앱이 보낸 값을 3분~2시간 범위로만 검증한다.
 
@@ -243,7 +244,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 
 ## 독서 인증
 
-> ⏳ [TODO-1](../../known-issues.md#todo-1) — 서버 API는 있지만 앱은 아직 옛 주소 `POST /api/reading-photos/verify`를 부르고 Mock을 쓴다.
+앱은 독서 종료 화면에서 사진을 붙이는 순간 **그 책의 가장 최근 회차**로 `image`만 보낸다 (쪽 범위·문장은 보내지 않음). `PASSED`만 통과로 보고, 통과 번호를 세션 저장 요청의 `photoVerificationId`로 보낸다. 앱은 최대 45초 기다린다.
 
 ### POST /api/reading-records/{id}/certifications
 
@@ -277,7 +278,7 @@ YES24를 검색한다. "이 책이 맞나?" 확인용 정보만 주고, 쪽수·
 | `bookPage` | AI가 책 페이지로 봤는지. 판단 못 하면 `null` |
 | `detectedPage` | 사진에서 찾은 쪽 번호. 못 찾으면 `null` |
 | `sentenceFound` | 문장을 찾았는지. 문장을 안 보냈거나 **목록 조회면 항상 `null`** |
-| `messages` | 판정 이유·안내 문구. 화면에 그대로 보여줘도 된다 |
+| `messages` | 판정 이유·안내 문구. 화면에 그대로 보여줘도 된다. AI 사용 한도 초과(429)로 확인 없이 통과하면 "AI 확인 없이 통과했어요. (사용 한도 초과)" |
 | `extractedText` | AI가 읽은 글자 |
 
 ### GET /api/reading-records/{id}/certifications

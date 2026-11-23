@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # user 데이터
 
@@ -69,4 +69,4 @@ erDiagram
 
 ## 삭제
 
-회원 탈퇴는 `UserWithdrawnEvent`를 발행하고, 같은 트랜잭션에서 review·reward·dday 리스너가 그 사용자의 데이터를 먼저 지운다. ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) reading 데이터는 지우지 않는다.
+회원 탈퇴는 `UserWithdrawnEvent`를 발행하고, 같은 트랜잭션에서 review·reward·dday·reading 리스너가 그 사용자의 데이터를 먼저 지운다. reading은 인증 → 세션 → 독서 기록 → 책 순서로 지운다.

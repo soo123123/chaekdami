@@ -115,11 +115,34 @@ docs/domains (현재 모습) ──읽고 시작──▶ 스펙 (바뀔 모습)
 - 구현 전에 `domains/`를 먼저 고치지 않는다. 아직 없는 기능이 있는 것처럼 보이기 때문이다.
 - 스펙이 끝나면 `domains/`가 갱신되고, 다음 스펙은 그 문서를 읽고 시작한다. 이 고리가 끊기지 않게 하는 것이 핵심이다.
 
-## 5. 예시로 한 바퀴
+## 5. 하네스 구성 한눈에 보기
+
+AI가 규칙을 지키며 일하도록 만든 문서와 도구 목록이다. 위에서 아래로 갈수록 자세해진다.
+
+| 문서 | 내용 |
+|---|---|
+| [AGENTS.md](../AGENTS.md) | AI가 가장 먼저 읽는 작업 지도. 믿는 순서, 작업별로 읽을 문서, 작업 원칙, 검증 명령, 하지 않는 것 |
+| [CLAUDE.md](../CLAUDE.md) | Claude 전용 메모. AGENTS.md를 불러오고, 한국어로 답하기·스펙 이어가기 같은 몇 줄만 더한다 |
+| [.cursor/rules/](../.cursor/rules/) | Cursor용 규칙. `agents.mdc`는 AGENTS.md 요약, `commit-message.mdc`는 커밋 메시지 형식 |
+| [docs/README.md](./README.md) | `docs/` 폴더 소개. 폴더별 내용, 도메인 나누는 법, 문서 쓰는 규칙(상태 줄 등) |
+| [docs/GUIDE.md](./GUIDE.md) | 지금 이 문서. 처음 합류한 사람용 안내서 |
+| [specs/README.md](./specs/README.md) | 스펙 절차와 규칙(S1~S11). 언제 스펙을 쓰는지, 승인·변경 기록 방법 |
+| [specs/_templates/](./specs/_templates/) | requirements · design · tasks 빈 양식 |
+| [known-issues.md](./known-issues.md) | 문제(`ISSUE-`) · 할 일(`TODO-`) · 질문(`ASK-`)을 ID로 모은 한 곳 |
+| [decisions/](./decisions/) | 설계나 작업 방식을 바꾼 이유. 하네스 도구를 둔 이유는 [0007](./decisions/0007-hooks-skills.md) |
+| [conventions/harness.md](./conventions/harness.md) | hooks · skills · 검사 스크립트 설명서. 무엇을 막고 검사하는지, 막혔을 때 할 일 |
+| [conventions/git.md](./conventions/git.md) | 브랜치·커밋 메시지 규칙 |
+| `.claude/hooks/`, `.claude/settings.json` | Claude Code가 저장소를 열면 자동으로 켜지는 검사·차단 (자세히: harness.md 1장) |
+| `.claude/skills/` | "새 스펙: ○○", "문제점 알려줘"처럼 말하면 따르는 작업 절차 4개 (자세히: harness.md 2장) |
+| `scripts/harness/` | 문서 상태(`docs-check.py`)와 앱↔백엔드 API 경로(`contract-check.py`) 검사 스크립트. 사람도 직접 실행할 수 있다 |
+
+하네스 자체를 처음 만든 과정은 [specs/000-harness-bootstrap/](./specs/000-harness-bootstrap/)에 있다.
+
+## 6. 예시로 한 바퀴
 
 > ⏳ 스펙 003이 끝나면 실제 파일을 따라가며 채운다.
 
-## 6. 자주 묻는 질문
+## 7. 자주 묻는 질문
 
 **Q. 문서와 코드가 다르면 어떻게 하나요?**
 코드가 맞다. 다른 점을 찾으면 그 문서의 담당 역할에게 알리고, 단순 누락이면 바로 문서를 고친다. 의도된 변경이 필요하면 스펙을 만든다.

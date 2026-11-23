@@ -44,7 +44,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 
 - 문제·할 일·질문은 [docs/known-issues.md](docs/known-issues.md) 한 곳에 ID로 기록한다: ⚠️ `ISSUE-<SEC|BUG|DATA|LIMIT>-N` · ⏳ `TODO-N` · ❓ `ASK-N`
 - 분류 기준: 지금 쓰면 잘못된 결과·위험 → 문제 / 아직 없을 뿐 → 할 일 / 사람이 정해야 함 → 질문. 애매하면 질문으로 올린다.
-- 도메인 문서에는 현재 동작을 그대로 쓰고, 바로 아래에 `> ⚠️ [ISSUE-BUG-1](../../known-issues.md#issue-bug-1)` 같은 한 줄만 단다.
+- 도메인 문서에는 현재 동작을 그대로 쓰고, 바로 아래에 `> ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1)` 같은 한 줄만 단다.
 - 심각도 "높음"을 새로 기록하면 바로 사람에게 알린다.
 - "문제점 알려줘" → `docs/known-issues.md`를 읽고 `grep -rn "ISSUE-" docs/`로 문서 안 위치를 함께 보여준다. "남은 일" → `TODO-`, "결정할 것" → `ASK-`.
 

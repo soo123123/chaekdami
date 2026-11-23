@@ -1,4 +1,4 @@
-> 기준: main@721fa71 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
 
 # 하네스 도구 — hooks · skills · 검사 스크립트
 
@@ -22,7 +22,7 @@ AI(Claude)가 이 저장소 규칙([AGENTS.md](../../AGENTS.md))을 지키도록
 | H3 | Claude가 파일을 쓰기 전 | `frontend/ios·android/`, `.env` 류 비밀 파일 차단 / 승인 이후 스펙의 requirements·design 수정은 **사람에게 확인** | 막거나 확인 창 | AGENTS 6·7장, S11 |
 
 - 스크립트: `guard-git.py`(H2), `guard-files.py`(H3), `check-after-edit.py`(H1), 공통 `_hook.py`
-- H1은 처음에 "알려주기만" 한다. `contract-check`에 이미 아는 불일치([TODO-1](../known-issues.md#todo-1))가 있어서다. 불일치가 0건이 되면 막는 방식으로 올릴지 정한다.
+- H1은 처음에 "알려주기만" 한다. `contract-check`에 이미 아는 불일치(독서 인증 옛 주소, 해결됨)가 있어서였다. 스펙 004로 불일치가 0건이 됐으니 막는 방식으로 올릴지 정한다.
 - H2 때문에 Claude는 커밋하지 않는다. 대신 커밋할 파일과 메시지([git.md](./git.md) 형식)를 제안한다. AI 커밋을 허용하려면 `guard-git.py`에서 `commit`을 빼고 AGENTS 7장을 함께 고친다.
 
 ## 2. skills — 반복 작업 절차

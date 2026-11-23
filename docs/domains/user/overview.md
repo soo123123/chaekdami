@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
 
 # user — 회원과 인증
 
@@ -37,13 +37,11 @@ backend/src/main/java/com/chaekdami/
 | 방향 | 무엇 | 방식 |
 |---|---|---|
 | 모든 도메인 → user | 현재 사용자 | review는 `CurrentUser`, reading·reward·dday는 `X-User-Id` 헤더(필터가 토큰 사용자로 채움) |
-| user → review·reward·dday | 회원 탈퇴 시 데이터 삭제 | 이벤트 `UserWithdrawnEvent` (같은 트랜잭션) |
-| user → reading | 회원 탈퇴 시 서재 삭제 | 리스너 없음 ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) |
+| user → review·reward·dday·reading | 회원 탈퇴 시 데이터 삭제 | 이벤트 `UserWithdrawnEvent` (같은 트랜잭션). reading은 `ReadingCleanupListener` |
 | review → user | 작성자 닉네임 | `UserNicknameReader` |
 
 ## 현재 상태
 
 - ✅ 가입, 로그인, 재발급, 로그아웃(단일·전체), 비밀번호 변경·재설정, 내 정보, 탈퇴, 로그인·재설정 요청 제한
 - ⚠️ [ISSUE-SEC-1](../../known-issues.md#issue-sec-1) `application-dev.properties`에 메일 비밀번호가 평문으로 커밋돼 있음
-- ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) 탈퇴 시 reading 데이터 미삭제
 - ⏳ [TODO-10](../../known-issues.md#todo-10) 관리자 기능은 리뷰 블라인드만 (사용자 관리 없음)

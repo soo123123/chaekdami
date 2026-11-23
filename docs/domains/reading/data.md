@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
 
 # reading 데이터
 
@@ -19,7 +19,8 @@ erDiagram
 | users 1 : N books | 같은 책도 사용자마다 별도 행. 서로의 서재는 보이지 않는다 |
 | books 1 : N reading_records | 완독한 책을 다시 읽으면 기존 기록을 덮지 않고 새 회차를 만든다 |
 | reading_records 1 : N reading_sessions | 회차 동안 타이머를 켤 때마다 쌓인다. 총 독서 시간 = 세션 합 |
-| reading_records 1 : N certifications | 회차에 올린 인증 사진의 판정 결과. 세션과는 연결되지 않는다 |
+| reading_records 1 : N certifications | 회차에 올린 인증 사진의 판정 결과. 사진을 붙일 때의 가장 최근 회차라, 다회독 첫 세션의 인증은 이전 회차에 붙는다 |
+| reading_sessions 1 : 0..1 certifications | 세션 저장 때 통과한 인증을 연결 (`reading_session_id`, 외래 키 아닌 숫자 칸). 사진 인증 보상 판단에 쓴다 |
 
 `reading_records.user_id`·`reading_sessions.user_id`는 조회 편의용으로 함께 저장한다 (항상 책 주인과 같다).
 
@@ -100,16 +101,17 @@ INDEX `idx_reading_sessions_reading_record_id`, `idx_reading_sessions_user_id_st
 | book_page | boolean | | AI 판단: 책 페이지인가 |
 | status | varchar(20) | not null | `PASSED` · `UNVERIFIED` · `FAILED` |
 | message | varchar(1000) | | 판정 이유 (여러 개면 줄바꿈으로 구분) |
+| ai_skipped | boolean | | AI 사용 한도 초과(429)로 확인 없이 통과. `null`은 false (칸이 생기기 전 기록) |
+| reading_session_id | bigint | UNIQUE | 이 인증을 쓴 독서 세션. 세션 저장 때 채움, 한 세션에 하나 |
 | created_at | timestamp | not null | |
 
 ## 삭제
 
 | 상황 | 처리 | 상태 |
 |---|---|---|
-| 책 삭제 | 인증 → 세션 → 기록 → 책 순서로 삭제 (`BookService.deleteBook`) | ✅ |
-| 책 삭제 시 문장·리뷰·독후감·좋아요·신고 | 지우지 않음 | ⚠️ [ISSUE-DATA-1](../../known-issues.md#issue-data-1) |
+| 책 삭제 | 독후활동(문장·리뷰·독후감·그 리뷰의 좋아요·신고) → 인증 → 세션 → 기록 → 책 순서로 한 트랜잭션에서 삭제 (`BookService.deleteBook`, port `BookActivityCleaner` → `ReviewCleanupService.deleteAllOfBook`). 다른 사용자의 같은 ISBN 데이터는 지우지 않음 | ✅ |
 | 책 삭제 시 보상 내역 | 지우지 않음 | ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) |
-| 회원 탈퇴 | reading 데이터를 지우는 리스너 없음 | ⚠️ [ISSUE-DATA-2](../../known-issues.md#issue-data-2) |
+| 회원 탈퇴 | 인증 → 세션 → 기록 → 책 순서로 삭제, 탈퇴와 같은 트랜잭션 (`ReadingCleanupListener` → `ReadingCleanupService.deleteAllOfUser`) | ✅ |
 
 ## 변경 이력
 

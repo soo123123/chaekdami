@@ -365,21 +365,19 @@ const httpReadingApi: ReadingApi = {
       recordId = created.data.id;
       round = created.data.round;
     }
+    // 세션·문장·사진 인증 연결을 요청 한 번으로 저장한다. 서버가 한 트랜잭션으로 처리하므로
+    // 실패하면 아무것도 저장되지 않고, '다시 시도하기'로 같은 요청을 보내도 세션이 2건이 되지 않는다.
+    // 문장 쪽 번호는 서버가 endPage로 정한다. (문장 API를 따로 부르지 않는다)
+    const sentence = request.sentence?.trim();
     const { data: session } = await apiClient.post<BeSession>('/api/reading-sessions', {
       bookId: request.bookId,
       readingTime: request.readingTime,
       startPage: request.startPage,
       endPage: request.endPage,
-      // 사진 인증을 통과했을 때만 보낸다. 서버는 이 번호로 세션에 '사진 인증됨'을 표시한다.
+      ...(sentence ? { sentence } : {}),
+      // 사진 인증을 통과했을 때만 보낸다. 서버는 이 번호의 인증을 이 세션에 연결해 사진 인증 보상을 판단한다.
       ...(request.photoVerificationId != null ? { photoVerificationId: request.photoVerificationId } : {}),
     });
-    const sentence = request.sentence?.trim();
-    if (sentence && recordId != null) {
-      await apiClient.post(`/api/reading-records/${recordId}/sentences`, {
-        content: sentence,
-        ...(request.endPage > 0 ? { pageNumber: request.endPage } : {}),
-      });
-    }
     const saved: ReadingRecordResult = {
       readingRecordId: session.readingRecordId ?? recordId!,
       round,

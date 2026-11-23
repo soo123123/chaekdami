@@ -34,4 +34,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
 
     // 서재에서 책을 지울 때 기록도 함께 삭제
     void deleteAllByBookId(Long bookId);
+
+    // 회원 탈퇴 때 그 사용자의 독서 기록 전부 삭제 (스펙 003 R4)
+    void deleteAllByUserId(Long userId);
 }

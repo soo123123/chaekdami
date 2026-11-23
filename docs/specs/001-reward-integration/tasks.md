@@ -1,4 +1,4 @@
-> 상태: in-progress (구현 완료, 7.1 테스트·8.x 실기기 확인 남음) · 기준: fix/fe1@ef397a6 · 담당: FE1·FE2·BE2
+> 상태: in-progress (구현 완료, 8.1·8.3~8.5 실기기 확인 남음) · 기준: fix/fe1@ef397a6 · 담당: FE1·FE2·BE2
 > 원본: `docs/reward-integration/tasks.md` — 스펙 000에서 이 위치로 옮김. 결정 요약: [decisions/0003](../../decisions/0003-reward-on-complete-screen.md), [0004](../../decisions/0004-dday-records.md)
 
 # 001 · 보상(BE2) 브랜치 병합과 프론트 연결 — Tasks
@@ -34,7 +34,8 @@
 - [x] 6.3 `ShopScreen`·`RewardScreen` 적용 중 표시 — R5.3
 
 ## Phase 7. 검증·커밋
-- [ ] 7.1 `./gradlew test` — 작업 환경에서 Gradle·Maven 저장소 접근이 막혀 미실행. 바꾼 계산 로직만 단독 컴파일로 13개 케이스 확인. 로컬에서 실행 필요
+- [x] 7.1 `./gradlew test` — 작업 환경에서 Gradle·Maven 저장소 접근이 막혀 미실행. 바꾼 계산 로직만 단독 컴파일로 13개 케이스 확인. 로컬에서 실행 필요
+  - 2026-11-22 로컬 실행 (스펙 004 작업 중): 228개 중 227개 통과. 실패 1개는 DB 비밀번호가 필요한 `contextLoads` ([TODO-21](../../known-issues.md#todo-21)). 이 스펙 관련 `ExperiencePolicyTest` 17, `UserBuffTest` 5, `BoosterServiceTest` 3, `ReadingSessionRewardServiceTest` 8 모두 통과
 - [x] 7.2 `npx tsc --noEmit` 통과. `expo lint`는 ESLint 미설정으로 미실행
 - [x] 7.3 로컬 커밋 (백엔드, 프론트)
 
@@ -42,7 +43,8 @@
 
 ## Phase 8. 프로토타입 테스트 (사용자)
 - [ ] 8.1 새 계정으로: 저장 → 완료 화면 값 확인 → 뒤로 갔다 재진입(같은 값, 강조 없음)
-- [ ] 8.2 `skip-reading.mjs`로 30분 독서 → 퀘스트 달성·코인 확인
+- [x] 8.2 `skip-reading.mjs`로 30분 독서 → 퀘스트 달성·코인 확인
+  - 2026-11-22: 스크립트 대신 API 직접 호출(세션 30분 저장 → 보상 요청)로 확인. 독서 경험치와 퀘스트 재화 지급 확인 (사용자)
 - [ ] 8.3 부스터 구매 → 사용 → 독서 → 2배(부분 적용) 확인
 - [ ] 8.4 홈·마이페이지·레벨·통계·D-day 연속일이 모두 같은지
 - [ ] 8.5 네트워크 끊고 완료 화면 진입 → 다시 시도

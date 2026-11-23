@@ -1,11 +1,14 @@
 package com.chaekdami.reading.presentation;
 
 import com.chaekdami.reading.application.ReadingSessionService;
+import com.chaekdami.reading.application.port.SessionSentenceRecorder;
 import com.chaekdami.reading.domain.Book;
 import com.chaekdami.reading.domain.ReadingRecord;
 import com.chaekdami.reading.infrastructure.BookRepository;
+import com.chaekdami.reading.infrastructure.CertificationRepository;
 import com.chaekdami.reading.infrastructure.ReadingRecordRepository;
 import com.chaekdami.reading.infrastructure.ReadingSessionRepository;
+import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.presentation.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,13 +46,17 @@ class ReadingSessionControllerTest {
     private ReadingRecordRepository readingRecordRepository;
     @Mock
     private ReadingSessionRepository readingSessionRepository;
+    @Mock
+    private CertificationRepository certificationRepository;
+    @Mock
+    private SessionSentenceRecorder sessionSentenceRecorder;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         ReadingSessionService service =
-                new ReadingSessionService(bookRepository, readingRecordRepository, readingSessionRepository);
+                new ReadingSessionService(bookRepository, readingRecordRepository, readingSessionRepository, certificationRepository, sessionSentenceRecorder);
         mockMvc = MockMvcBuilders.standaloneSetup(new ReadingSessionController(service))
                 .setControllerAdvice(new ReadingExceptionHandler(), new GlobalExceptionHandler())
                 .build();
@@ -71,5 +79,23 @@ class ReadingSessionControllerTest {
                 .andExpect(jsonPath("$.message").value("독서 시간은 3분 이상이어야 합니다."));
 
         verify(readingSessionRepository, never()).save(any());
+    }
+
+    @Test
+    void 문장_규칙을_어기면_400_VALIDATION_ERROR와_문장_필드_오류를_돌려준다() throws Exception {
+        // 실제 규칙 검사는 review의 SentenceService가 한다. 여기서는 그 예외가 400으로 나가는지 확인
+        doThrow(new InvalidRequestException("sentence", "문장은 500자 이하여야 합니다."))
+                .when(sessionSentenceRecorder).record(any(), any(), any(), any());
+
+        mockMvc.perform(post("/api/reading-sessions")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bookId": 10, "readingTime": 600, "startPage": 0, "endPage": 10, "sentence": "%s"}
+                                """.formatted("가".repeat(501))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fields[0].field").value("sentence"))
+                .andExpect(jsonPath("$.fields[0].message").value("문장은 500자 이하여야 합니다."));
     }
 }
