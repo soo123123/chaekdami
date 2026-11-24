@@ -45,7 +45,7 @@ erDiagram
 | token_hash | SHA-256 해시 (원문 저장 안 함), UNIQUE |
 | expires_at | 발급 + 90일 |
 | created_at | |
-| revoked_at | 폐기 시각 |
+| revoked_at | 재발급으로 교체된 시각. 로그아웃·일괄 무효화된 토큰은 행을 삭제 (이 변경 전에 폐기된 토큰은 이유와 관계없이 값이 남아 있음) |
 
 ## password_reset_tokens
 
