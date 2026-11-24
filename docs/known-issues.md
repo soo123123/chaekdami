@@ -1,4 +1,4 @@
-> 기준: main (이 문서는 main에서만 고친다) · 최종 확인: 2026-11-23 · 담당: BE1
+> 기준: main (이 문서는 main에서만 고친다) · 최종 확인: 2026-11-24 · 담당: BE1
 
 # 문제 · 할 일 · 질문
 
@@ -66,7 +66,7 @@
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | 열림 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE1 | AI 기능 (독후감 피드백, 문장 인증) | 열림 | 없음. `book_reports.revision`만 준비. 책 추천은 TODO-27로 분리 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 열림 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
-| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
+| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005, 008) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음 | — | [reward/rules](./domains/reward/rules.md#2-경험치) |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | FE2 (+FE1) | (확정) 독서 알림 | 열림 | 없음. 기획(2026-11-23): 오늘 독서하지 않았으면 특정 시간부터 자정까지 반복 알림 (듀오링고 방식), 마이페이지에서 설정. 구현 방식은 ASK-7 (서버 푸시면 +BE3·BE2) | — | [overview](./overview.md#3-주요-기능과-현재-상태) |
 | <a id="todo-9"></a>TODO-9 | BE3 (+FE1) | 리뷰(별점) 삭제 | 진행 중 (스펙 006) | API 없음. 한줄평만 빈 문자열로 지움 | `ReviewController` | [review/rules](./domains/review/rules.md#2-리뷰별점한줄평) |
