@@ -51,7 +51,7 @@
 |---|---|---|---|---|---|---|---|---|---|
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 공통 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
 | <a id="issue-sec-3"></a>ISSUE-SEC-3 | BE1 (+BE2) | 높음 | 열림 | 책 쪽수에 상한이 없고 세션끼리의 시간·구간 겹침을 확인하지 않는다 | 비정상적인 경험치 획득과 서버 부하가 가능하다. 주간 랭킹에도 영향 (자세한 내용은 담당자에게 따로 전달) | `BookService`, `ReadingSession`, `RewardAccount.addExperience` | — | — |
-| <a id="issue-sec-4"></a>ISSUE-SEC-4 | BE3 | 중간 | 열림 | 가입에 이메일 확인이 없고 일부 요청 제한의 범위가 좁다 | 신고·별점 결과가 왜곡될 수 있다. 정책은 ASK-10 | `UserService`, `LoginAttemptLimiter`, `ReviewSocialService` | — | — |
+| <a id="issue-sec-4"></a>ISSUE-SEC-4 | BE3 | 중간 | 열림 | 일부 요청 제한의 범위가 좁다 (가입 이메일 확인은 하지 않기로 함, ASK-10) | 신고·별점 결과가 왜곡될 수 있다 | `UserService`, `LoginAttemptLimiter`, `ReviewSocialService` | — | — |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-6"></a>ISSUE-BUG-6 | BE2 (+FE1) | 중간 | 진행 중 (스펙 009) | 서버는 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 비율만큼만 2배로 계산한다 (`0979aa9`, 미팅에서 정한 수정 방향과 같음) | 테스트 환경에서 독서 시간이 부스터 시간(30분)보다 길면 부스터가 적용되지 않았다. 의심 원인: ① 테스트 빌드가 `0979aa9` 이전 ② 일시정지가 있으면 계산한 구간이 실제 독서 시각과 어긋남 ③ 완료 화면 표시 문제 | `RewardService.grantReadingExperience`, 앱 `useReadingTimer` | [reward/rules](./domains/reward/rules.md#3-경험치-부스터) | 009 (부스터는 책 읽는 동안에만 시간이 흐르도록 규칙 변경) | 서버 구현 완료, 병합 대기 (feature/009-booster-reading-time). 앱 수정과 같은 때 병합, ISSUE-BUG-9 먼저 병합. FE2 응답 필드 확인·실제 DB 확인·재테스트 남음 |
 | <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 진행 중 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음). 부스터 위젯이 로그인 상태에서 화면 이동·앱 복귀·30초마다 조회해 겹칠 기회가 늘었다. 부스터 사용 직후에는 위젯과 상점이 거의 동시에 조회한다 (PR #23, 시뮬레이터 확인) | `RewardService.getRewardStatus`, 앱 `BoosterFloatingWidget`, `ShopScreen` | — | — | 구현 완료, 병합 대기 (fix/be2-reward-status). 실제 DB 동시 요청 미확인 |
@@ -141,7 +141,6 @@
 | <a id="ask-7"></a>ASK-7 | FE2 · BE3 · 기획 | 독서 알림의 세부 값. 방식은 로컬 알림과 서버 푸시를 함께 쓰기로 결정 (BE3, 2026-11-24). 남은 것: 주간 목표를 사용자가 정하나(제안: 기본 5시간)? 하루 최대 개수와 금지 시간(제안: 2개, 22시 30분~8시)? 알림 시각과 문구? 복귀 푸시 시점(제안: 8·14·30일째)? | TODO-8, TODO-42 |
 | <a id="ask-8"></a>ASK-8 | BE2 · 기획 | 랜덤박스 확률표와 칭호·히든 칭호 획득 조건 | TODO-28, TODO-29 |
 | <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
-| <a id="ask-10"></a>ASK-10 | BE3 · 기획 | 가입 때 이메일을 확인하나? | ISSUE-SEC-4 |
 | <a id="ask-11"></a>ASK-11 | BE3 · 기획 | 정지된 회원의 글을 숨기나? | TODO-35, [007](./specs/007-admin-users/) |
 | <a id="ask-12"></a>ASK-12 | FE1 · 기획 | 책 정보의 찜하기를 유지하나? (지금은 화면을 나가면 사라짐) | 앱 `BookInfoScreen` |
 
@@ -153,6 +152,7 @@
 | TODO-25 홈 보유 아이템 표시 | `HomeScreen`의 "최근 읽은 책"을 "나의 보유 아이템"으로 교체 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
 | TODO-26 부스터 남은 시간 표시 | `BoosterFloatingWidget`을 최상위 레이아웃에 추가 — 드래그 이동, 남은 시간 (`44ff21d`). 사용 직후 갱신·안전 영역 제한 보완 (PR #23). 완료는 FE2 확인 | 2026-11-24 | — |
 | ISSUE-BUG-7 독서 통계의 예시 카테고리 비율 | `ReadingStatsScreen`의 카테고리 비율과 `GENRES` 제거 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
+| ASK-10 가입 때 이메일 확인 | 하지 않음 (BE3 결정). ISSUE-SEC-4에는 요청 제한 범위만 남음 | 2026-11-25 | — |
 | ASK-6 독서 통계 카테고리 비율 | 없애는 것으로 정리 (앱에서 제거됨, 통계 API 변경 없음) | 2026-11-24 | — |
 | ISSUE-SEC-1 메일 비밀번호 평문 커밋 | `application-dev.properties`의 평문 줄을 지우고 `application.properties`의 `${MAIL_PASSWORD}`로 통일. 비밀번호는 교체하지 않기로 함 (사람 결정 2026-11-23): 이전 커밋(`4f29537` 등)에 남은 값은 계속 유효 | 2026-11-23 | — |
 | TODO-10 관리자 사용자 관리 | `/api/admin/users` 목록·검색·상세, 이용 정지(기한 선택·사유)·해제, 역할 변경. 정지·역할 변경 시 세션 무효화, 정지된 회원 로그인 403 `ACCOUNT_SUSPENDED`. 자기 자신·ADMIN 대상 변경 금지. 앱 화면 없이 http로만 사용 | 2026-11-23 | [007](./specs/007-admin-users/) |
