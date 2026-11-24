@@ -44,6 +44,13 @@ public class LoginAttemptLimiter {
         increase(key);
     }
 
+    /** 회원 탈퇴와 같은 트랜잭션에서 그 이메일의 기록을 모든 IP에 대해 지운다. */
+    @Transactional
+    public void deleteAllOf(String email) {
+        authAttemptRepository.deleteByKeyPrefix(loginKey(email, ""));
+        authAttemptRepository.deleteByKeyPrefix(resetKey(email, ""));
+    }
+
     private void ensureAllowed(String key) {
         authAttemptRepository.findByAttemptKey(key)
                 .filter(attempt -> attempt.isLocked(LocalDateTime.now()))

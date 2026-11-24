@@ -216,6 +216,7 @@ public class UserService implements NicknameChanger {
         eventPublisher.publishEvent(new UserWithdrawnEvent(user.getId()));
         refreshTokenRepository.deleteByUser_Id(user.getId());
         passwordResetTokenRepository.deleteByUser_Id(user.getId());
+        loginAttemptLimiter.deleteAllOf(user.getEmail());
         userRepository.delete(user);
     }
 

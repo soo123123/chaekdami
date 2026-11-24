@@ -1,4 +1,4 @@
-> 기준: fix/be3-db-connection · 최종 확인: 2026-11-24 · 담당: BE3
+> 기준: fix/be3-withdraw-auth-attempts · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 규칙
 
@@ -53,6 +53,7 @@
 |---|---|---|---|
 | 확인 | 현재 비밀번호 필요 | `WithdrawRequest` | ✅ |
 | 다른 도메인 데이터 | 같은 트랜잭션에서 review·reward·dday·reading 리스너가 먼저 삭제 | `UserWithdrawnEvent` | ✅ |
+| 로그인·재설정 제한 기록 | 같은 트랜잭션에서 그 이메일의 기록을 모든 IP에 대해 삭제. 탈퇴 뒤 같은 이메일로 다시 시도하면 새로 기록 | `LoginAttemptLimiter.deleteAllOf` | ✅ |
 
 ## 6. 관리자
 
