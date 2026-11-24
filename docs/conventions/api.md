@@ -34,10 +34,11 @@
 API 요청 → 401
   → POST /api/auth/refresh { refreshToken } (동시에 여러 요청이 401이어도 재발급은 1번)
   → 성공: 새 토큰 저장 → 원래 요청 1번 재시도
-  → 실패: 토큰 삭제 → 로그인 화면으로
+  → 서버가 거절(401·403)하거나 Refresh Token이 없음: 토큰 삭제 → 안내 → 로그인 화면으로
+  → 네트워크 오류·서버 장애(5xx): 토큰 유지, 원래 요청만 실패 (다음 요청에서 다시 시도)
 ```
 
-`/api/auth/*` 요청의 401은 재발급을 시도하지 않는다. 토큰은 `expo-secure-store`에 저장한다 (`frontend/src/utils/tokenStorage.ts`).
+`/api/auth/*` 요청의 401은 재발급을 시도하지 않는다 (로그인이 필요한 `/api/auth/password`는 예외). `INVALID_CREDENTIALS`와 토큰 없이 보낸 요청의 401도 재발급하지 않는다. 토큰은 `expo-secure-store`에 저장한다 (`frontend/src/utils/tokenStorage.ts`).
 
 ### X-User-Id 헤더 (과도기)
 

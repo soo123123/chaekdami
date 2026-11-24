@@ -151,45 +151,6 @@ export async function login(
   };
 }
 
-// 현재 로그인 사용자 조회 API
-export async function getMyInfo(
-  accessToken: string
-): Promise<UserInfo> {
-  let response: Response;
-
-  try {
-    response = await fetch(`${API_BASE_URL}/api/me`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json',
-      },
-    });
-  } catch {
-    throw new AuthApiError(
-      '사용자 정보를 불러올 수 없습니다. 서버 연결을 확인해주세요.',
-      0,
-      'NETWORK_ERROR'
-    );
-  }
-
-  const result = await parseResponse(response);
-
-  if (
-    !result ||
-    typeof result !== 'object' ||
-    Array.isArray(result)
-  ) {
-    throw new AuthApiError(
-      '사용자 정보 응답 형식이 올바르지 않습니다.',
-      response.status,
-      'INVALID_RESPONSE'
-    );
-  }
-
-  return result as UserInfo;
-}
-
 // 회원가입 요청 데이터
 export interface SignUpRequest {
   email: string;
