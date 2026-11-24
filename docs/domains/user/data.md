@@ -1,4 +1,4 @@
-> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: fix/be3-withdraw-auth-attempts · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 데이터
 
@@ -75,3 +75,5 @@ erDiagram
 ## 삭제
 
 회원 탈퇴는 `UserWithdrawnEvent`를 발행하고, 같은 트랜잭션에서 review·reward·dday·reading 리스너가 그 사용자의 데이터를 먼저 지운다. reading은 인증 → 세션 → 독서 기록 → 책 순서로 지운다.
+
+`refresh_tokens`·`password_reset_tokens`와 그 이메일의 `auth_attempts`(로그인·재설정, 모든 IP)도 같은 트랜잭션에서 지운다. 가입하지 않은 이메일로 시도한 기록과 오래된 기록을 지우는 작업은 없다.
