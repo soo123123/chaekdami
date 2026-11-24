@@ -52,6 +52,12 @@ public class ReviewController {
         return ResponseEntity.ok(ReviewResponse.from(reviewService.update(reviewId, request.toCommand())));
     }
 
+    @DeleteMapping("/api/reviews/{reviewId}")
+    public ResponseEntity<Void> delete(@PathVariable Long reviewId) {
+        reviewService.delete(reviewId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/api/reading-records/{readingRecordId}/review")
     public ResponseEntity<ReadingReviewResponse> getForRound(@PathVariable Long readingRecordId) {
         return ResponseEntity.ok(ReadingReviewResponse.from(readingReviewService.get(readingRecordId)));

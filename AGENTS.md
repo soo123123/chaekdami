@@ -44,13 +44,14 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 
 - 문제·할 일·질문은 [docs/known-issues.md](docs/known-issues.md) 한 곳에 ID로 기록한다: ⚠️ `ISSUE-<SEC|BUG|DATA|LIMIT>-N` · ⏳ `TODO-N` · ❓ `ASK-N`
 - **known-issues는 main에서만 고치고 바로 main에 올린다.** 브랜치의 사본은 읽지도 고치지도 않는다. 읽기 `python3 scripts/harness/known-issues.py show`, 고치기 `open` → 수정 → `push -m "docs: 요약"` ([decisions/0008](docs/decisions/0008-known-issues-on-main.md))
+- TODO·ISSUE를 골라 시작하면 **스펙이나 구현 전에** 적힌 설명(known-issues 행·비고, 노션 카드 본문)을 담당자에게 먼저 보여주고 답을 받는다. 동의하지 않은 제안은 확정으로 치지 않는다 ([decisions/0011](docs/decisions/0011-start-briefing.md))
 - 해결 처리는 고친 코드가 main에 병합된 뒤에 한다. 그 전에는 `진행 중`으로 둔다.
-- 작업을 시작하면 먼저 `python3 scripts/harness/known-issues.py news`로 지난 확인 이후 바뀐 것을 확인한다 (Claude Code는 세션 시작 때 hook이 자동으로 한다).
+- 작업을 시작하면 먼저 `python3 scripts/harness/known-issues.py news`로 지난 확인 이후 바뀐 것을 확인한다 (Claude Code는 세션 시작 때 hook이 자동으로 한다). main의 코드 업데이트는 `python3 scripts/harness/main-news.py`로 확인하고, 받을지는 작업자가 정한다.
 - 스펙 design이 승인되면 known-issues "🚧 진행 중 작업" 표에 건드리는 파일을 등록한다. 새 작업 전에는 `known-issues.py overlap`으로 겹침을, 작업 중에는 `known-issues.py drift`로 등록 범위 밖 수정과 main 변경을 확인한다.
 - 분류 기준: 지금 쓰면 잘못된 결과·위험 → 문제 / 아직 없을 뿐 → 할 일 / 사람이 정해야 함 → 질문. 애매하면 질문으로 올린다.
 - 도메인 문서에는 현재 동작을 그대로 쓰고, 바로 아래에 `> ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1)` 같은 한 줄만 단다.
 - 심각도 "높음"을 새로 기록하면 바로 사람에게 알린다.
-- "문제점 알려줘" → `docs/known-issues.md`를 읽고 `grep -rn "ISSUE-" docs/`로 문서 안 위치를 함께 보여준다. "남은 일" → `TODO-`, "결정할 것" → `ASK-`.
+- "todo 보여줘"·"남은 일"·"내 파트" → 문제 → 할 일 → 질문을 모두 보여준다. "문제점 알려줘" → `docs/known-issues.md`를 읽고 `grep -rn "ISSUE-" docs/`로 문서 안 위치를 함께 보여준다. "할 일만" → `TODO-`, "결정할 것" → `ASK-`.
 
 ## 5. 검증 명령
 

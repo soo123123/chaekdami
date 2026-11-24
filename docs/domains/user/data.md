@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # user 데이터
 
@@ -28,6 +28,11 @@ erDiagram
 | role | `USER` · `ADMIN` (가입 시 `USER`) |
 | created_at | 가입 시각 |
 | token_version | Access Token 즉시 무효화용 버전 |
+| status | `ACTIVE` · `SUSPENDED`. NULL은 ACTIVE로 봄 (기존 행에 추가할 수 있게 NULL 허용) |
+| suspended_until | 정지 끝 시각. NULL이면 무기한 (정지 중일 때) |
+| suspension_reason | 정지 사유 (최대 200자, 관리자만 봄) |
+| suspended_at | 정지한 시각 |
+| suspended_by | 정지한 관리자 회원 번호 |
 
 ## refresh_tokens
 

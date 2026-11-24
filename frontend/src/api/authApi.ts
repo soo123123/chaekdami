@@ -1,7 +1,13 @@
-
-const API_BASE_URL =
+const RAW_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
   'http://localhost:8080';
+
+// API 주소 끝의 /api 및 / 제거
+// 예: http://localhost:8080/api → http://localhost:8080
+const API_BASE_URL = RAW_API_BASE_URL
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/api$/i, '');
 
 // 로그인 요청 데이터
 export interface LoginRequest {
@@ -17,7 +23,6 @@ export interface LoginResponse {
 }
 
 // 사용자 정보
-// BE3의 실제 응답 구조가 확인되면 수정할 수 있습니다.
 export interface UserInfo {
   id?: number | string;
   email?: string;
@@ -68,7 +73,10 @@ async function parseResponse(
   }
 
   if (!response.ok) {
-    const error = result as ApiErrorResponse;
+    const error =
+      result && typeof result === 'object'
+        ? (result as ApiErrorResponse)
+        : null;
 
     throw new AuthApiError(
       error?.message || '요청에 실패했습니다.',
@@ -80,26 +88,19 @@ async function parseResponse(
   return result;
 }
 
-// 로그인 API
-export async function login(
-  data: LoginRequest
-): Promise<LoginResponse> {
-  let response: Response;
-
+// 공통 POST 요청
+async function postAuth(
+  path: string,
+  body: unknown
+): Promise<Response> {
   try {
-    response = await fetch(
-      `${API_BASE_URL}/api/auth/login`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email.trim(),
-          password: data.password,
-        }),
-      }
-    );
+    return await fetch(`${API_BASE_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
   } catch {
     throw new AuthApiError(
       '서버에 연결할 수 없습니다. 서버 실행 상태와 주소를 확인해주세요.',
@@ -107,6 +108,27 @@ export async function login(
       'NETWORK_ERROR'
     );
   }
+}
+
+// 204 No Content 응답 처리
+async function readAuthResponse(
+  response: Response
+): Promise<unknown> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  return parseResponse(response);
+}
+
+// 로그인 API
+export async function login(
+  data: LoginRequest
+): Promise<LoginResponse> {
+  const response = await postAuth('/api/auth/login', {
+    email: data.email.trim(),
+    password: data.password,
+  });
 
   const result = await parseResponse(response);
   const tokens = result as Partial<LoginResponse>;
@@ -136,16 +158,13 @@ export async function getMyInfo(
   let response: Response;
 
   try {
-    response = await fetch(
-      `${API_BASE_URL}/api/me`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      }
-    );
+    response = await fetch(`${API_BASE_URL}/api/me`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
   } catch {
     throw new AuthApiError(
       '사용자 정보를 불러올 수 없습니다. 서버 연결을 확인해주세요.',
@@ -171,43 +190,14 @@ export async function getMyInfo(
   return result as UserInfo;
 }
 
+// 회원가입 요청 데이터
 export interface SignUpRequest {
   email: string;
   password: string;
   nickname: string;
 }
 
-async function postAuth(
-  path: string,
-  body: unknown
-): Promise<Response> {
-  try {
-    return await fetch(`${API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new AuthApiError(
-      '서버에 연결할 수 없습니다. 서버 실행 상태와 주소를 확인해주세요.',
-      0,
-      'NETWORK_ERROR'
-    );
-  }
-}
-
-async function readAuthResponse(
-  response: Response
-): Promise<unknown> {
-  if (response.status === 204) {
-    return null;
-  }
-
-  return parseResponse(response);
-}
-
+// 회원가입 API
 export async function signup(
   data: SignUpRequest
 ): Promise<UserInfo> {
@@ -216,9 +206,14 @@ export async function signup(
     password: data.password,
     nickname: data.nickname.trim(),
   });
+
   const result = await readAuthResponse(response);
 
-  if (!result || typeof result !== 'object') {
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    Array.isArray(result)
+  ) {
     throw new AuthApiError(
       '회원가입 응답 형식이 올바르지 않습니다.',
       response.status,
@@ -229,21 +224,27 @@ export async function signup(
   return result as UserInfo;
 }
 
+// 비밀번호 재설정 요청
 export async function requestPasswordReset(
   email: string
 ): Promise<void> {
   const response = await postAuth(
     '/api/auth/password/reset-request',
-    { email: email.trim() }
+    {
+      email: email.trim(),
+    }
   );
+
   await readAuthResponse(response);
 }
 
+// 로그아웃 API
 export async function logout(
   refreshToken: string
 ): Promise<void> {
   const response = await postAuth('/api/auth/logout', {
     refreshToken,
   });
+
   await readAuthResponse(response);
 }

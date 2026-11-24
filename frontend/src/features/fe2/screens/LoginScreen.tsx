@@ -14,6 +14,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { login, AuthApiError } from '../../../api/authApi';
 import { saveTokens } from '../../../utils/tokenStorage';
@@ -134,161 +135,166 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      edges={['top', 'left', 'right', 'bottom']}
     >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* 앱 이름 */}
-        <View style={styles.brand}>
-          <Text style={styles.brandTitle}>
-            책다듬이
-          </Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* 앱 이름 */}
+          <View style={styles.brand}>
+            <Text style={styles.brandTitle}>
+              책다듬이
+            </Text>
 
-          <Text style={styles.brandSubtitle}>
-            책과 함께 성장하는 나의 하루
-          </Text>
-        </View>
-
-        {/* 고양이 일러스트 */}
-        <Image
-          source={IMAGES.cat}
-          style={styles.catImage}
-          resizeMode="contain"
-        />
-
-        {/* 로그인 카드 */}
-        <View style={styles.loginCard}>
-          <Text style={styles.welcomeTitle}>
-            다시 만나서 반가워요!
-          </Text>
-
-          <Text style={styles.welcomeSubtitle}>
-            계정에 로그인하고 독서 기록을 이어가세요.
-          </Text>
-
-          {/* 이메일 */}
-          <Text style={styles.label}>
-            이메일
-          </Text>
-
-          <View style={styles.inputBox}>
-            <Icon
-              name="mail"
-              size={19}
-              color="#8D8478"
-              style={styles.inputIcon}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="example@email.com"
-              placeholderTextColor="#AAA49B"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-              editable={!loading}
-            />
+            <Text style={styles.brandSubtitle}>
+              책과 함께 성장하는 나의 하루
+            </Text>
           </View>
 
-          {/* 비밀번호 */}
-          <Text style={styles.label}>
-            비밀번호
-          </Text>
-
-          <View style={styles.inputBox}>
-            <Icon
-              name="person"
-              size={19}
-              color="#8D8478"
-              style={styles.inputIcon}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="비밀번호를 입력해주세요"
-              placeholderTextColor="#AAA49B"
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              value={password}
-              onChangeText={setPassword}
-              editable={!loading}
-            />
-
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Text style={styles.showPassword}>
-                {showPassword ? '숨기기' : '보기'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 로그인 버튼 */}
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              loading && styles.disabledButton,
-            ]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.loginButtonText}>
-                로그인
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* 하단 메뉴 */}
-          <View style={styles.bottomLinks}>
-            <TouchableOpacity
-              onPress={() => router.push(FORGOT_PASSWORD_ROUTE)}
-            >
-              <Text style={styles.forgotPassword}>
-                비밀번호를 잊으셨나요?
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.linkDivider} />
-
-            <TouchableOpacity
-              onPress={() => router.push(SIGNUP_ROUTE)}
-            >
-              <Text style={styles.signupText}>
-                회원가입
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 꽃 일러스트 */}
-        <View style={styles.flowerArea}>
+          {/* 고양이 일러스트 */}
           <Image
-            source={IMAGES.flowerLeft}
-            style={styles.flower}
+            source={IMAGES.cat}
+            style={styles.catImage}
             resizeMode="contain"
           />
 
-          <Image
-            source={IMAGES.flowerRight}
-            style={styles.flower}
-            resizeMode="contain"
-          />
-        </View>
+          {/* 로그인 카드 */}
+          <View style={styles.loginCard}>
+            <Text style={styles.welcomeTitle}>
+              다시 만나서 반가워요!
+            </Text>
 
-        <Text style={styles.footerText}>
-          🌱 오늘도 책과 함께하는 좋은 하루
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Text style={styles.welcomeSubtitle}>
+              계정에 로그인하고 독서 기록을 이어가세요.
+            </Text>
+
+            {/* 이메일 */}
+            <Text style={styles.label}>
+              이메일
+            </Text>
+
+            <View style={styles.inputBox}>
+              <Icon
+                name="mail"
+                size={19}
+                color="#8D8478"
+                style={styles.inputIcon}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="example@email.com"
+                placeholderTextColor="#AAA49B"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+              />
+            </View>
+
+            {/* 비밀번호 */}
+            <Text style={styles.label}>
+              비밀번호
+            </Text>
+
+            <View style={styles.inputBox}>
+              <Icon
+                name="person"
+                size={19}
+                color="#8D8478"
+                style={styles.inputIcon}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="비밀번호를 입력해주세요"
+                placeholderTextColor="#AAA49B"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
+              />
+
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={styles.showPassword}>
+                  {showPassword ? '숨기기' : '보기'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 로그인 버튼 */}
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loading && styles.disabledButton,
+              ]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>
+                  로그인
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {/* 하단 메뉴 */}
+            <View style={styles.bottomLinks}>
+              <TouchableOpacity
+                onPress={() => router.push(FORGOT_PASSWORD_ROUTE)}
+              >
+                <Text style={styles.forgotPassword}>
+                  비밀번호를 잊으셨나요?
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.linkDivider} />
+
+              <TouchableOpacity
+                onPress={() => router.push(SIGNUP_ROUTE)}
+              >
+                <Text style={styles.signupText}>
+                  회원가입
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 꽃 일러스트 */}
+          <View style={styles.flowerArea}>
+            <Image
+              source={IMAGES.flowerLeft}
+              style={styles.flower}
+              resizeMode="contain"
+            />
+
+            <Image
+              source={IMAGES.flowerRight}
+              style={styles.flower}
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text style={styles.footerText}>
+            🌱 오늘도 책과 함께하는 좋은 하루
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -296,6 +302,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BG,
+  },
+  flex: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,

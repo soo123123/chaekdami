@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # review 규칙
 
@@ -26,7 +26,7 @@
 | 별점 | 1~5 정수, 생성 시 필수 | `Review.MIN_RATING`·`MAX_RATING` | ✅ |
 | 한줄평 | 최대 100자, 줄바꿈 불가. 빈 문자열을 보내면 한줄평 삭제 (별점은 남음) | `Review.MAX_ONE_LINE_LENGTH` | ✅ |
 | 기본값 | `isSpoiler` false, `isPublic` true | `ReviewService` | ✅ |
-| 리뷰 삭제 | API 없음 | — | ⏳ [TODO-9](../../known-issues.md#todo-9) |
+| 리뷰 삭제 | 작성자만. 블라인드된 리뷰도 가능. 그 리뷰의 좋아요·신고도 함께 삭제. 지운 뒤 같은 책에 다시 쓸 수 있음 | `ReviewService.delete` | ✅ |
 | ISBN | 숫자·X만 남기고 대문자. reading의 ISBN 정규화와 같은 규칙이어야 함 | `ReviewService` ↔ `BookService` | ✅ |
 
 ## 3. 독후감

@@ -8,6 +8,8 @@ import com.chaekdami.review.application.port.ReadingRecordReader;
 import com.chaekdami.review.application.result.ReviewResult;
 import com.chaekdami.review.domain.Review;
 import com.chaekdami.review.domain.ReviewErrorCode;
+import com.chaekdami.review.infrastructure.ReviewLikeRepository;
+import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
 import com.chaekdami.user.application.CurrentUser;
 import com.chaekdami.user.application.exception.InvalidRequestException;
@@ -23,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ReviewLikeRepository reviewLikeRepository;
+    private final ReviewReportRepository reviewReportRepository;
     private final ReadingRecordReader readingRecordReader;
     private final OwnedResources ownedResources;
     private final CurrentUser currentUser;
@@ -52,11 +56,26 @@ public class ReviewService {
     @Transactional
     public ReviewResult update(Long reviewId, ReviewWriteCommand command) {
         Long userId = currentUser.requireId();
-        Review review = reviewRepository.findById(reviewId)
-                .filter(found -> found.ownedBy(userId))
-                .orElseThrow(() -> new BusinessException(ReviewErrorCode.REVIEW_NOT_FOUND));
+        Review review = requireOwn(reviewId, userId);
         applyChanges(review, command, ownedResources.requireBook(review.getBookId(), userId));
         return ReviewResult.from(review);
+    }
+
+    /**
+     * 블라인드 여부와 관계없이 작성자가 지운다. 좋아요·신고가 review_id FK로 붙어 있어 먼저 지운다.
+     */
+    @Transactional
+    public void delete(Long reviewId) {
+        Review review = requireOwn(reviewId, currentUser.requireId());
+        reviewLikeRepository.deleteAllOnReview(reviewId);
+        reviewReportRepository.deleteAllOnReview(reviewId);
+        reviewRepository.delete(review);
+    }
+
+    private Review requireOwn(Long reviewId, Long userId) {
+        return reviewRepository.findById(reviewId)
+                .filter(found -> found.ownedBy(userId))
+                .orElseThrow(() -> new BusinessException(ReviewErrorCode.REVIEW_NOT_FOUND));
     }
 
     /**

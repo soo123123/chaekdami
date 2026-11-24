@@ -14,7 +14,7 @@ function formatMinutes(minutes: number) {
   return rest === 0 ? `${hours}시간` : `${hours}시간 ${rest}분`;
 }
 
-/** 오늘의 독서 기록: 독서 시간 / 읽은 페이지 / 독서 집중도 */
+/** 오늘의 독서 기록: 독서 시간 / 읽은 페이지 */
 export function ReadingResultCard({ record }: Props) {
   return (
     <View style={styles.card}>
@@ -32,13 +32,6 @@ export function ReadingResultCard({ record }: Props) {
           label="읽은 페이지"
           value={`${Math.floor(record.pagesRead)} 페이지`}
           sub={`목표 ${record.goalPages} 페이지`}
-        />
-        <View style={styles.divider} />
-        <StatItem
-          icon="stats"
-          label="독서 집중도"
-          value={`${Math.min(100, Math.round(record.focusPercent))}%`}
-          sub={record.focusModeUsed ? '집중 모드 사용' : '일반 모드'}
         />
       </View>
     </View>

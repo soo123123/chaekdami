@@ -4,6 +4,7 @@ import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.global.error.ErrorCode;
 import com.chaekdami.reward.domain.RewardErrorCode;
 import com.chaekdami.reward.domain.RewardException;
+import com.chaekdami.user.application.exception.AccountSuspendedException;
 import com.chaekdami.user.application.exception.DuplicateEmailException;
 import com.chaekdami.user.application.exception.DuplicateNicknameException;
 import com.chaekdami.user.application.exception.ForbiddenException;
@@ -115,6 +116,13 @@ public class GlobalExceptionHandler {
         RewardErrorCode errorCode = exception.getErrorCode();
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiErrorResponse.of(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(AccountSuspendedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccountSuspended(AccountSuspendedException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
+        return ResponseEntity.status(errorCode.getStatus()).body(new ApiErrorResponse(
+                errorCode.getCode(), errorCode.getMessage(), null, exception.getSuspendedUntil()));
     }
 
     @ExceptionHandler(BusinessException.class)

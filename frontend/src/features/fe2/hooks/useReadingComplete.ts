@@ -72,7 +72,6 @@ const EXAMPLE = {
   goalMinutes: 90,
   pagesRead: 60,
   goalPages: 60,
-  focusPercent: 94,
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -167,12 +166,10 @@ function buildData(
 
   const record = {
     durationMinutes,
-    // 목표·집중도는 아직 전달 경로가 없어 예시 값을 쓴다
+    // 목표는 아직 전달 경로가 없어 예시 값을 쓴다
     goalMinutes: pick(null, EXAMPLE.goalMinutes, 'goalMinutes'),
     pagesRead,
     goalPages: pick(null, EXAMPLE.goalPages, 'goalPages'),
-    focusPercent: pick(null, EXAMPLE.focusPercent, 'focusPercent'),
-    focusModeUsed: true,
   };
   const review = {
     // FE1 저장 결과(완독 여부)와 서버 canWrite를 모두 만족해야 활성화한다.

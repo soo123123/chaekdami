@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import { getQuests } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
 
-type QuestType = 'DDAY' | 'EXP';
+type QuestType = 'DDAY' | 'WEEKLY';
 type QuestTab = 'ALL' | QuestType;
 
 interface Quest {
@@ -87,23 +87,23 @@ const SAMPLE_QUESTS: Quest[] = [
   },
   {
     id: 3,
-    title: '누적 300분 독서하기',
-    description: '총 독서 시간을 300분까지 채워보세요.',
+    title: '이번 주 300분 독서하기',
+    description: '이번 주 독서 시간을 300분까지 채워보세요.',
     progress: 180,
     target: 300,
     rewardXp: 100,
     rewardCurrency: 50,
-    type: 'EXP',
+    type: 'WEEKLY',
   },
   {
     id: 4,
-    title: '책 5권 완독하기',
-    description: '책을 총 5권 완독해보세요.',
+    title: '이번 주 책 5권 완독하기',
+    description: '이번 주 책 5권을 완독해보세요.',
     progress: 3,
     target: 5,
     rewardXp: 150,
     rewardCurrency: 100,
-    type: 'EXP',
+    type: 'WEEKLY',
   },
 ];
 
@@ -273,7 +273,11 @@ export default function QuestScreen() {
         );
       }
 
-      setQuests(response as Quest[]);
+      setQuests(response.map((quest) => ({
+        ...quest,
+        // 현재 rewardApi의 EXP는 서버 WEEKLY 유형을 의미합니다.
+        type: quest.type === 'EXP' ? 'WEEKLY' : quest.type,
+      })) as Quest[]);
       setUsingSample(false);
     } catch (error) {
       console.warn('퀘스트 조회 오류:', error);
@@ -295,25 +299,25 @@ export default function QuestScreen() {
     [quests]
   );
 
-  const cumulativeQuests = useMemo(
-    () => quests.filter(q => q.type === 'EXP'),
+  const weeklyQuests = useMemo(
+    () => quests.filter(q => q.type === 'WEEKLY'),
     [quests]
   );
 
   const visibleQuests = useMemo(() => {
     if (tab === 'DDAY') return dailyQuests;
-    if (tab === 'EXP') return cumulativeQuests;
+    if (tab === 'WEEKLY') return weeklyQuests;
 
     return quests;
-  }, [tab, quests, dailyQuests, cumulativeQuests]);
+  }, [tab, quests, dailyQuests, weeklyQuests]);
 
   const completedCount = quests.filter(isCompleted).length;
 
   const completedDaily =
     dailyQuests.filter(isCompleted).length;
 
-  const completedCumulative =
-    cumulativeQuests.filter(isCompleted).length;
+  const completedWeekly =
+    weeklyQuests.filter(isCompleted).length;
 
   const completionPercent =
     quests.length > 0
@@ -496,12 +500,12 @@ export default function QuestScreen() {
               />
 
               <Text style={styles.statLabel}>
-                누적 퀘스트
+                주간 퀘스트
               </Text>
 
               <Text style={styles.statValue}>
-                {completedCumulative}/
-                {cumulativeQuests.length}
+                {completedWeekly}/
+                {weeklyQuests.length}
               </Text>
             </View>
 
@@ -567,7 +571,7 @@ export default function QuestScreen() {
           {([
             ['ALL', '전체'],
             ['DDAY', '일일'],
-            ['EXP', '누적'],
+            ['WEEKLY', '주간'],
           ] as const).map(([value, label]) => (
             <TouchableOpacity
               key={value}
