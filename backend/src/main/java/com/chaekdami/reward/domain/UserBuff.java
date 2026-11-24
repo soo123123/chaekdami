@@ -14,11 +14,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 /**
- * 실시간 경험치 버프
+ * 경험치 부스터 1개의 효과. 시각이 아니라 책을 읽은 시간만큼 남은 시간이 줄어든다. (스펙 009)
+ * 남은 시간이 없는(null) 행은 만료 시각을 쓰던 옛 기록이라 적용하지 않는다.
  */
 @Getter
 @Entity
@@ -36,68 +36,48 @@ public class UserBuff extends BaseTimeEntity {
     @Column(name = "is_buff_activated", nullable = false)
     private Boolean buffActivated;
 
+    /** 부스터를 켠 시각 */
     @Column(name = "buff_start_at")
     private LocalDateTime buffStartAt;
 
-    @Column(name = "buff_end_at")
-    private LocalDateTime buffEndAt;
+    /** 남은 부스터 시간(초) */
+    @Column(name = "remaining_seconds")
+    private Integer remainingSeconds;
 
     @Builder
-    private UserBuff(Long userId, Boolean buffActivated, LocalDateTime buffStartAt, LocalDateTime buffEndAt) {
+    private UserBuff(Long userId, Boolean buffActivated, LocalDateTime buffStartAt, Integer remainingSeconds) {
         this.userId = userId;
         this.buffActivated = buffActivated != null ? buffActivated : false;
         this.buffStartAt = buffStartAt;
-        this.buffEndAt = buffEndAt;
+        this.remainingSeconds = remainingSeconds;
     }
 
     /**
-     * 버프가 활성화되어 있고, now 가 [buffStartAt, buffEndAt) 구간에 있으면 true
+     * 독서 1회에 부스터를 켠 순서대로 적용하고, 적용한 만큼 각 부스터의 남은 시간을 줄인다.
+     *
+     * @param buffs           켠 순서로 정렬된 부스터
+     * @param sessionEndedAt  독서 세션 종료(저장) 시각. 그 뒤에 켠 부스터는 적용하지 않는다
+     * @param durationSeconds 독서 시간(초). 일시정지한 시간은 들어 있지 않다
+     * @return 부스터가 적용된 시간(초)
      */
-    public boolean isBuffActive(LocalDateTime now) {
-        if (!Boolean.TRUE.equals(buffActivated) || buffStartAt == null || buffEndAt == null) {
-            return false;
+    public static int consume(List<UserBuff> buffs, LocalDateTime sessionEndedAt, int durationSeconds) {
+        int applied = 0;
+        for (UserBuff buff : buffs) {
+            applied += buff.consume(sessionEndedAt, durationSeconds - applied);
         }
-        return !now.isBefore(buffStartAt) && now.isBefore(buffEndAt);
+        return applied;
     }
 
     /**
-     * 적용 중인 버프의 종료 시각을 duration 만큼 늦춘다. (부스터를 겹쳐 쓴 경우)
+     * 남은 시간, 켠 뒤 세션 종료까지 지난 시간, 아직 부스터가 적용되지 않은 독서 시간 중 가장 작은 만큼 쓴다.
      */
-    public void extend(Duration duration) {
-        this.buffEndAt = this.buffEndAt.plus(duration);
-    }
-
-    /**
-     * [from, to) 구간 중 버프가 하나라도 적용된 시간(초). 버프끼리 겹치는 시간은 한 번만 센다.
-     * 비활성 버프와 시작·종료 시각이 없는 버프는 제외한다.
-     */
-    public static long overlapSeconds(List<UserBuff> buffs, LocalDateTime from, LocalDateTime to) {
-        if (buffs == null || buffs.isEmpty() || !from.isBefore(to)) {
+    private int consume(LocalDateTime sessionEndedAt, int unboostedSeconds) {
+        if (!Boolean.TRUE.equals(buffActivated) || buffStartAt == null || remainingSeconds == null) {
             return 0;
         }
-        List<UserBuff> sorted = buffs.stream()
-                .filter(buff -> Boolean.TRUE.equals(buff.buffActivated)
-                        && buff.buffStartAt != null && buff.buffEndAt != null)
-                .sorted(Comparator.comparing(UserBuff::getBuffStartAt))
-                .toList();
-        long total = 0;
-        LocalDateTime coveredUntil = from;
-        for (UserBuff buff : sorted) {
-            LocalDateTime start = max(buff.buffStartAt, coveredUntil);
-            LocalDateTime end = min(buff.buffEndAt, to);
-            if (start.isBefore(end)) {
-                total += Duration.between(start, end).getSeconds();
-                coveredUntil = end;
-            }
-        }
-        return total;
-    }
-
-    private static LocalDateTime max(LocalDateTime a, LocalDateTime b) {
-        return a.isAfter(b) ? a : b;
-    }
-
-    private static LocalDateTime min(LocalDateTime a, LocalDateTime b) {
-        return a.isBefore(b) ? a : b;
+        long sinceActivated = Duration.between(buffStartAt, sessionEndedAt).getSeconds();
+        int used = (int) Math.max(0, Math.min(Math.min(remainingSeconds, unboostedSeconds), sinceActivated));
+        this.remainingSeconds -= used;
+        return used;
     }
 }

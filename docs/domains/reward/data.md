@@ -100,15 +100,16 @@ UNIQUE `uk_user_items_user_id_shop_item_id` (user_id, shop_item_id)
 
 ## user_buffs
 
-경험치 부스터 효과 기간. 엔티티: `UserBuff`
+경험치 부스터 1개의 남은 시간. 부스터를 쓸 때마다 한 행이 생긴다. 엔티티: `UserBuff`
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | id | bigint | PK | |
 | user_id | bigint | not null | |
 | is_buff_activated | boolean | not null | |
-| buff_start_at | timestamp | | |
-| buff_end_at | timestamp | | 연장하면 늘어남 |
+| buff_start_at | timestamp | | 켠 시각 |
+| remaining_seconds | int | | 남은 부스터 시간(초). NULL이면 만료 시각을 쓰던 옛 기록이라 적용하지 않음 |
+| buff_end_at | timestamp | | 옛 만료 시각. 코드에서 쓰지 않으며 이미 있던 DB에만 남아 있음 |
 | created_at, updated_at | timestamp | not null | 시각 |
 
 ## reward_transactions

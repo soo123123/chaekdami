@@ -65,15 +65,17 @@
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
 | 효과 | 독서 경험치 2배 | `ExperiencePolicy.BOOSTER_MULTIPLIER` | ✅ |
-| 효과 시간 | 30분. 적용 중에 또 쓰면 30분 연장 (배율은 그대로) | `ExperiencePolicy.BOOSTER_DURATION`, `BoosterService.use` | ✅ |
-| 적용 범위 | 독서 경험치만. 퀘스트 보상·사진 보너스에는 미적용 | `BoosterService` | ✅ |
-| 부분 적용 | 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 **비율만큼만** 2배 (반올림) | `ExperiencePolicy.boostedExperience(exp, boostedSeconds, durationSeconds)` | ✅ |
-| 겹친 시간 계산 | 부스터끼리 겹친 시간은 한 번만 계산 | `UserBuff.overlapSeconds` | ✅ |
-| 독서 시간 0초 | 종료 시각에 부스터 적용 중이면 전체 2배 | `RewardService.grantReadingExperience` | ✅ |
+| 효과 시간 | 1개당 **책 읽는 시간** 30분. 읽지 않거나 일시정지하면 줄지 않고, 남으면 다음 독서에 이어서 쓴다. 유효 기간 없음 | `ExperiencePolicy.BOOSTER_DURATION`, `UserBuff.consume` | ✅ |
+| 남아 있을 때 또 쓰면 | 30분짜리가 하나 더 생김 (배율은 그대로). 켠 순서대로 쓴다 | `BoosterService.use` | ✅ |
+| 적용 범위 | 독서 경험치(시간 + 쪽수)만. 퀘스트 보상·사진 보너스에는 미적용 | `RewardService.grantReadingExperience` | ✅ |
+| 적용 시간 | 부스터마다 남은 시간, 켠 뒤 세션 종료(저장)까지 지난 시간, 아직 적용되지 않은 독서 시간 중 가장 작은 값 | `UserBuff.consume` | ✅ |
+| 추가 경험치 | 독서 경험치에 적용 시간 **비율만큼만** 추가 (반올림) | `ExperiencePolicy.boostedExperience(exp, boostedSeconds, durationSeconds)` | ✅ |
+| 남은 시간 차감 | 독서 완료 보상을 처음 받을 때 적용한 만큼 (세션당 1번) | `RewardService.grantReadingExperience` | ✅ |
+| 독서 도중에 켠 경우 | 켠 뒤의 일시정지와 종료 화면에 머문 시간은 구분하지 못해 조금 더 인정될 수 있음 | `UserBuff.consume` | ✅ |
 
 예: 60 EXP, 독서 60분 중 20분이 부스터 → 60 + 20 = **80 EXP**
 
-> ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) — 테스트 환경에서 독서 시간이 부스터보다 길면 부스터가 적용되지 않음 (원인 확인 필요)
+> ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) — 독서 시간이 부스터보다 길면 부스터가 적용되지 않던 문제. 위 규칙으로 고침, 최신 빌드 재테스트 남음
 
 ## 4. 일일 퀘스트
 
