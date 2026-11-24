@@ -55,7 +55,7 @@
 | <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 열림 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음) | `RewardService.getRewardStatus` | — | — |
 | <a id="issue-bug-10"></a>ISSUE-BUG-10 | FE2 (+BE2) | 높음 | 열림 | D-day 조회가 실패하거나 응답 전이면 목표가 빈 목록인 채 추가할 수 있다 | 저장이 전체 교체라 기존 목표가 지워질 수 있다 | 앱 `DdayScreen`, `DdayService.saveGoals` | — | — |
 | <a id="issue-bug-11"></a>ISSUE-BUG-11 | FE2 | 높음 | 열림 | 앱 시작 때 로그인 확인이 토큰 재발급 없이 `/api/me`를 부른다. 개발 빌드는 이 확인을 건너뛴다 | 출시용 앱은 Access Token(15분)이 만료된 뒤 다시 켜면 로그아웃된다 | 앱 `home.tsx`, `authApi.ts` | — | — |
-| <a id="issue-bug-12"></a>ISSUE-BUG-12 | 공통 (FE2 주) | 높음 | 열림 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — |
+| <a id="issue-bug-12"></a>ISSUE-BUG-12 | 프론트 공통 (FE2 주) | 높음 | 열림 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — |
 | <a id="issue-bug-13"></a>ISSUE-BUG-13 | FE2 | 중간 | 열림 | 조회 실패를 예시 값이나 기본값으로 보여준다 (마이페이지 닉네임, 홈 재화·레벨. 레벨·퀘스트·통계도 예시 값을 쓴다는 보고) | 내 기록이 아닌 값이 실제처럼 보인다 | 앱 `MyPageScreen`, `HomeScreen`, `RewardScreen`, `QuestScreen`, `ReadingStatsScreen` | — | — |
 | <a id="issue-bug-14"></a>ISSUE-BUG-14 | FE2 (+FE1) | 중간 | 열림 | 독서 완료 화면의 목표 1시간 30분·60쪽이 고정 예시 값이다 | 모든 사용자에게 같은 목표가 보인다 | 앱 `useReadingComplete` | — | — |
 | <a id="issue-bug-15"></a>ISSUE-BUG-15 | FE2 | 중간 | 열림 | 상점 구매 버튼에 요청 중 막는 처리가 없다 | 연타하면 중복 구매될 수 있다 | 앱 `ShopScreen` | — | — |
@@ -73,7 +73,7 @@
 | <a id="issue-bug-27"></a>ISSUE-BUG-27 | BE1 | 낮음 | 열림 | 일간 통계는 0~4시를 마지막 칸(21시)에 더하고, 월간은 세션마다 분을 버린다 | 새벽 기록이 21시에 보이고 월간 합이 작게 나온다 | `ReadingStatsService` | — | — |
 | <a id="issue-bug-28"></a>ISSUE-BUG-28 | BE1·BE3 | 낮음 | 열림 | 책 저장의 모든 무결성 오류를 "이미 서재에 있는 책입니다" 409로 바꾼다 | 너무 긴 입력도 중복으로 안내될 수 있다 (리뷰 ISBN 길이도 확인 필요) | `BookService` | — | — |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | BE1 (+BE2) | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
-| <a id="issue-data-4"></a>ISSUE-DATA-4 | 공통 | 중간 | 열림 | 로그아웃 때 토큰만 지운다. 서재 테마 저장에 사용자 구분이 없다 | 같은 기기의 다음 사용자에게 이전 테마 등이 남을 수 있다 (최근 검색어, 뒤로 가기 화면은 확인 필요) | 앱 `MyPageScreen`, `readingApi.ts` | — | — |
+| <a id="issue-data-4"></a>ISSUE-DATA-4 | 프론트 공통 | 중간 | 열림 | 로그아웃 때 토큰만 지운다. 서재 테마 저장에 사용자 구분이 없다 | 같은 기기의 다음 사용자에게 이전 테마 등이 남을 수 있다 (최근 검색어, 뒤로 가기 화면은 확인 필요) | 앱 `MyPageScreen`, `readingApi.ts` | — | — |
 | <a id="issue-data-5"></a>ISSUE-DATA-5 | BE3 | 낮음 | 열림 | 로그인 제한 기록의 키에 이메일·IP를 쓰고 탈퇴 때 지우지 않는다 | 탈퇴한 사용자의 이메일·IP가 남는다 | `LoginAttemptLimiter`, `UserService.withdraw` | — | — |
 | <a id="issue-limit-1"></a>ISSUE-LIMIT-1 | BE1 | 중간 | 열림 | 서버는 독서 시간이 3분~2시간인지만 검증한다 | 앱 종료 화면은 측정 시간 이내로 막지만, 측정값이 없을 때나 API를 직접 부를 때는 실제보다 긴 시간이 저장될 수 있다 (쪽수·겹치는 세션은 ISSUE-SEC-3) | `ReadingSession.of` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
 | <a id="issue-limit-2"></a>ISSUE-LIMIT-2 | FE1 | 낮음 | 열림 | 타이머는 앱 메모리에서 돈다 | 독서 중 앱이 완전히 종료되면 측정 시간이 사라진다 | 앱 `useReadingTimer` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
