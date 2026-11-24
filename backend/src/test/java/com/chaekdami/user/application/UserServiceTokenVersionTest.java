@@ -18,6 +18,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -54,7 +55,8 @@ class UserServiceTokenVersionTest {
                 mock(LoginAttemptLimiter.class),
                 currentUser,
                 new AccessGuard(currentUser),
-                mock(ApplicationEventPublisher.class));
+                mock(ApplicationEventPublisher.class),
+                TransactionOperations.withoutTransaction());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 1L, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         user = User.builder()

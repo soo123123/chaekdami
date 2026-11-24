@@ -44,7 +44,8 @@ class CertificationPhotoCheckerTest {
     @BeforeEach
     void setUp() {
         CertificationService service = new CertificationService(
-                readingRecordRepository, certificationRepository, pageTextExtractor, new CertificationVerifier());
+                readingRecordRepository, certificationRepository, pageTextExtractor, new CertificationVerifier(),
+                org.springframework.transaction.support.TransactionOperations.withoutTransaction());
         checker = new CertificationPhotoChecker(service);
     }
 

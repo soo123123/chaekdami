@@ -19,6 +19,7 @@ import com.chaekdami.user.domain.PasswordResetToken;
 import com.chaekdami.user.domain.RefreshToken;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
+import com.chaekdami.user.infrastructure.LoginCredential;
 import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
@@ -29,7 +30,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -59,6 +62,7 @@ public class UserService implements NicknameChanger {
     private final CurrentUser currentUser;
     private final AccessGuard accessGuard;
     private final ApplicationEventPublisher eventPublisher;
+    private final TransactionOperations transaction;
 
     @Value("${jwt.refresh-token-validity-in-seconds:7776000}")
     private long refreshTokenValidityInSeconds;
@@ -84,23 +88,38 @@ public class UserService implements NicknameChanger {
         return UserAccount.from(userRepository.save(user));
     }
 
-    @Transactional
+    /**
+     * DB 연결을 한 번에 하나만 쓰도록 조회·실패 기록·토큰 발급을 겹치지 않게 실행한다.
+     * 비밀번호 비교(BCrypt)는 트랜잭션 밖에서 한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public IssuedTokens login(LoginCommand command) {
         String email = normalizeEmail(command.email());
         String clientIp = command.clientIp();
         loginAttemptLimiter.checkLoginAllowed(email, clientIp);
 
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
+        LoginCredential credential = transaction.execute(
+                status -> userRepository.findLoginCredential(email).orElse(null));
+        if (credential == null) {
             passwordEncoder.matches(command.password(), DUMMY_PASSWORD_HASH);
             throw rejectLogin(email, clientIp);
         }
-        if (!passwordEncoder.matches(command.password(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(command.password(), credential.passwordHash())) {
             throw rejectLogin(email, clientIp);
         }
 
         loginAttemptLimiter.clearLoginFailures(email, clientIp);
-        // 비밀번호가 맞을 때만 정지 사실을 알린다. 틀리면 위에서 401로 끝나 정지 여부가 드러나지 않는다.
+        return transaction.execute(status -> issueLoginTokens(credential));
+    }
+
+    /**
+     * 비밀번호를 비교하는 동안 비밀번호 변경·탈퇴·정지가 있었을 수 있어 회원을 잠그고 다시 확인한다.
+     * 비밀번호가 맞을 때만 정지 사실을 알린다.
+     */
+    private IssuedTokens issueLoginTokens(LoginCredential credential) {
+        User user = userRepository.findByIdForLogin(credential.id())
+                .filter(found -> found.getPasswordHash().equals(credential.passwordHash()))
+                .orElseThrow(InvalidCredentialsException::new);
         if (user.isSuspendedAt(LocalDateTime.now())) {
             throw new AccountSuspendedException(user.getSuspendedUntil());
         }
@@ -200,25 +219,58 @@ public class UserService implements NicknameChanger {
         userRepository.delete(user);
     }
 
-    @Transactional
+    /**
+     * 메일을 보내는 동안 DB 연결을 쥐지 않는다. 메일 발송에 실패하면 새 토큰만 지우고 이전 링크는 그대로 둔다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void requestPasswordReset(PasswordResetRequestCommand command) {
         String email = normalizeEmail(command.email());
         loginAttemptLimiter.consumePasswordResetRequest(email, command.clientIp());
 
         String rawToken = newRawToken();
         String tokenHash = sha256(rawToken);
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
+        IssuedReset issued = transaction.execute(status -> saveResetToken(email, tokenHash));
+        if (issued == null) {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        for (PasswordResetToken previous : passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(user.getId())) {
-            previous.use(now);
+        try {
+            passwordResetNotifier.send(issued.email(), rawToken);
+        } catch (RuntimeException exception) {
+            discardResetToken(issued.tokenId(), exception);
+            throw exception;
         }
-        passwordResetTokenRepository.save(
-                new PasswordResetToken(user, tokenHash, now.plusMinutes(PASSWORD_RESET_TOKEN_MINUTES)));
-        passwordResetNotifier.send(user.getEmail(), rawToken);
+        transaction.executeWithoutResult(status -> invalidateOlderResetTokens(issued));
+    }
+
+    private IssuedReset saveResetToken(String email, String tokenHash) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return null;
+        }
+        PasswordResetToken saved = passwordResetTokenRepository.save(new PasswordResetToken(
+                user, tokenHash, LocalDateTime.now().plusMinutes(PASSWORD_RESET_TOKEN_MINUTES)));
+        return new IssuedReset(user.getId(), user.getEmail(), saved.getId());
+    }
+
+    private void discardResetToken(Long tokenId, RuntimeException mailFailure) {
+        try {
+            transaction.executeWithoutResult(status -> passwordResetTokenRepository.deleteById(tokenId));
+        } catch (RuntimeException exception) {
+            mailFailure.addSuppressed(exception);
+        }
+    }
+
+    /** 동시에 요청해도 서로를 무효화하지 않도록 먼저 만든 토큰만 무효화한다. */
+    private void invalidateOlderResetTokens(IssuedReset issued) {
+        LocalDateTime now = LocalDateTime.now();
+        for (PasswordResetToken token : passwordResetTokenRepository
+                .findAllByUser_IdAndUsedAtIsNullAndIdLessThan(issued.userId(), issued.tokenId())) {
+            token.use(now);
+        }
+    }
+
+    private record IssuedReset(Long userId, String email, Long tokenId) {
     }
 
     @Transactional

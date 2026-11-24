@@ -1,4 +1,4 @@
-> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: fix/be3-review-isbn · 최종 확인: 2026-11-24 · 담당: BE3
 
 # review 규칙
 
@@ -22,12 +22,13 @@
 |---|---|---|---|
 | 단위 | 책당 1개 (`book_id` UNIQUE). 다회독해도 하나 | `Review` | ✅ |
 | 작성 조건 | 그 책의 회차 중 완독이 있어야 함 (아니면 409 `READING_NOT_COMPLETED`) | `ReviewService` | ✅ |
-| 중복 생성 | 409 `REVIEW_ALREADY_EXISTS` → 수정 API 사용 | `ReviewService` | ✅ |
+| 중복 생성 | 409 `REVIEW_ALREADY_EXISTS` → 수정 API 사용. 동시 저장은 `uk_reviews_book_id` 위반일 때만 409, 다른 무결성 오류는 500 | `ReviewService` | ✅ |
 | 별점 | 1~5 정수, 생성 시 필수 | `Review.MIN_RATING`·`MAX_RATING` | ✅ |
 | 한줄평 | 최대 100자, 줄바꿈 불가. 빈 문자열을 보내면 한줄평 삭제 (별점은 남음) | `Review.MAX_ONE_LINE_LENGTH` | ✅ |
 | 기본값 | `isSpoiler` false, `isPublic` true | `ReviewService` | ✅ |
 | 리뷰 삭제 | 작성자만. 블라인드된 리뷰도 가능. 그 리뷰의 좋아요·신고도 함께 삭제. 지운 뒤 같은 책에 다시 쓸 수 있음 | `ReviewService.delete` | ✅ |
 | ISBN | 숫자·X만 남기고 대문자. reading의 ISBN 정규화와 같은 규칙이어야 함 | `ReviewService` ↔ `BookService` | ✅ |
+| 긴 ISBN | 20자를 넘으면 리뷰에 ISBN 없이 저장 (별점·한줄평은 저장, ISBN 한줄평 목록·통계에서는 빠짐) | `Review.MAX_ISBN_LENGTH` | ✅ |
 
 ## 3. 독후감
 

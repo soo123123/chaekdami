@@ -1,4 +1,4 @@
-> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: fix/be3-token-check-error · 최종 확인: 2026-11-24 · 담당: BE3
 
 # user API
 
@@ -207,3 +207,4 @@
 | 409 | `EMAIL_ALREADY_EXISTS` | 이미 가입된 이메일 |
 | 409 | `NICKNAME_ALREADY_EXISTS` | 이미 쓰는 닉네임 (대소문자 무시) |
 | 429 | `TOO_MANY_ATTEMPTS` | 로그인 5회 실패 후 15분 잠금, 재설정 요청 초과 |
+| 500 | `INTERNAL_ERROR` | 토큰 확인 중 서버 오류(DB 장애 등). 토큰이 거절된 것이 아님 |

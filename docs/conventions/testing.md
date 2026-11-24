@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-24 · 담당: BE1
 
 # 실행과 테스트
 
@@ -44,6 +44,7 @@ cd backend
 - 테이블은 JPA가 만든다 (`ddl-auto=update`). 마이그레이션 파일은 없다.
 - Supabase 무료 플랜은 오래 안 쓰면 일시정지된다. 연결 오류가 나면 대시보드에서 Restore project.
 - Supabase Session pooler는 전체 연결이 15개뿐이라 서버 하나당 DB 연결을 3개로 제한한다 (`spring.datasource.hikari.maximum-pool-size`).
+- 연결이 적으므로 AI 호출·메일 발송처럼 오래 걸리는 작업은 트랜잭션 밖에서 하고, 한 요청이 연결을 2개 쓰지 않게 한다. `spring.jpa.open-in-view=false`라서 지연 로딩은 서비스 트랜잭션 안에서만 된다.
 
 ### 프론트엔드
 
@@ -67,7 +68,7 @@ npx expo start --tunnel      # 같은 와이파이가 아닐 때 실기기
 
 | 대상 | 명령 | 비고 |
 |---|---|---|
-| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | `ChaekdamiApplicationTests.contextLoads`는 DB 비밀번호가 없으면 실패 |
+| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | `ChaekdamiApplicationTests.contextLoads`는 DB 비밀번호가 없으면 실패. `connection/` 테스트는 H2로 앱을 띄워 DB 없이 실행됨 (PostgreSQL 전용 동작은 확인하지 않음) |
 | 백엔드 일부만 | `./gradlew test --tests '*ReadingSessionServiceTest'` | |
 | 프론트 린트 | `cd frontend && npm run lint` | ⏳ [TODO-20](../known-issues.md#todo-20) ESLint 설정 없음 |
 | 프론트 타입 검사 | `cd frontend && npx tsc --noEmit` | |
