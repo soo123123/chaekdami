@@ -1,4 +1,4 @@
-> 상태: in-progress · 작성: 2026-11-23 · 기준: feature/be3-review-delete@79205bb · 담당: BE3
+> 상태: done · 작성: 2026-11-23 · 기준: feature/be3-review-delete@79205bb · 담당: BE3
 > 요구사항: [requirements.md](./requirements.md) · 설계: [design.md](./design.md)
 
 # 006 · 리뷰(별점) 삭제 — Tasks
@@ -34,4 +34,4 @@
 - [x] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test` (241개 중 `ChaekdamiApplicationTests.contextLoads` 1개 실패: DB 환경변수 없음, TODO-21. main에서도 같음)
 - [x] 9.2 계약 검사 — 검증: `python3 scripts/harness/contract-check.py`
 - [x] 9.3 **docs 반영**: design ④의 문서 전부 수정 (known-issues 해결 처리는 PR 병합 후) — R3.1 — 검증: `python3 scripts/harness/docs-check.py`
-- [ ] 9.4 상태 줄을 done으로, `docs/specs/README.md` 목록 갱신
+- [x] 9.4 상태 줄을 done으로, `docs/specs/README.md` 목록 갱신

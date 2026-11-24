@@ -1,4 +1,4 @@
-> 상태: approved · 작성: 2026-11-23 · 기준: feature/be3-admin-users@2c3e189 · 담당: BE3 · 승인: BE3
+> 상태: done · 작성: 2026-11-23 · 기준: feature/be3-admin-users@2c3e189 · 담당: BE3 · 승인: BE3
 
 # 007 · 관리자 사용자 관리 — Requirements
 
