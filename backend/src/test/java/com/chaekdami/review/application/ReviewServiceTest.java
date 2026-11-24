@@ -16,6 +16,7 @@ import com.chaekdami.user.application.exception.InvalidRequestException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +29,7 @@ import static com.chaekdami.review.ReviewFixtures.signIn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +38,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -112,6 +115,48 @@ class ReviewServiceTest {
                 () -> reviewService.create(7L, new ReviewWriteCommand(5, null, null, null)));
 
         assertEquals(ReviewErrorCode.REVIEW_ALREADY_EXISTS, exception.getErrorCode());
+    }
+
+    @Test
+    void otherIntegrityErrorIsNotReportedAsDuplicate() {
+        when(readingRecordReader.hasCompletedRound(7L)).thenReturn(true);
+        DataIntegrityViolationException failure = new DataIntegrityViolationException("could not execute statement",
+                new IllegalStateException("value too long for type character varying(20)"));
+        doThrow(failure).when(reviewRepository).saveAndFlush(any());
+
+        DataIntegrityViolationException thrown = assertThrows(DataIntegrityViolationException.class,
+                () -> reviewService.create(7L, new ReviewWriteCommand(5, null, null, null)));
+
+        assertSame(failure, thrown);
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void createKeepsIsbnOfMaxLengthAndDropsLongerOne() {
+        when(readingRecordReader.hasCompletedRound(7L)).thenReturn(true);
+
+        when(bookReader.find(7L)).thenReturn(Optional.of(book(7L, 1L, "9".repeat(20), 400)));
+        reviewService.create(7L, new ReviewWriteCommand(5, "좋아요", null, null));
+        when(bookReader.find(7L)).thenReturn(Optional.of(book(7L, 1L, "9".repeat(21), 400)));
+        reviewService.create(7L, new ReviewWriteCommand(5, "좋아요", null, null));
+
+        ArgumentCaptor<Review> saved = ArgumentCaptor.forClass(Review.class);
+        verify(reviewRepository, times(2)).saveAndFlush(saved.capture());
+        assertEquals("9".repeat(20), saved.getAllValues().get(0).getIsbn());
+        assertNull(saved.getAllValues().get(1).getIsbn());
+        assertFalse(saved.getAllValues().get(1).publiclyVisible());
+    }
+
+    @Test
+    void updateDropsTooLongIsbn() {
+        Review stored = review(1L);
+        when(reviewRepository.findById(5L)).thenReturn(Optional.of(stored));
+        when(bookReader.find(7L)).thenReturn(Optional.of(book(7L, 1L, "9".repeat(21), 400)));
+
+        ReviewResult result = reviewService.update(5L, new ReviewWriteCommand(2, null, null, null));
+
+        assertEquals(2, result.rating());
+        assertNull(stored.getIsbn());
     }
 
     @Test

@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE3
+> 기준: fix/be3-review-isbn · 최종 확인: 2026-11-24 · 담당: BE3
 
 # review 데이터
 
@@ -42,7 +42,7 @@ INDEX `idx_sentences_reading_record_id_read_date`, `idx_sentences_user_id`, `idx
 | id | bigint | PK | `reviewId` |
 | user_id | bigint | not null | |
 | book_id | bigint | not null, **UNIQUE** `uk_reviews_book_id` | 책당 1개 |
-| isbn | varchar(20) | | 같은 책 묶기용 (정규화) |
+| isbn | varchar(20) | | 같은 책 묶기용 (정규화). 책 ISBN이 20자를 넘으면 `null` |
 | rating | smallint | not null | 1~5 |
 | one_line | varchar(100) | | 없으면 `null` |
 | is_spoiler | boolean | not null | |
