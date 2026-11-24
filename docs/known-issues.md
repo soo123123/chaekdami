@@ -95,7 +95,7 @@
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 열림 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
 | <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 (사용자 구분도 없음, ISSUE-DATA-4) | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
-| <a id="todo-8"></a>TODO-8 | FE2 (+FE1) | (확정) 독서 알림 | 열림 | 없음. 기획(2026-11-23): 오늘 독서하지 않았으면 특정 시간부터 자정까지 반복 알림 (듀오링고 방식), 마이페이지에서 설정. 구현 방식은 ASK-7 (서버 푸시면 +BE3·BE2) | — | [overview](./overview.md#3-주요-기능과-현재-상태) |
+| <a id="todo-8"></a>TODO-8 | BE3 | (확정) 독서 독려 알림 (기기 로컬, Android·iOS) | 열림 | 없음. 기획(2026-11-24, 2026-11-23의 자정까지 반복 알림을 대체): 시간대·요일, 금일 독서 여부, 금일·금주 독서량, 연속 독서, 미접속을 활용해 독서를 유도하는 알림 (듀오링고 방식). 앱이 7일치를 예약하고 독서 저장·접속 때 다시 예약, 마이페이지에서 설정. 서버는 알림용 상태 조회와 `reminder_settings`(주간 목표·마지막 접속·푸시 수신) 테이블. 독서 여부·독서량은 저장하지 않고 세션에서 계산. 세부 값은 ASK-7, 날짜 기준은 ASK-9. 서버 푸시는 TODO-42 | 앱 `MyPageScreen`, `useReadingEnd`, `app/_layout.tsx` | [overview](./overview.md#3-주요-기능과-현재-상태) | 담당은 BE3 단독이지만 FE1·FE2 화면 파일을 고침 |
 | <a id="todo-11"></a>TODO-11 | FE1 | 바코드 스캔 검색 | 열림 | 앱에 "준비 중" 안내 | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-12"></a>TODO-12 | BE1 (+BE2, FE2) | 독서 통계 목표·D-day 완료 권수 연결 | 열림 | 통계 `goalBooks`·`goalTarget` 항상 0, D-day 완료 권수는 사용자 입력 | `ReadingStatsService`, `DdayService` | [reading/api](./domains/reading/api.md#get-apimereading-stats), [dday/rules](./domains/dday/rules.md#1-목표) |
 | <a id="todo-13"></a>TODO-13 | FE1·FE2 (완독은 미정) | 앱에서 아직 안 쓰는 API 연결 | 열림 | 완독, 독후감 개별, 커뮤니티 요약·항목, 문장 모음집, 관리자 API, 리뷰 삭제(TODO-9에서 넘어옴, FE1)를 앱이 부르지 않음 (`contract-check.py --all`) | 앱 | [review/overview](./domains/review/overview.md#현재-상태) |
@@ -111,6 +111,7 @@
 | <a id="todo-35"></a>TODO-35 | BE3 (+FE1) | 공개 독후감·문장의 신고와 블라인드 | 열림 | 신고·블라인드는 한줄평 리뷰에만 있음. 정지 회원 글은 ASK-11 | `CommunityQueryRepository` | — |
 | <a id="todo-40"></a>TODO-40 | FE2 | 부스터 사용 버튼을 상점에서 홈 보유 아이템으로 이동 | 열림 | 사용 버튼은 상점에만 있고, 홈 "나의 보유 아이템"은 개수만 보여준다. 보유 아이템을 보는 곳에서 바로 쓰는 것이 자연스러워, 홈 경험치병에 사용 버튼을 넣고 상점의 사용 버튼은 뺀다 (FE1 제안, FE2 확인 필요). 제안 기준: 상점의 적용 상태·보유 개수 표시는 유지, 사용 전 확인 창, 0개면 비활성, 방어권은 버튼 없음, 사용 후 홈 개수와 위젯 바로 갱신. 스펙 001 D10·R5.1(상점에 사용 버튼)과 달라진다. API 변경 없음 | 앱 `HomeScreen`, `ShopScreen` | [스펙 001](./specs/001-reward-integration/requirements.md) | 실기기 검토·피드백: FE1 |
 | <a id="todo-41"></a>TODO-41 | FE2 | (아이디어) 부스터 위젯을 놓으면 가장자리로 자동 이동 | 열림 | 놓은 자리에 그대로 멈춰 화면 가운데에도 남는다. 화면 내용을 덜 가리도록, 손을 떼면 가까운 좌우 가장자리로 붙인다 (제안 기준: 세로 위치는 유지, 안전 영역 안). 하단 탭 가림(ISSUE-LIMIT-6)과 함께 검토 | 앱 `BoosterFloatingWidget` | — | 실기기 검토·피드백: FE1 |
+| <a id="todo-42"></a>TODO-42 | BE3 | (확정) 미접속 사용자 복귀 푸시 (Android) | 열림 | 없음. 기획(2026-11-24): 로컬 예약(7일)이 끝난 뒤인 8일 이상 미접속 사용자에게만 서버 푸시를 보내 TODO-8과 겹치지 않게 함. Expo Push Service 사용(제안). `device_tokens`·`push_logs` 테이블, 토큰 등록·해제 API, 하루 한 번 스케줄러 필요. Apple 유료 개발자 계정이 없어 iOS 서버 푸시는 제외. Firebase·Expo projectId·개발 빌드 필요. TODO-8 다음에 진행 | `app.json`, 백엔드 새 도메인 | [overview](./overview.md#3-주요-기능과-현재-상태) |
 
 ### 개선
 
@@ -139,7 +140,7 @@
 | <a id="ask-2"></a>ASK-2 | BE1 · 기획 | 세션 최대 2시간을 유지하나? (지금은 넘기면 저장할 때 거부됨, ISSUE-LIMIT-5) | [reading/rules](./domains/reading/rules.md#3-독서-세션) |
 | <a id="ask-3"></a>ASK-3 | BE1 · BE3 | 목록 페이지 번호를 통일하나? (review는 0부터, 도서 검색은 1부터) | [review/rules](./domains/review/rules.md#6-공통) |
 | <a id="ask-4"></a>ASK-4 | BE1 · BE2 | 책을 삭제하면 보상 내역도 지우나? | ISSUE-DATA-3 |
-| <a id="ask-7"></a>ASK-7 | FE2 · BE3 · 기획 | 독서 알림을 기기 로컬 알림으로 하나(독서 종료 때 예약 취소, 백엔드 없음), 서버 푸시로 하나(토큰 저장·스케줄러 필요)? 알림 시작 시각과 간격은? | TODO-8 |
+| <a id="ask-7"></a>ASK-7 | FE2 · BE3 · 기획 | 독서 알림의 세부 값. 방식은 로컬 알림과 서버 푸시를 함께 쓰기로 결정 (BE3, 2026-11-24). 남은 것: 주간 목표를 사용자가 정하나(제안: 기본 5시간)? 하루 최대 개수와 금지 시간(제안: 2개, 22시 30분~8시)? 알림 시각과 문구? 복귀 푸시 시점(제안: 8·14·30일째)? | TODO-8, TODO-42 |
 | <a id="ask-8"></a>ASK-8 | BE2 · 기획 | 랜덤박스 확률표와 칭호·히든 칭호 획득 조건 | TODO-28, TODO-29 |
 | <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
 | <a id="ask-10"></a>ASK-10 | BE3 · 기획 | 가입 때 이메일을 확인하나? | ISSUE-SEC-4 |
