@@ -15,9 +15,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   getRewardStatus,
+  subscribeBoosterUsed,
   type RewardStatusView,
 } from '@/features/fe2/api/rewardApi';
 import { getAccessToken } from '@/utils/tokenStorage';
@@ -103,17 +105,22 @@ function formatRemainingTime(
 export default function BoosterFloatingWidget() {
   const pathname = usePathname();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const isTestMode = __DEV__ && TEST_MODE;
 
+  // 노치·제스처 바를 뺀 안전 영역 안에서만 움직인다
+  const minX = insets.left + EDGE_MARGIN;
+  const minY = insets.top + EDGE_MARGIN;
+
   const maxX = Math.max(
-    EDGE_MARGIN,
-    width - WIDGET_SIZE - EDGE_MARGIN
+    minX,
+    width - insets.right - WIDGET_SIZE - EDGE_MARGIN
   );
 
   const maxY = Math.max(
-    EDGE_MARGIN,
-    height - WIDGET_SIZE - EDGE_MARGIN
+    minY,
+    height - insets.bottom - WIDGET_SIZE - EDGE_MARGIN
   );
 
   const [position, setPosition] = useState<Position>(
@@ -121,14 +128,14 @@ export default function BoosterFloatingWidget() {
       x: maxX,
       y: clamp(
         INITIAL_TOP,
-        EDGE_MARGIN,
+        minY,
         maxY
       ),
     })
   );
 
   const positionRef = useRef(position);
-  const boundsRef = useRef({ maxX, maxY });
+  const boundsRef = useRef({ minX, minY, maxX, maxY });
   const dragStartRef = useRef(position);
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
@@ -162,12 +169,12 @@ export default function BoosterFloatingWidget() {
       const adjusted: Position = {
         x: clamp(
           next.x,
-          EDGE_MARGIN,
+          bounds.minX,
           bounds.maxX
         ),
         y: clamp(
           next.y,
-          EDGE_MARGIN,
+          bounds.minY,
           bounds.maxY
         ),
       };
@@ -179,10 +186,10 @@ export default function BoosterFloatingWidget() {
   );
 
   useEffect(() => {
-    boundsRef.current = { maxX, maxY };
+    boundsRef.current = { minX, minY, maxX, maxY };
 
     updatePosition(positionRef.current);
-  }, [maxX, maxY, updatePosition]);
+  }, [minX, minY, maxX, maxY, updatePosition]);
 
   /**
    * 실제 서버에서 부스터 상태 조회
@@ -263,6 +270,17 @@ export default function BoosterFloatingWidget() {
   useEffect(() => {
     void refreshReward();
   }, [pathname, refreshReward]);
+
+  /**
+   * 부스터를 쓴 직후 상태 갱신
+   */
+  useEffect(
+    () =>
+      subscribeBoosterUsed(() => {
+        void refreshReward();
+      }),
+    [refreshReward]
+  );
 
   /**
    * 30초마다 서버 상태 갱신

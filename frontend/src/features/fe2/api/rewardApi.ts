@@ -131,12 +131,27 @@ export interface BoosterUseResult {
   remainingBoosters: number;
 }
 
+// 부스터 사용을 다른 화면 요소(부스터 위젯)에 알린다
+const boosterUsedListeners = new Set<() => void>();
+
+export function subscribeBoosterUsed(
+  listener: () => void
+): () => void {
+  boosterUsedListeners.add(listener);
+
+  return () => {
+    boosterUsedListeners.delete(listener);
+  };
+}
+
 export const activateExpBooster =
   async (): Promise<BoosterUseResult> => {
     const response =
       await apiClient.post<BoosterUseResult>(
         '/api/rewards/boosters/use'
       );
+
+    boosterUsedListeners.forEach((listener) => listener());
 
     return response.data;
   };

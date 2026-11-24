@@ -18,6 +18,7 @@
 - 분류는 발견한 사람(또는 AI)이 기준에 따라 먼저 정한다. 기준으로 판단이 안 되면 ❓ 질문으로 올린다. 팀원이 분류나 심각도를 바꾸면 그 판단이 우선이다.
 - **심각도**: 높음(데이터 오류·보안) · 중간(기능이 기대와 다름) · 낮음(불편·한계). AI는 "높음"을 기록하면 바로 사람에게 알린다.
 - **담당**: 주 담당 파트(BE1·BE2·BE3·FE1·FE2·공통)를 먼저 쓰고, 함께 할 파트는 `(+FE1)`처럼 괄호로 붙인다. 파트 범위는 [architecture](./architecture.md)의 도메인 담당·파트 나눔을 따르고, 팀원이 바꾸면 그 판단이 우선이다.
+- **비고** (문제·할 일 표의 마지막 칸): 실기기 검토·피드백 제공자처럼 담당은 아니지만 알아둘 것을 적는다. 예: `실기기 검토·피드백: FE1`. 적을 것이 없으면 칸을 생략해도 된다.
 - **기획 단계**: 할 일 앞에 `(확정)`(구현하기로 정함) 또는 `(아이디어)`(기획 단계, 우선순위 낮음)를 붙일 수 있다. 순서와 관계없이 병렬로 착수할 수 있다.
 - **상태** (문제·할 일 표의 `상태` 칸): 열림 → 진행 중(스펙 번호) → 해결. 할 일 표의 `지금 구현` 칸은 진행 단계가 아니라 지금 코드가 어떤지를 적는다. 해결은 고친 코드가 main에 병합된 뒤에 처리한다. 해결되면 4장으로 옮기고 도메인 문서의 표시 줄을 지운다.
 - ID는 한 번 붙이면 바꾸거나 재사용하지 않는다.
@@ -44,15 +45,15 @@
 
 ## 1. ⚠️ 문제
 
-| ID | 담당 | 심각도 | 상태 | 지금 구현 | 문제 | 위치 | 문서 | 스펙 |
-|---|---|---|---|---|---|---|---|---|
+| ID | 담당 | 심각도 | 상태 | 지금 구현 | 문제 | 위치 | 문서 | 스펙 | 비고 |
+|---|---|---|---|---|---|---|---|---|---|
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 공통 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
 | <a id="issue-sec-3"></a>ISSUE-SEC-3 | BE1 (+BE2) | 높음 | 열림 | 책 쪽수에 상한이 없고 세션끼리의 시간·구간 겹침을 확인하지 않는다 | 비정상적인 경험치 획득과 서버 부하가 가능하다. 주간 랭킹에도 영향 (자세한 내용은 담당자에게 따로 전달) | `BookService`, `ReadingSession`, `RewardAccount.addExperience` | — | — |
 | <a id="issue-sec-4"></a>ISSUE-SEC-4 | BE3 | 중간 | 열림 | 가입에 이메일 확인이 없고 일부 요청 제한의 범위가 좁다 | 신고·별점 결과가 왜곡될 수 있다. 정책은 ASK-10 | `UserService`, `LoginAttemptLimiter`, `ReviewSocialService` | — | — |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-6"></a>ISSUE-BUG-6 | BE2 (+FE1) | 중간 | 열림 (원인 확인 필요) | 서버는 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 비율만큼만 2배로 계산한다 (`0979aa9`, 미팅에서 정한 수정 방향과 같음) | 테스트 환경에서 독서 시간이 부스터 시간(30분)보다 길면 부스터가 적용되지 않았다. 의심 원인: ① 테스트 빌드가 `0979aa9` 이전 ② 일시정지가 있으면 계산한 구간이 실제 독서 시각과 어긋남 ③ 완료 화면 표시 문제 | `RewardService.grantReadingExperience`, 앱 `useReadingTimer` | [reward/rules](./domains/reward/rules.md#3-경험치-부스터) | 불필요 (규칙 변경 없음) |
 | <a id="issue-bug-8"></a>ISSUE-BUG-8 | BE1·BE3 | 높음 | 열림 | 서버의 DB 연결이 3개인데 사진 인증은 AI 응답을 기다리는 동안 연결을 쥐고, 로그인·메일 발송도 연결을 오래 쓰거나 2개를 쓴다 | 동시 사용이 늘면 다른 API까지 기다리거나 500이 날 수 있다 | `CertificationService`, `LoginAttemptLimiter`, `UserService` | — | — |
-| <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 열림 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음) | `RewardService.getRewardStatus` | — | — |
+| <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 열림 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음). 부스터 위젯이 로그인 상태에서 화면 이동·앱 복귀·30초마다 조회해 겹칠 기회가 늘었다. 부스터 사용 직후에는 위젯과 상점이 거의 동시에 조회한다 (PR #23, 시뮬레이터 확인) | `RewardService.getRewardStatus`, 앱 `BoosterFloatingWidget`, `ShopScreen` | — | — |
 | <a id="issue-bug-10"></a>ISSUE-BUG-10 | FE2 (+BE2) | 높음 | 열림 | D-day 조회가 실패하거나 응답 전이면 목표가 빈 목록인 채 추가할 수 있다 | 저장이 전체 교체라 기존 목표가 지워질 수 있다 | 앱 `DdayScreen`, `DdayService.saveGoals` | — | — |
 | <a id="issue-bug-11"></a>ISSUE-BUG-11 | FE2 | 높음 | 열림 | 앱 시작 때 로그인 확인이 토큰 재발급 없이 `/api/me`를 부른다. 개발 빌드는 이 확인을 건너뛴다 | 출시용 앱은 Access Token(15분)이 만료된 뒤 다시 켜면 로그아웃된다 | 앱 `home.tsx`, `authApi.ts` | — | — |
 | <a id="issue-bug-12"></a>ISSUE-BUG-12 | 프론트 공통 (FE2 주) | 높음 | 열림 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — |
@@ -80,13 +81,14 @@
 | <a id="issue-limit-3"></a>ISSUE-LIMIT-3 | BE1 | 낮음 | 열림 | 세션 목록 응답의 `status`·`currentPage`·`progressRate`는 회차에서 읽는다 | 저장 당시 값이 아니라 회차의 현재 값이 나온다 | `ReadingSessionResponse` | [reading/api](./domains/reading/api.md#get-apireading-recordsidsessions) | — |
 | <a id="issue-limit-4"></a>ISSUE-LIMIT-4 | FE2 (+FE1, BE2) | 높음 | 열림 | 독서 보상 요청은 독서 완료 화면에서만 보낸다 (스펙 001의 알려진 제한) | 실패한 채 나가거나 앱이 꺼지면 보상과 D-day 읽은 날을 놓친다. 서버 정산 기능 필요 | 앱 `useReadingComplete`, 서버 보상 | — | — |
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
+| <a id="issue-limit-6"></a>ISSUE-LIMIT-6 | FE2 | 낮음 | 열림 | 부스터 위젯의 이동 범위가 하단 탭바와 화면 버튼을 계산하지 않는다 (PR #23의 안전 영역 제한도 노치·제스처 바만 뺀다) | 위젯을 옮긴 위치에 따라 하단 탭(홈 등)이나 서재 오른쪽 위 버튼을 가린다. 위젯을 다시 옮기면 누를 수 있다 (시뮬레이터 확인). 제안: 탭바가 있는 화면에서는 탭바 위까지만 이동. 서재 버튼 가림은 TODO-41과 함께 검토 | 앱 `BoosterFloatingWidget` | — | — | 실기기 검토·피드백: FE1 |
 
 ## 2. ⏳ 할 일
 
 ### 기능
 
-| ID | 담당 | 할 일 | 상태 | 지금 구현 | 위치 | 문서 |
-|---|---|---|---|---|---|---|
+| ID | 담당 | 할 일 | 상태 | 지금 구현 | 위치 | 문서 | 비고 |
+|---|---|---|---|---|---|---|---|
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | 열림 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE1 | AI 기능 (독후감 피드백, 문장 인증) | 열림 | 없음. `book_reports.revision`만 준비. 책 추천은 TODO-27로 분리 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 열림 | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
@@ -106,11 +108,13 @@
 | <a id="todo-33"></a>TODO-33 | FE1 | 도서 검색 결과 21번째 이후 보기 | 열림 | 1페이지 20권만 조회 | 앱 `readingApi.ts` | — |
 | <a id="todo-34"></a>TODO-34 | BE3 (+FE2) | 닉네임 변경 API와 마이페이지 준비 중 항목 | 열림 | 서버에 닉네임 변경 서비스만 있고 API가 없음. 앱의 프로필 편집·설정·고객센터·약관은 준비 중 (알림은 TODO-8) | `NicknameChanger`, 앱 `MyPageScreen` | — |
 | <a id="todo-35"></a>TODO-35 | BE3 (+FE1) | 공개 독후감·문장의 신고와 블라인드 | 열림 | 신고·블라인드는 한줄평 리뷰에만 있음. 정지 회원 글은 ASK-11 | `CommunityQueryRepository` | — |
+| <a id="todo-40"></a>TODO-40 | FE2 | 부스터 사용 버튼을 상점에서 홈 보유 아이템으로 이동 | 열림 | 사용 버튼은 상점에만 있고, 홈 "나의 보유 아이템"은 개수만 보여준다. 보유 아이템을 보는 곳에서 바로 쓰는 것이 자연스러워, 홈 경험치병에 사용 버튼을 넣고 상점의 사용 버튼은 뺀다 (FE1 제안, FE2 확인 필요). 제안 기준: 상점의 적용 상태·보유 개수 표시는 유지, 사용 전 확인 창, 0개면 비활성, 방어권은 버튼 없음, 사용 후 홈 개수와 위젯 바로 갱신. 스펙 001 D10·R5.1(상점에 사용 버튼)과 달라진다. API 변경 없음 | 앱 `HomeScreen`, `ShopScreen` | [스펙 001](./specs/001-reward-integration/requirements.md) | 실기기 검토·피드백: FE1 |
+| <a id="todo-41"></a>TODO-41 | FE2 | (아이디어) 부스터 위젯을 놓으면 가장자리로 자동 이동 | 열림 | 놓은 자리에 그대로 멈춰 화면 가운데에도 남는다. 화면 내용을 덜 가리도록, 손을 떼면 가까운 좌우 가장자리로 붙인다 (제안 기준: 세로 위치는 유지, 안전 영역 안). 하단 탭 가림(ISSUE-LIMIT-6)과 함께 검토 | 앱 `BoosterFloatingWidget` | — | 실기기 검토·피드백: FE1 |
 
 ### 개선
 
-| ID | 담당 | 할 일 | 상태 | 지금 구현 | 위치 |
-|---|---|---|---|---|---|
+| ID | 담당 | 할 일 | 상태 | 지금 구현 | 위치 | 비고 |
+|---|---|---|---|---|---|---|
 | <a id="todo-15"></a>TODO-15 | 백엔드 공통 | 에러 코드 방식 통일 | 열림 | review는 이름, reward는 번호, reading은 HTTP 공통 코드 | [conventions/api](./conventions/api.md#5-에러-코드-표) |
 | <a id="todo-16"></a>TODO-16 | BE1·BE2·BE3 | `X-User-Id` 헤더 제거 | 열림 | reading·reward·dday 컨트롤러가 헤더로 사용자를 받음 (필터가 토큰 사용자로 채움) | `JwtAuthenticationFilter` |
 | <a id="todo-17"></a>TODO-17 | BE1 | YES24 장애를 502로 | 열림 | 지금은 500 `INTERNAL_ERROR`. 호출 시간 제한(연결·읽기) 설정도 없어 함께 추가 필요 | `Yes24Client` |
@@ -136,7 +140,7 @@
 | <a id="ask-4"></a>ASK-4 | BE1 · BE2 | 책을 삭제하면 보상 내역도 지우나? | ISSUE-DATA-3 |
 | <a id="ask-7"></a>ASK-7 | FE2 · BE3 · 기획 | 독서 알림을 기기 로컬 알림으로 하나(독서 종료 때 예약 취소, 백엔드 없음), 서버 푸시로 하나(토큰 저장·스케줄러 필요)? 알림 시작 시각과 간격은? | TODO-8 |
 | <a id="ask-8"></a>ASK-8 | BE2 · 기획 | 랜덤박스 확률표와 칭호·히든 칭호 획득 조건 | TODO-28, TODO-29 |
-| <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) | 스펙 005의 한국 시간 주 경계 |
+| <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
 | <a id="ask-10"></a>ASK-10 | BE3 · 기획 | 가입 때 이메일을 확인하나? | ISSUE-SEC-4 |
 | <a id="ask-11"></a>ASK-11 | BE3 · 기획 | 정지된 회원의 글을 숨기나? | TODO-35, [007](./specs/007-admin-users/) |
 | <a id="ask-12"></a>ASK-12 | FE1 · 기획 | 책 정보의 찜하기를 유지하나? (지금은 화면을 나가면 사라짐) | 앱 `BookInfoScreen` |
@@ -147,7 +151,7 @@
 |---|---|---|---|
 | TODO-9 리뷰(별점) 삭제 | `DELETE /api/reviews/{reviewId}` 추가 (PR 20). 앱 연결은 TODO-13 | 2026-11-24 | [006](./specs/006-review-delete/) |
 | TODO-25 홈 보유 아이템 표시 | `HomeScreen`의 "최근 읽은 책"을 "나의 보유 아이템"으로 교체 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
-| TODO-26 부스터 남은 시간 표시 | `BoosterFloatingWidget`을 최상위 레이아웃에 추가 — 드래그 이동, 남은 시간 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
+| TODO-26 부스터 남은 시간 표시 | `BoosterFloatingWidget`을 최상위 레이아웃에 추가 — 드래그 이동, 남은 시간 (`44ff21d`). 사용 직후 갱신·안전 영역 제한 보완 (PR #23). 완료는 FE2 확인 | 2026-11-24 | — |
 | ISSUE-BUG-7 독서 통계의 예시 카테고리 비율 | `ReadingStatsScreen`의 카테고리 비율과 `GENRES` 제거 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
 | ASK-6 독서 통계 카테고리 비율 | 없애는 것으로 정리 (앱에서 제거됨, 통계 API 변경 없음) | 2026-11-24 | — |
 | ISSUE-SEC-1 메일 비밀번호 평문 커밋 | `application-dev.properties`의 평문 줄을 지우고 `application.properties`의 `${MAIL_PASSWORD}`로 통일. 비밀번호는 교체하지 않기로 함 (사람 결정 2026-11-23): 이전 커밋(`4f29537` 등)에 남은 값은 계속 유효 | 2026-11-23 | — |
