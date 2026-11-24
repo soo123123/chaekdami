@@ -80,6 +80,7 @@
 | <a id="issue-limit-3"></a>ISSUE-LIMIT-3 | BE1 | 낮음 | 열림 | 세션 목록 응답의 `status`·`currentPage`·`progressRate`는 회차에서 읽는다 | 저장 당시 값이 아니라 회차의 현재 값이 나온다 | `ReadingSessionResponse` | [reading/api](./domains/reading/api.md#get-apireading-recordsidsessions) | — |
 | <a id="issue-limit-4"></a>ISSUE-LIMIT-4 | FE2 (+FE1, BE2) | 높음 | 열림 | 독서 보상 요청은 독서 완료 화면에서만 보낸다 (스펙 001의 알려진 제한) | 실패한 채 나가거나 앱이 꺼지면 보상과 D-day 읽은 날을 놓친다. 서버 정산 기능 필요 | 앱 `useReadingComplete`, 서버 보상 | — | — |
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
+| <a id="issue-limit-6"></a>ISSUE-LIMIT-6 | FE2 | 낮음 | 열림 | 부스터 위젯의 이동 범위가 하단 탭바와 화면 버튼을 계산하지 않는다 (PR #23의 안전 영역 제한도 노치·제스처 바만 뺀다) | 위젯을 옮긴 위치에 따라 하단 탭(홈 등)이나 서재 오른쪽 위 버튼을 가린다. 위젯을 다시 옮기면 누를 수 있다 (시뮬레이터 확인) | 앱 `BoosterFloatingWidget` | — | — |
 
 ## 2. ⏳ 할 일
 
@@ -106,6 +107,8 @@
 | <a id="todo-33"></a>TODO-33 | FE1 | 도서 검색 결과 21번째 이후 보기 | 열림 | 1페이지 20권만 조회 | 앱 `readingApi.ts` | — |
 | <a id="todo-34"></a>TODO-34 | BE3 (+FE2) | 닉네임 변경 API와 마이페이지 준비 중 항목 | 열림 | 서버에 닉네임 변경 서비스만 있고 API가 없음. 앱의 프로필 편집·설정·고객센터·약관은 준비 중 (알림은 TODO-8) | `NicknameChanger`, 앱 `MyPageScreen` | — |
 | <a id="todo-35"></a>TODO-35 | BE3 (+FE1) | 공개 독후감·문장의 신고와 블라인드 | 열림 | 신고·블라인드는 한줄평 리뷰에만 있음. 정지 회원 글은 ASK-11 | `CommunityQueryRepository` | — |
+| <a id="todo-40"></a>TODO-40 | FE2 | 부스터 사용 버튼을 상점에서 홈 보유 아이템으로 이동 | 열림 | 사용 버튼은 상점에만 있고, 홈 "나의 보유 아이템"은 개수만 보여준다. 홈 경험치병에 사용 버튼을 넣고 상점의 사용 버튼은 뺀다 (FE1 제안, FE2 확인 필요). 스펙 001 D10·R5.1(상점에 사용 버튼)과 달라진다. API 변경 없음 | 앱 `HomeScreen`, `ShopScreen` | [스펙 001](./specs/001-reward-integration/requirements.md) |
+| <a id="todo-41"></a>TODO-41 | FE2 | (아이디어) 부스터 위젯을 놓으면 가장자리로 자동 이동 | 열림 | 놓은 자리에 그대로 멈춰 화면 가운데에도 남는다. 손을 떼면 가까운 좌우 가장자리로 붙인다. 하단 탭 가림(ISSUE-LIMIT-6)과 함께 검토 | 앱 `BoosterFloatingWidget` | — |
 
 ### 개선
 
