@@ -27,6 +27,7 @@ import com.chaekdami.user.presentation.validation.NicknameRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements NicknameChanger {
+public class UserService {
 
     private static final String DUMMY_PASSWORD_HASH = new BCryptPasswordEncoder().encode("timing-safe-dummy");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -199,25 +200,41 @@ public class UserService implements NicknameChanger {
         return UserAccount.from(loadCurrentUser());
     }
 
-    @Override
-    @Transactional
-    public void changeNickname(Long userId, String nickname) {
-        accessGuard.requireSelf(userId);
+    /** 비밀번호 비교(BCrypt)는 트랜잭션 밖에서 해 DB 연결을 쥐지 않는다. */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public UserAccount changeNickname(String nickname) {
+        Long userId = currentUser.requireId();
         String violation = NicknameRules.violationMessage(nickname);
         if (nickname == null || violation != null) {
             throw new InvalidRequestException("nickname",
                     violation != null ? violation : "닉네임을 입력해야 합니다.");
         }
         String normalized = nickname.trim();
-        User user = userRepository.findById(userId).orElseThrow(UnauthorizedException::new);
-        if (!normalized.equalsIgnoreCase(user.getNickname())
-                && userRepository.existsByNicknameIgnoreCase(normalized)) {
-            throw new DuplicateNicknameException();
-        }
-        if (passwordEncoder.matches(normalized, user.getPasswordHash())) {
+        LoginCredential credential = transaction.execute(
+                status -> userRepository.findCredentialById(userId).orElseThrow(UnauthorizedException::new));
+        if (passwordEncoder.matches(normalized, credential.passwordHash())) {
             throw new InvalidRequestException("nickname", "닉네임은 비밀번호와 같을 수 없습니다.");
         }
-        user.changeNickname(normalized);
+        try {
+            return transaction.execute(status -> saveNickname(credential, normalized));
+        } catch (DataIntegrityViolationException exception) {
+            // 중복 검사를 함께 통과한 요청이 먼저 저장했다. 이 트랜잭션은 닉네임만 바꾼다.
+            throw new DuplicateNicknameException();
+        }
+    }
+
+    /** 비교하는 동안 비밀번호 변경·탈퇴·정지가 있었을 수 있어 회원을 잠그고 다시 확인한다. */
+    private UserAccount saveNickname(LoginCredential credential, String nickname) {
+        User user = userRepository.findByIdForUpdate(credential.id())
+                .filter(found -> found.getPasswordHash().equals(credential.passwordHash()))
+                .filter(found -> !found.isSuspendedAt(LocalDateTime.now()))
+                .orElseThrow(UnauthorizedException::new);
+        if (!nickname.equalsIgnoreCase(user.getNickname())
+                && userRepository.existsByNicknameIgnoreCase(nickname)) {
+            throw new DuplicateNicknameException();
+        }
+        user.changeNickname(nickname);
+        return UserAccount.from(user);
     }
 
     @Transactional
