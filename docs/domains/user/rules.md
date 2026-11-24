@@ -1,4 +1,4 @@
-> 기준: feature/be3-nickname (스펙 010) · 최종 확인: 2026-11-25 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 규칙
 
@@ -35,9 +35,11 @@
 
 | 규칙 | 값 | 코드 위치 |
 |---|---|---|
-| 기준 | 이메일 + 클라이언트 IP | `LoginAttemptLimiter` |
+| 기준 | 이메일 + 클라이언트 IP (재설정 요청은 이메일별 제한도 함께 적용) | `LoginAttemptLimiter` |
 | 로그인 | 15분 안에 5번 실패하면 15분 잠금 (429). 1~4번째는 401이며 계정 존재 여부를 구분하지 않음 | `LoginAttemptLimiter.MAX_ATTEMPTS`·`WINDOW`·`LOCK` |
 | 재설정 요청 | 15분 안에 5번까지는 가입 여부와 관계없이 204, 6번째부터 15분 동안 429 | `LoginAttemptLimiter.consumePasswordResetRequest` |
+| 재설정 요청 (이메일별) | 첫 요청부터 1시간 구간에 10번까지, 10번째부터 1시간 동안 IP와 관계없이 429. 이메일+IP 제한으로 거절된 요청은 세지 않음. 로그인과 이미 받은 링크는 막지 않음 | `LoginAttemptLimiter.MAX_RESETS_PER_EMAIL`·`EMAIL_RESET_WINDOW`·`EMAIL_RESET_LOCK` |
+| 동시 요청 | 기록 행을 `on conflict do nothing`으로 만들고 잠근 뒤 횟수를 올림 | `AuthAttemptRepository` |
 | 타이밍 공격 방지 | 없는 이메일도 더미 해시로 비밀번호 비교 | `UserService.DUMMY_PASSWORD_HASH` |
 | 트랜잭션 | 조회 → 비밀번호 비교(트랜잭션 밖) → 토큰 발급. 발급 때 회원을 잠그고 비밀번호·정지를 다시 확인. 실패 횟수는 따로 저장돼 로그인이 거절돼도 남음 | `UserService.login` |
 

@@ -3,6 +3,7 @@ package com.chaekdami.review.application;
 import com.chaekdami.global.dto.PageResponse;
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.review.application.command.ReviewReportCommand;
+import com.chaekdami.review.application.port.UserLock;
 import com.chaekdami.review.application.port.UserNicknameReader;
 import com.chaekdami.review.application.result.CommunityAuthor;
 import com.chaekdami.review.application.result.LikeResult;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +44,8 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class ReviewSocialService {
 
+    static final int MAX_REPORTS_PER_DAY = 20;
+
     private static final Sort LATEST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
     private static final Sort LIKES = Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"),
             Sort.Order.desc("id"));
@@ -50,6 +54,7 @@ public class ReviewSocialService {
     private final ReviewLikeRepository reviewLikeRepository;
     private final ReviewReportRepository reviewReportRepository;
     private final UserNicknameReader userNicknameReader;
+    private final UserLock userLock;
     private final CurrentUser currentUser;
     private final KoreanTime koreanTime;
 
@@ -129,12 +134,19 @@ public class ReviewSocialService {
             throw new BusinessException(ReviewErrorCode.CANNOT_REPORT_OWN_REVIEW);
         }
         String detail = command.detail() == null || command.detail().isBlank() ? null : command.detail().strip();
+        // 같은 회원의 신고가 겹쳐도 하루 횟수를 넘지 않게 한다.
+        userLock.lock(userId);
+        LocalDateTime now = koreanTime.now();
         int inserted = reviewReportRepository.insertIfAbsent(
-                reviewId, userId, command.reason().name(), detail, koreanTime.now());
+                reviewId, userId, command.reason().name(), detail, now);
         if (inserted == 0) {
             throw new BusinessException(ReviewErrorCode.ALREADY_REPORTED);
         }
-        reviewRepository.addReport(reviewId, blindThreshold, koreanTime.now());
+        if (reviewReportRepository.countByUserIdAndCreatedAtGreaterThanEqual(
+                userId, now.toLocalDate().atStartOfDay()) > MAX_REPORTS_PER_DAY) {
+            throw new BusinessException(ReviewErrorCode.TOO_MANY_ATTEMPTS);
+        }
+        reviewRepository.addReport(reviewId, blindThreshold, now);
     }
 
     private Review requireVisible(Long reviewId) {

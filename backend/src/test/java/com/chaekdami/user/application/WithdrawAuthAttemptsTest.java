@@ -39,9 +39,10 @@ class WithdrawAuthAttemptsTest {
     private static final String EMAIL = "a_b%c@test.local";
     private static final List<String> MINE = List.of(
             "login|a_b%c@test.local|10.0.0.1", "login|a_b%c@test.local|::1",
-            "reset|a_b%c@test.local|10.0.0.1");
+            "reset|a_b%c@test.local|10.0.0.1", "reset|a_b%c@test.local|*");
     private static final List<String> OTHERS = List.of(
             "login|axbyc@test.local|10.0.0.1", "reset|axbyc@test.local|10.0.0.1",
+            "reset|axbyc@test.local|*",
             "login|a_b%c@test.local.kr|10.0.0.1", "login|xa_b%c@test.local|10.0.0.1");
 
     @Autowired

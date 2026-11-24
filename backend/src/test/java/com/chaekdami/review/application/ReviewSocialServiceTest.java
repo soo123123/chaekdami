@@ -2,6 +2,7 @@ package com.chaekdami.review.application;
 
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.review.application.command.ReviewReportCommand;
+import com.chaekdami.review.application.port.UserLock;
 import com.chaekdami.review.application.port.UserNicknameReader;
 import com.chaekdami.review.application.result.LikeResult;
 import com.chaekdami.review.application.result.RatingSummary;
@@ -45,7 +46,7 @@ class ReviewSocialServiceTest {
     @BeforeEach
     void setUp() {
         service = new ReviewSocialService(reviewRepository, reviewLikeRepository, reviewReportRepository,
-                mock(UserNicknameReader.class), new CurrentUser(), new KoreanTime());
+                mock(UserNicknameReader.class), mock(UserLock.class), new CurrentUser(), new KoreanTime());
         ReflectionTestUtils.setField(service, "blindThreshold", 3);
         signIn(1L);
     }
