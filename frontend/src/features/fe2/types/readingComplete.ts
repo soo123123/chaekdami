@@ -60,8 +60,6 @@ export type CompleteRecord = {
   goalMinutes: number;
   pagesRead: number;
   goalPages: number;
-  focusPercent: number;
-  focusModeUsed: boolean;
 };
 
 export type CompleteQuest = {

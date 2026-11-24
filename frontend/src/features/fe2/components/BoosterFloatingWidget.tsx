@@ -20,6 +20,7 @@ import {
   getRewardStatus,
   type RewardStatusView,
 } from '@/features/fe2/api/rewardApi';
+import { getAccessToken } from '@/utils/tokenStorage';
 
 /**
  * 개발 전용 테스트 모드
@@ -194,6 +195,22 @@ export default function BoosterFloatingWidget() {
     const requestId = ++requestIdRef.current;
 
     try {
+      const accessToken = await getAccessToken();
+
+      if (
+        !mountedRef.current ||
+        requestId !== requestIdRef.current
+      ) {
+        return;
+      }
+
+      // 로그인 전이나 로그아웃 후에는 조회하지 않고 위젯을 숨긴다
+      if (!accessToken) {
+        setExpiration(null);
+        setRemaining(0);
+        return;
+      }
+
       const reward: RewardStatusView =
         await getRewardStatus();
 

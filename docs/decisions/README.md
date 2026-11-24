@@ -16,6 +16,8 @@
 | [0006](./0006-expo-router.md) | 화면 이동은 Expo Router, 라우트는 /fe1·/fe2 | 프론트 |
 | [0007](./0007-hooks-skills.md) | AI 작업 규칙을 hooks·skills로 보조, 스펙 없이 관리 | 작업 방식 |
 | [0008](./0008-known-issues-on-main.md) | known-issues는 main에서만 고치고 바로 push, 진행 중 작업의 건드리는 곳 공유 | 작업 방식 |
+| [0009](./0009-notion-issue-board.md) | 노션 문제 보드를 따로 두고, 할 일을 물으면 문제·질문도 함께 보여준다 | 작업 방식 |
+| [0010](./0010-main-news.md) | 작업을 시작할 때 main 업데이트와 내 작업 영향을 알린다 | 작업 방식 |
 
 ## 새 결정을 남길 때
 
