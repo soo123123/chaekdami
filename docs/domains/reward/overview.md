@@ -52,6 +52,8 @@ backend/src/main/java/com/chaekdami/reward/
 - ⏳ [TODO-5](../../known-issues.md#todo-5) 주간 퀘스트 — `QuestType.WEEKLY` 값만 있음
 - ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) 독서 시간이 부스터보다 길면 부스터 미적용 (원인 확인 필요)
 - ⏳ [TODO-6](../../known-issues.md#todo-6) 주간 독서 랭킹, 레벨 해금 — 미구현
+- ⚠️ [ISSUE-LIMIT-6](../../known-issues.md#issue-limit-6) 부스터 위젯이 하단 탭·버튼을 가릴 수 있음
+- ⏳ [TODO-40](../../known-issues.md#todo-40) 부스터 사용 버튼을 홈으로 이동 · [TODO-41](../../known-issues.md#todo-41) 위젯 가장자리 자동 이동
 - ⏳ [TODO-28](../../known-issues.md#todo-28) 랜덤박스 · [TODO-29](../../known-issues.md#todo-29) 칭호
 - ⏳ [TODO-19](../../known-issues.md#todo-19) reward ↔ dday 직접 참조
 - 결정 배경: [decisions/0003](../../decisions/0003-reward-on-complete-screen.md), [decisions/0004](../../decisions/0004-dday-records.md)
