@@ -180,3 +180,4 @@ UNIQUE `uk_reading_session_rewards_user_id_reading_session_id` (user_id, reading
 | `1ff5c0c` | `quests.code` 추가, 일일 퀘스트를 코드로 구분 |
 | `41b2cd0` | `reward_transactions.reference_id` 추가 (세션별 중복 지급 방지) |
 | `8b13aaa` | `reading_session_rewards`, `reading_session_reward_quests` 추가 ([specs/001](../../specs/001-reward-integration/)) |
+| `feature/009-booster-reading-time@e62bd5b` | `user_buffs.remaining_seconds` 추가, `buff_end_at`은 코드에서 쓰지 않음 ([specs/009](../../specs/009-booster-reading-time/)) |

@@ -1,5 +1,7 @@
-> 상태: approved (2026-11-24, BE2 승인 · FE2 승인은 구두로 알린 뒤 BE2가 승인으로 판단 · 응답 필드 변경은 병합 전에 ⑤ 확인) · 작성: 2026-11-24 · 기준: feature/009-booster-reading-time@299a3b9 · 담당: BE2 · 승인: BE2, FE2
+> 상태: in-progress (BE2 승인 2026-11-24) · 작성: 2026-11-24 · 기준: feature/009-booster-reading-time@299a3b9 · 담당: BE2 · 승인: BE2
 > 요구사항: [requirements.md](./requirements.md)
+
+예외: S6의 "영향받는 파트 담당 1명"(FE2)의 명시적 승인 없이 BE2만 확인하고 진행한다 (사람 결정 2026-11-24). FE2에는 구두로 알렸다. 응답 필드 변경(⑤)은 병합 전에 FE2에 확인한다.
 
 # 009 · 부스터는 책 읽는 동안에만 시간이 흐름 — Design
 
