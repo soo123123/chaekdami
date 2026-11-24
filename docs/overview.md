@@ -37,7 +37,7 @@
 | 연속 독서 | D-day 달력, 방어권 자동 사용, D-day 목표 | ✅ | [dday](./domains/dday/) |
 | 통계 | 오늘 독서, 주·월·하루 독서 시간 | ✅ | [reading](./domains/reading/) |
 | 서재 꾸미기 | 테마 3종 | ⏳ [TODO-7](./known-issues.md#todo-7) 기기에만 저장 | |
-| 관리자 | 신고 리뷰 블라인드 | ⏳ [TODO-10](./known-issues.md#todo-10) 사용자 관리 없음 | [review](./domains/review/) |
+| 관리자 | 신고 리뷰 블라인드, 회원 조회·정지·역할 변경 (API만, 앱 화면 없음) | ✅ | [review](./domains/review/), [user](./domains/user/) |
 | AI | 책 추천, 독후감 피드백, 문장 인증 | ⏳ [TODO-4](./known-issues.md#todo-4) | |
 | 기타 | 푸시 알림, 랭킹, 주간 퀘스트, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) ⏳ [TODO-5](./known-issues.md#todo-5) | |
 
