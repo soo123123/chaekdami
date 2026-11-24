@@ -22,9 +22,11 @@
 | Access Token | JWT, 15분 | `JwtTokenProvider.ACCESS_TOKEN_VALIDITY_SECONDS` |
 | Refresh Token | 90일, 원문은 응답으로만 주고 DB에는 SHA-256 해시 | `jwt.refresh-token-validity-in-seconds`, `RefreshToken` |
 | 회전 | 재발급하면 이전 Refresh Token 즉시 폐기 | `UserService.refresh` |
-| 재사용 감지 | 폐기된 Refresh Token이 다시 오면 그 사용자의 Refresh Token 전부 폐기 + `token_version` 증가 | `UserService.refresh` |
+| 재사용 감지 | **재발급으로 교체된** Refresh Token이 다시 오면 그 사용자의 Refresh Token 전부 삭제 + `token_version` 증가 | `UserService.refresh` |
+| 무효화된 토큰 | 로그아웃하거나 일괄 무효화된 Refresh Token은 DB에서 삭제. 다시 와도 401만 내고 다른 세션은 유지 | `UserService.logout`, `UserService.invalidateSessions` |
+| 동시 처리 | 로그인·재발급·로그아웃·일괄 무효화·탈퇴는 회원 행을 먼저 잠금. 같은 토큰으로 재발급이 겹치면 나중 요청은 재사용으로 처리 | `UserRepository.findByIdForUpdate` |
 | 즉시 무효화 | 비밀번호 변경·재설정, 전체 로그아웃, 재사용 감지 시 `token_version` 증가. 필터가 JWT 값과 DB 값을 비교해 다르면 401 | `TokenVersionChecker`, `JwtAuthenticationFilter` |
-| 단일 로그아웃 | 그 Refresh Token만 폐기. Access Token은 최대 15분 유효 | `UserService.logout` |
+| 단일 로그아웃 | 그 Refresh Token만 삭제. Access Token은 최대 15분 유효 | `UserService.logout` |
 | 서명 키 | 환경변수 `JWT_SECRET` | `application.properties` |
 
 ## 3. 로그인·비밀번호 재설정 제한
@@ -64,7 +66,7 @@
 | 권한 | `/api/admin/**`는 `ADMIN`만 (아니면 403) | `SecurityConfig` | ✅ |
 | 첫 관리자 | API로 만들 수 없음. DB에서 `users.role`을 직접 `ADMIN`으로 | — | ✅ |
 | 정지 판단 | `status = SUSPENDED`이고 끝 시각이 없거나 지금보다 뒤일 때만 정지. 끝 시각이 지나면 해제하지 않아도 풀림 (스케줄러 없음). `status`가 NULL이면 ACTIVE | `User.isSuspendedAt` | ✅ |
-| 정지 시 세션 | `token_version` +1, Refresh Token 전부 폐기 (전체 로그아웃과 같음) | `UserService.invalidateSessions` | ✅ |
+| 정지 시 세션 | `token_version` +1, Refresh Token 전부 삭제 (전체 로그아웃과 같음) | `UserService.invalidateSessions` | ✅ |
 | 정지된 회원 로그인 | 비밀번호가 맞을 때만 403 `ACCOUNT_SUSPENDED` + 끝 시각. 틀리면 401 (정지 사실을 드러내지 않음) | `UserService.login` | ✅ |
 | 정지된 회원 재설정 | 비밀번호 재설정 요청·재설정 가능. 정지는 그대로 | `UserService` | ✅ |
 | 정지 사유 | 선택, 200자까지. 관리자 상세에서만 보임 | `User.MAX_SUSPENSION_REASON_LENGTH` | ✅ |

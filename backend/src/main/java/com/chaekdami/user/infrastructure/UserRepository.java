@@ -23,10 +23,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     Optional<LoginCredential> findLoginCredential(@Param("email") String email);
 
-    /** 정지·비밀번호 변경과 토큰 발급이 엇갈리지 않도록 회원 행을 잠근다. 트랜잭션 안에서만 부른다. */
+    /** 토큰 발급과 폐기(정지·비밀번호 변경·로그아웃)가 엇갈리지 않도록 회원 행을 잠근다. 트랜잭션 안에서만 부른다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.id = :id")
-    Optional<User> findByIdForLogin(@Param("id") Long id);
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
 
     boolean existsByNicknameIgnoreCase(String nickname);
 

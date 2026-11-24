@@ -77,7 +77,7 @@
 { "refreshToken": "…" }
 ```
 
-응답은 로그인과 같다 (새 토큰 쌍). 이전 Refresh Token은 즉시 폐기된다. **폐기된 토큰을 다시 쓰면** 그 사용자의 모든 토큰이 폐기된다 (강제 로그아웃).
+응답은 로그인과 같다 (새 토큰 쌍). 이전 Refresh Token은 즉시 폐기된다. **재발급으로 교체된 토큰을 다시 쓰면** 그 사용자의 모든 토큰이 무효가 된다 (강제 로그아웃). 로그아웃하거나 일괄 무효화된 토큰은 401만 낸다.
 
 ## POST /api/auth/logout
 
@@ -85,11 +85,11 @@
 { "refreshToken": "…" }
 ```
 
-이 Refresh Token만 폐기한다. Access Token은 만료(최대 15분)까지 유효하다.
+이 Refresh Token만 삭제한다. Access Token은 만료(최대 15분)까지 유효하다.
 
 ## POST /api/auth/logout-all
 
-본문 없음. 모든 Refresh Token 폐기 + `token_version` 증가 → 모든 Access Token도 즉시 무효.
+본문 없음. 모든 Refresh Token 삭제 + `token_version` 증가 → 모든 Access Token도 즉시 무효.
 
 ## POST /api/auth/password
 

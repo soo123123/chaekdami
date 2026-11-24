@@ -42,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -117,7 +118,7 @@ public class UserService implements NicknameChanger {
      * 비밀번호가 맞을 때만 정지 사실을 알린다.
      */
     private IssuedTokens issueLoginTokens(LoginCredential credential) {
-        User user = userRepository.findByIdForLogin(credential.id())
+        User user = userRepository.findByIdForUpdate(credential.id())
                 .filter(found -> found.getPasswordHash().equals(credential.passwordHash()))
                 .orElseThrow(InvalidCredentialsException::new);
         if (user.isSuspendedAt(LocalDateTime.now())) {
@@ -126,15 +127,20 @@ public class UserService implements NicknameChanger {
         return issueTokens(user);
     }
 
+    /**
+     * 폐기 표시가 남은 토큰은 재발급으로 교체된 것뿐이다. 다시 오면 도난으로 보고 모두 무효화한다.
+     * 로그아웃·일괄 무효화된 토큰은 지워지므로 401만 낸다.
+     */
     @Transactional(noRollbackFor = UnauthorizedException.class)
     public IssuedTokens refresh(String rawRefreshToken) {
-        RefreshToken stored = refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken))
+        String tokenHash = sha256(rawRefreshToken);
+        // 잠근 뒤에 토큰을 읽어야 기다리는 동안 지워진 토큰을 알 수 있다.
+        lockOwner(tokenHash).orElseThrow(UnauthorizedException::new);
+        RefreshToken stored = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(UnauthorizedException::new);
         if (stored.isRevoked()) {
-            // 예외를 던져도 버전 증가와 Refresh 폐기는 커밋된다.
-            User user = stored.getUser();
-            user.bumpTokenVersion();
-            revokeAll(user.getId());
+            // 예외를 던져도 버전 증가와 Refresh 삭제는 커밋된다.
+            invalidateSessions(stored.getUser());
             throw new UnauthorizedException();
         }
         if (stored.isExpired(LocalDateTime.now())) {
@@ -147,8 +153,10 @@ public class UserService implements NicknameChanger {
 
     @Transactional
     public void logout(String rawRefreshToken) {
-        refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken))
-                .ifPresent(token -> token.revoke(LocalDateTime.now()));
+        String tokenHash = sha256(rawRefreshToken);
+        if (lockOwner(tokenHash).isPresent()) {
+            refreshTokenRepository.deleteUsableByTokenHash(tokenHash);
+        }
     }
 
     @Transactional
@@ -163,8 +171,7 @@ public class UserService implements NicknameChanger {
         rejectIdentityPassword(user, command.newPassword(), "newPassword");
 
         user.changePassword(passwordEncoder.encode(command.newPassword()));
-        user.bumpTokenVersion();
-        revokeAll(user.getId());
+        invalidateSessions(user);
     }
 
     @Transactional
@@ -174,11 +181,18 @@ public class UserService implements NicknameChanger {
 
     /**
      * 이미 발급된 Access Token(버전 비교로 다음 요청부터 401)과 Refresh Token을 모두 못 쓰게 한다.
-     * 전체 로그아웃, 관리자의 정지·역할 변경이 쓴다.
+     * 전체 로그아웃, 비밀번호 변경·재설정, 재사용 감지, 관리자의 정지·역할 변경이 쓴다.
      */
     void invalidateSessions(User user) {
         user.bumpTokenVersion();
-        revokeAll(user.getId());
+        // 먼저 잠가야 같은 때 재발급된 토큰까지 지운다.
+        userRepository.findByIdForUpdate(user.getId());
+        refreshTokenRepository.deleteAllOfUser(user.getId());
+    }
+
+    private Optional<User> lockOwner(String tokenHash) {
+        return refreshTokenRepository.findUserIdByTokenHash(tokenHash)
+                .flatMap(userRepository::findByIdForUpdate);
     }
 
     public UserAccount getMe() {
@@ -212,9 +226,11 @@ public class UserService implements NicknameChanger {
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new InvalidRequestException("currentPassword", "현재 비밀번호가 올바르지 않습니다.");
         }
+        // 재발급(회원 → 토큰 순으로 잠금)과 순서를 맞춘다.
+        userRepository.findByIdForUpdate(user.getId());
         // 리스너가 같은 트랜잭션에서 다른 도메인의 사용자 데이터를 먼저 지운다.
         eventPublisher.publishEvent(new UserWithdrawnEvent(user.getId()));
-        refreshTokenRepository.deleteByUser_Id(user.getId());
+        refreshTokenRepository.deleteAllOfUser(user.getId());
         passwordResetTokenRepository.deleteByUser_Id(user.getId());
         loginAttemptLimiter.deleteAllOf(user.getEmail());
         userRepository.delete(user);
@@ -289,8 +305,7 @@ public class UserService implements NicknameChanger {
         rejectIdentityPassword(user, command.newPassword(), "newPassword");
 
         user.changePassword(passwordEncoder.encode(command.newPassword()));
-        user.bumpTokenVersion();
-        revokeAll(user.getId());
+        invalidateSessions(user);
         stored.use(LocalDateTime.now());
     }
 
@@ -325,13 +340,6 @@ public class UserService implements NicknameChanger {
         byte[] bytes = new byte[32];
         SECURE_RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private void revokeAll(Long userId) {
-        LocalDateTime now = LocalDateTime.now();
-        for (RefreshToken token : refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(userId)) {
-            token.revoke(now);
-        }
     }
 
     private static void rejectIdentityPassword(User user, String password, String field) {

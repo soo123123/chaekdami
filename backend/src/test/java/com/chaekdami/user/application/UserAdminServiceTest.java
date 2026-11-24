@@ -4,7 +4,6 @@ import com.chaekdami.global.dto.PageResponse;
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.user.application.exception.InvalidRequestException;
 import com.chaekdami.user.application.result.AdminUserResult;
-import com.chaekdami.user.domain.RefreshToken;
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
 import com.chaekdami.user.domain.UserErrorCode;
@@ -39,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +50,6 @@ class UserAdminServiceTest {
     private final RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
     private UserAdminService service;
     private User target;
-    private RefreshToken targetRefreshToken;
 
     @BeforeEach
     void setUp() {
@@ -63,8 +62,6 @@ class UserAdminServiceTest {
 
         target = user(2L, Role.USER);
         when(userRepository.findById(2L)).thenReturn(Optional.of(target));
-        targetRefreshToken = new RefreshToken(target, "hash", LocalDateTime.now().plusDays(1));
-        when(refreshTokenRepository.findAllByUser_IdAndRevokedAtIsNull(2L)).thenReturn(List.of(targetRefreshToken));
     }
 
     @AfterEach
@@ -84,7 +81,7 @@ class UserAdminServiceTest {
         assertEquals(ADMIN_ID, result.suspendedBy());
         assertNotNull(result.suspendedAt());
         assertEquals(1L, target.getTokenVersion());
-        assertTrue(targetRefreshToken.isRevoked());
+        verify(refreshTokenRepository).deleteAllOfUser(2L);
     }
 
     @Test
@@ -162,7 +159,7 @@ class UserAdminServiceTest {
         assertEquals("ADMIN", result.role());
         assertEquals(Role.ADMIN, target.getRole());
         assertEquals(1L, target.getTokenVersion());
-        assertTrue(targetRefreshToken.isRevoked());
+        verify(refreshTokenRepository).deleteAllOfUser(2L);
     }
 
     @Test
@@ -170,7 +167,7 @@ class UserAdminServiceTest {
         service.changeRole(2L, Role.USER);
 
         assertEquals(0L, target.getTokenVersion());
-        assertFalse(targetRefreshToken.isRevoked());
+        verify(refreshTokenRepository, never()).deleteAllOfUser(any());
     }
 
     @Test

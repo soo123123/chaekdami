@@ -54,7 +54,7 @@ class UserServiceLoginAttemptTest {
         UserRepository userRepository = mock(UserRepository.class);
         when(userRepository.findLoginCredential("reader@chaekdami.local"))
                 .thenReturn(Optional.of(new LoginCredential(1L, "stored-hash")));
-        when(userRepository.findByIdForLogin(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
 
         passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
