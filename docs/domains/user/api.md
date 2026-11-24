@@ -1,4 +1,4 @@
-> 기준: fix/be3-token-check-error · 최종 확인: 2026-11-24 · 담당: BE3
+> 기준: feature/be3-nickname (스펙 010) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user API
 
@@ -17,6 +17,7 @@
 | POST | `/api/auth/password/reset-request` | 재설정 메일 요청 | 불필요 | 204 | ✅ |
 | POST | `/api/auth/password/reset` | 메일 토큰으로 새 비밀번호 | 불필요 | 204 | ✅ |
 | GET | `/api/me` | 내 정보 | 필요 | 200 | ✅ |
+| PATCH | `/api/me` | 닉네임 변경 | 필요 | 200 | ✅ |
 | DELETE | `/api/me` | 회원 탈퇴 | 필요 | 204 | ✅ |
 | GET | `/email/reset` | 재설정 메일 링크가 여는 HTML 화면 | 불필요 | 200 | ✅ |
 | POST | `/email/reset` | 위 화면의 폼 제출 (form-urlencoded) | 불필요 | 200 | ✅ |
@@ -116,6 +117,15 @@
 ## GET /api/me
 
 응답: `UserResponse` (`id`, `email`, `nickname`, `role`)
+
+## PATCH /api/me
+
+```json
+{ "nickname": "새닉네임" }
+```
+
+성공 `200` 바뀐 내 정보 (`UserResponse`). 토큰은 그대로 쓸 수 있다. 지금과 같은 닉네임도 200이다. 규칙: [rules.md §1](./rules.md#1-가입-정보)
+형식 위반·비밀번호와 같음은 `400 VALIDATION_ERROR`(`fields[].field = "nickname"`), 다른 사용자가 쓰면 `409 NICKNAME_ALREADY_EXISTS`.
 
 ## DELETE /api/me
 

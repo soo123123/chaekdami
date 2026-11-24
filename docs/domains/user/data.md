@@ -1,4 +1,4 @@
-> 기준: fix/be3-withdraw-auth-attempts · 최종 확인: 2026-11-25 · 담당: BE3
+> 기준: feature/be3-nickname (스펙 010) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 데이터
 
@@ -16,7 +16,7 @@ erDiagram
 
 ## users
 
-엔티티: `User`
+엔티티: `User` (`@DynamicUpdate`: 동시에 다른 컬럼을 고친 값을 덮어쓰지 않도록 바뀐 컬럼만 UPDATE)
 
 | 컬럼 | 설명 |
 |---|---|

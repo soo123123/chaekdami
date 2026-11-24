@@ -54,3 +54,4 @@
 | 004 | [reading-certification-app](./004-reading-certification-app/) — 독서 인증 앱 연결과 사진 인증 보상 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·FE1·BE2 |
 | 006 | [review-delete](./006-review-delete/) — 리뷰(별점) 삭제 API | done | BE3 |
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
+| 010 | [nickname-change](./010-nickname-change/) — 닉네임 변경 API | done | BE3 |
