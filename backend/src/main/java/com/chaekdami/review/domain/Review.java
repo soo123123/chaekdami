@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "reviews",
-        uniqueConstraints = @UniqueConstraint(name = "uk_reviews_book_id", columnNames = "book_id"),
+        uniqueConstraints = @UniqueConstraint(name = Review.BOOK_UNIQUE_CONSTRAINT, columnNames = "book_id"),
         indexes = {
                 @Index(name = "idx_reviews_user_id", columnList = "user_id"),
                 @Index(name = "idx_reviews_isbn_created_at", columnList = "isbn, created_at"),
@@ -35,6 +35,8 @@ public class Review extends BaseTimeEntity {
     public static final int MIN_RATING = 1;
     public static final int MAX_RATING = 5;
     public static final int MAX_ONE_LINE_LENGTH = 100;
+    public static final int MAX_ISBN_LENGTH = 20;
+    public static final String BOOK_UNIQUE_CONSTRAINT = "uk_reviews_book_id";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +48,7 @@ public class Review extends BaseTimeEntity {
     @Column(name = "book_id", nullable = false)
     private Long bookId;
 
-    @Column(length = 20)
+    @Column(length = MAX_ISBN_LENGTH)
     private String isbn;
 
     @Column(nullable = false)
@@ -78,7 +80,7 @@ public class Review extends BaseTimeEntity {
                   boolean isSpoiler, Boolean isPublic) {
         this.userId = userId;
         this.bookId = bookId;
-        this.isbn = isbn;
+        this.isbn = storableIsbn(isbn);
         this.rating = (short) rating;
         this.oneLine = oneLine;
         this.isSpoiler = isSpoiler;
@@ -102,7 +104,14 @@ public class Review extends BaseTimeEntity {
     }
 
     public void syncIsbn(String isbn) {
-        this.isbn = isbn;
+        this.isbn = storableIsbn(isbn);
+    }
+
+    /**
+     * 칸보다 긴 ISBN은 올바른 값이 아니다. 잘라 저장하면 다른 책과 묶일 수 있어 ISBN 없는 책처럼 다룬다.
+     */
+    private static String storableIsbn(String isbn) {
+        return isbn == null || isbn.length() > MAX_ISBN_LENGTH ? null : isbn;
     }
 
     public boolean ownedBy(Long userId) {
