@@ -18,8 +18,9 @@ description: 책다듬이에서 새 스펙(requirements → design → tasks)을
 0. `python3 scripts/harness/known-issues.py news`로 지난 확인 이후 바뀐 것을 확인해 사용자에게 짧게 알린다
 1. `docs/glossary.md`
 2. 관련 도메인의 `docs/domains/<도메인>/overview.md`, 필요한 `api.md`·`data.md`·`rules.md`
-3. `python3 scripts/harness/known-issues.py show`(최신 main)에서 관련 ISSUE·TODO·ASK. 스펙을 시작하면 그 항목 상태를 `진행 중 (스펙 NNN)`으로 바꿔 issue-log 절차로 push
+3. `python3 scripts/harness/known-issues.py show`(최신 main)에서 관련 ISSUE·TODO·ASK. 고지(5번)의 답을 받은 뒤 그 항목 상태를 `진행 중 (스펙 NNN)`으로 바꿔 issue-log 절차로 push
 4. 실제 코드 (문서와 다르면 코드가 맞다)
+5. **시작 전 고지** ✋: known-issues 항목(TODO·ISSUE)에서 시작하는 스펙이면, requirements를 쓰기 전에 issue-log "시작 전 고지"대로 적힌 설명(노션 카드 본문·비고 포함)을 담당자에게 보여주고 답을 받는다. 이 대화에서 이미 했으면 건너뛴다. 항목이 없는 스펙은 해당 없음
 
 ## 2. 번호와 폴더
 
@@ -32,6 +33,7 @@ description: 책다듬이에서 새 스펙(requirements → design → tasks)을
 - 첫 줄: `> 상태: draft · 작성: <오늘> · 기준: <브랜치>@<짧은 커밋> · 담당: <역할> · 승인: <역할>, <역할>` (`git rev-parse --short HEAD`)
 - 배경은 docs 링크·코드 위치를 근거로 쓴다
 - 완료 조건은 `R1.1 ~하면, ~한다.` 한 문장씩. "어떻게"(클래스·메서드)는 쓰지 않는다
+- 고지에서 담당자가 동의한 완료 기준은 R로 옮기고, 동의하지 않은 제안은 범위 밖, 답하지 않은 것은 남은 질문에 쓴다
 - 사용자가 이미 결정한 내용은 배경에 "사람 결정 (날짜)"로 적는다
 - **범위 밖**을 꼭 쓴다
 - 모르는 것은 "남은 질문(❓)"에 남기고 추측으로 채우지 않는다
