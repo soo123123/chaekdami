@@ -45,4 +45,3 @@ backend/src/main/java/com/chaekdami/
 
 - ✅ 가입, 로그인, 재발급, 로그아웃(단일·전체), 비밀번호 변경·재설정, 내 정보, 탈퇴, 로그인·재설정 요청 제한
 - ✅ 관리자 회원 목록·검색·상세, 이용 정지·해제, 역할 변경 (스펙 007)
-- ⚠️ [ISSUE-SEC-1](../../known-issues.md#issue-sec-1) `application-dev.properties`에 메일 비밀번호가 평문으로 커밋돼 있음
