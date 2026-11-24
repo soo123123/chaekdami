@@ -1,4 +1,4 @@
-> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: fix/be3-db-connection · 최종 확인: 2026-11-24 · 담당: BE3
 
 # user 규칙
 
@@ -35,6 +35,7 @@
 | 로그인 | 15분 안에 5번 실패하면 15분 잠금 (429). 1~4번째는 401이며 계정 존재 여부를 구분하지 않음 | `LoginAttemptLimiter.MAX_ATTEMPTS`·`WINDOW`·`LOCK` |
 | 재설정 요청 | 15분 안에 5번까지는 가입 여부와 관계없이 204, 6번째부터 15분 동안 429 | `LoginAttemptLimiter.consumePasswordResetRequest` |
 | 타이밍 공격 방지 | 없는 이메일도 더미 해시로 비밀번호 비교 | `UserService.DUMMY_PASSWORD_HASH` |
+| 트랜잭션 | 조회 → 비밀번호 비교(트랜잭션 밖) → 토큰 발급. 발급 때 회원을 잠그고 비밀번호·정지를 다시 확인. 실패 횟수는 따로 저장돼 로그인이 거절돼도 남음 | `UserService.login` |
 
 ## 4. 비밀번호 재설정
 
@@ -42,6 +43,7 @@
 |---|---|---|
 | 토큰 유효 | 15분, 1회용 | `UserService.PASSWORD_RESET_TOKEN_MINUTES` |
 | 메일 | Gmail SMTP, 비밀번호 `MAIL_PASSWORD` | `SmtpPasswordResetNotifier` |
+| 발송 순서 | 새 토큰 저장 → 메일 발송(트랜잭션 밖) → 먼저 만든 토큰 무효화. 발송에 실패하면 새 토큰만 지우고 이전 링크는 유지 | `UserService.requestPasswordReset` |
 | 링크 주소 | `app.public-base-url` + `/email/reset?token=…` | `EmailPageController` |
 | 성공 후 | 모든 토큰 무효 | `UserService.resetPassword` |
 

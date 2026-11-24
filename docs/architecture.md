@@ -26,7 +26,7 @@ flowchart TB
 | 계층 | 책임 |
 |---|---|
 | presentation | HTTP 요청·응답, 입력값 검증, DTO 변환. Entity를 그대로 응답하지 않는다 |
-| application | 유스케이스 실행, 트랜잭션, 다른 도메인과의 연결 |
+| application | 유스케이스 실행, 트랜잭션, 다른 도메인과의 연결. 지연 로딩은 이 계층의 트랜잭션 안에서 끝낸다 (`open-in-view=false`) |
 | domain | 핵심 규칙(페이지 범위, 경험치 계산 등)과 상태 변경 |
 | infrastructure | DB, 외부 API(YES24·메일), port 구현, 이벤트 리스너, 초기 데이터 |
 
