@@ -49,8 +49,6 @@
 |---|---|---|---|---|---|---|---|---|
 | <a id="issue-sec-2"></a>ISSUE-SEC-2 | 공통 | 높음 | 열림 | 팀 노션 "환경 변수 모음"에 YES24·Gemini·메일·DB 값이 평문으로 있다 | 노션 공유 범위만큼 비밀값이 노출된다 | 노션 dev 페이지 | [conventions/testing](./conventions/testing.md#2-환경변수) | — |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
-| <a id="issue-bug-4"></a>ISSUE-BUG-4 | FE2 | 중간 | 열림 | 독서 완료 화면의 "독서 집중도"는 전달 경로가 없어 예시 값(94%, 집중 모드 사용)을 보여준다 | 실제와 관계없는 집중도가 사용자에게 보인다. 미팅(2026-11-23) 결정: 표시를 없앤다 | 앱 `useReadingComplete`(`EXAMPLE.focusPercent`), `ReadingResultCard` | [reward/overview](./domains/reward/overview.md#현재-상태) | 불필요 |
-| <a id="issue-bug-5"></a>ISSUE-BUG-5 | FE2 | 중간 | 열림 | 로그인 화면이 안전 영역(SafeArea)을 처리하지 않는다 | 실제 기기에서 화면 맨 위가 카메라(노치) 영역에 가려 잘려 보인다 | 앱 `LoginScreen` | [user/overview](./domains/user/overview.md#현재-상태) | 불필요 |
 | <a id="issue-bug-6"></a>ISSUE-BUG-6 | BE2 (+FE1) | 중간 | 열림 (원인 확인 필요) | 서버는 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 비율만큼만 2배로 계산한다 (`0979aa9`, 미팅에서 정한 수정 방향과 같음) | 테스트 환경에서 독서 시간이 부스터 시간(30분)보다 길면 부스터가 적용되지 않았다. 의심 원인: ① 테스트 빌드가 `0979aa9` 이전 ② 일시정지가 있으면 계산한 구간이 실제 독서 시각과 어긋남 ③ 완료 화면 표시 문제 | `RewardService.grantReadingExperience`, 앱 `useReadingTimer` | [reward/rules](./domains/reward/rules.md#3-경험치-부스터) | 불필요 (규칙 변경 없음) |
 | <a id="issue-bug-7"></a>ISSUE-BUG-7 | FE2 (+BE1) | 중간 | 열림 | 독서 통계의 "카테고리별 독서 비율"은 앱에 고정된 예시 값(`GENRES`)이다 | 사용자 기록과 관계없는 비율이 보인다. 제거할지 실제 데이터로 바꿀지는 ASK-6 | 앱 `ReadingStatsScreen` | [reading/api](./domains/reading/api.md#get-apimereading-stats) | 실제 데이터로 바꾸면 필요 (통계 API 변경) |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | BE1 (+BE2) | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
@@ -114,6 +112,8 @@
 | ISSUE-SEC-1 메일 비밀번호 평문 커밋 | `application-dev.properties`의 평문 줄을 지우고 `application.properties`의 `${MAIL_PASSWORD}`로 통일. 비밀번호는 교체하지 않기로 함 (사람 결정 2026-11-23): 이전 커밋(`4f29537` 등)에 남은 값은 계속 유효 | 2026-11-23 | — |
 | TODO-10 관리자 사용자 관리 | `/api/admin/users` 목록·검색·상세, 이용 정지(기한 선택·사유)·해제, 역할 변경. 정지·역할 변경 시 세션 무효화, 정지된 회원 로그인 403 `ACCOUNT_SUSPENDED`. 자기 자신·ADMIN 대상 변경 금지. 앱 화면 없이 http로만 사용 | 2026-11-23 | [007](./specs/007-admin-users/) |
 |---|---|---|---|
+| ISSUE-BUG-4 독서 완료 화면의 예시 집중도 | `ReadingResultCard`의 집중도 칸과 `focusPercent`·`focusModeUsed` 제거 (목표 시간·쪽수는 아직 예시 값) | 2026-11-24 | — |
+| ISSUE-BUG-5 로그인 화면 상단 잘림 | `LoginScreen`에 `SafeAreaView` 적용. Android 에뮬레이터(Pixel 7)에서 확인, iOS는 미확인 | 2026-11-24 | — |
 | TODO-1 독서 인증 앱 연결 | 앱이 `POST /api/reading-records/{id}/certifications`로 사진을 보냄 (가장 최근 회차, 45초). `PASSED`만 통과 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
 | TODO-3 사진 인증 추가 보상 연결 | 세션 저장 때 인증을 세션에 연결하고 `CertificationPhotoChecker`가 조회. 429 통과는 제외 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
 | ASK-5 독서 인증 판정 엄격도 | `UNVERIFIED`는 통과 아님(다시 찍기, 보상 없음). 앱은 쪽 범위를 보내지 않아 쪽 번호 비교 안 함(±3쪽 규칙은 범위를 보내는 호출에만). 앱 대기 45초, 서버 AI 호출은 한 번 다시 시도 | 2026-11-22 | [004](./specs/004-reading-certification-app/) |
