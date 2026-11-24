@@ -52,7 +52,7 @@
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-6"></a>ISSUE-BUG-6 | BE2 (+FE1) | 중간 | 열림 (원인 확인 필요) | 서버는 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 비율만큼만 2배로 계산한다 (`0979aa9`, 미팅에서 정한 수정 방향과 같음) | 테스트 환경에서 독서 시간이 부스터 시간(30분)보다 길면 부스터가 적용되지 않았다. 의심 원인: ① 테스트 빌드가 `0979aa9` 이전 ② 일시정지가 있으면 계산한 구간이 실제 독서 시각과 어긋남 ③ 완료 화면 표시 문제 | `RewardService.grantReadingExperience`, 앱 `useReadingTimer` | [reward/rules](./domains/reward/rules.md#3-경험치-부스터) | 불필요 (규칙 변경 없음) |
 | <a id="issue-bug-8"></a>ISSUE-BUG-8 | BE1·BE3 | 높음 | 열림 | 서버의 DB 연결이 3개인데 사진 인증은 AI 응답을 기다리는 동안 연결을 쥐고, 로그인·메일 발송도 연결을 오래 쓰거나 2개를 쓴다 | 동시 사용이 늘면 다른 API까지 기다리거나 500이 날 수 있다 | `CertificationService`, `LoginAttemptLimiter`, `UserService` | — | — |
-| <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 열림 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음) | `RewardService.getRewardStatus` | — | — |
+| <a id="issue-bug-9"></a>ISSUE-BUG-9 | BE2 | 높음 | 열림 | 보상 조회가 계정 행을 잠그지 않고 읽은 뒤 연속 일수를 저장한다 (`@Version` 없음) | 구매·보상과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있다 (확률 낮음). 부스터 위젯이 로그인 상태에서 화면 이동·앱 복귀·30초마다 조회해 겹칠 기회가 늘었다. PR #23(병합 전)이 들어가면 부스터 사용 직후 위젯과 상점이 거의 동시에 조회한다 | `RewardService.getRewardStatus`, 앱 `BoosterFloatingWidget`, `ShopScreen` | — | — |
 | <a id="issue-bug-10"></a>ISSUE-BUG-10 | FE2 (+BE2) | 높음 | 열림 | D-day 조회가 실패하거나 응답 전이면 목표가 빈 목록인 채 추가할 수 있다 | 저장이 전체 교체라 기존 목표가 지워질 수 있다 | 앱 `DdayScreen`, `DdayService.saveGoals` | — | — |
 | <a id="issue-bug-11"></a>ISSUE-BUG-11 | FE2 | 높음 | 열림 | 앱 시작 때 로그인 확인이 토큰 재발급 없이 `/api/me`를 부른다. 개발 빌드는 이 확인을 건너뛴다 | 출시용 앱은 Access Token(15분)이 만료된 뒤 다시 켜면 로그아웃된다 | 앱 `home.tsx`, `authApi.ts` | — | — |
 | <a id="issue-bug-12"></a>ISSUE-BUG-12 | 프론트 공통 (FE2 주) | 높음 | 열림 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — |
@@ -136,7 +136,7 @@
 | <a id="ask-4"></a>ASK-4 | BE1 · BE2 | 책을 삭제하면 보상 내역도 지우나? | ISSUE-DATA-3 |
 | <a id="ask-7"></a>ASK-7 | FE2 · BE3 · 기획 | 독서 알림을 기기 로컬 알림으로 하나(독서 종료 때 예약 취소, 백엔드 없음), 서버 푸시로 하나(토큰 저장·스케줄러 필요)? 알림 시작 시각과 간격은? | TODO-8 |
 | <a id="ask-8"></a>ASK-8 | BE2 · 기획 | 랜덤박스 확률표와 칭호·히든 칭호 획득 조건 | TODO-28, TODO-29 |
-| <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) | 스펙 005의 한국 시간 주 경계 |
+| <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
 | <a id="ask-10"></a>ASK-10 | BE3 · 기획 | 가입 때 이메일을 확인하나? | ISSUE-SEC-4 |
 | <a id="ask-11"></a>ASK-11 | BE3 · 기획 | 정지된 회원의 글을 숨기나? | TODO-35, [007](./specs/007-admin-users/) |
 | <a id="ask-12"></a>ASK-12 | FE1 · 기획 | 책 정보의 찜하기를 유지하나? (지금은 화면을 나가면 사라짐) | 앱 `BookInfoScreen` |
