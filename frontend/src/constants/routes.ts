@@ -24,6 +24,7 @@ export const ROUTES = {
     readingStart: '/fe1/reading-start',
     readingEnd: '/fe1/reading-end',
     community: '/fe1/community',
+    ranking: '/fe1/ranking',
   },
 
   fe2: {

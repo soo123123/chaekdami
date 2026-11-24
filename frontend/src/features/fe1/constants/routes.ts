@@ -6,5 +6,5 @@ import { ROUTES } from '@/constants/routes';
  */
 export const FE1_ROUTES = ROUTES.fe1;
 
-/** 하단 탭바를 띄우는 FE1 화면 (UI 시안 기준: 서재·커뮤니티 화면). 나머지 FE1 화면은 탭바 없이 보여준다. */
-export const FE1_ROUTES_WITH_TAB_BAR: string[] = [FE1_ROUTES.library, FE1_ROUTES.community];
+/** 하단 탭바를 띄우는 FE1 화면 (UI 시안 기준: 서재·커뮤니티·랭킹 화면). 나머지 FE1 화면은 탭바 없이 보여준다. */
+export const FE1_ROUTES_WITH_TAB_BAR: string[] = [FE1_ROUTES.library, FE1_ROUTES.community, FE1_ROUTES.ranking];

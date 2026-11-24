@@ -7,7 +7,7 @@ import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation';
 import BoosterFloatingWidget from '@/features/fe2/components/BoosterFloatingWidget';
 
 /**
- * 하단 탭바로 오가는 화면 (홈 / 서재 / 마이페이지).
+ * 하단 탭바로 오가는 화면 (홈 / 서재 / 커뮤니티 / 랭킹 / 마이페이지).
  * key: 최상위 Stack의 라우트 이름
  * value: 그 안의 탭 화면 이름
  * 빈 배열 = 라우트 자체가 탭 화면
@@ -17,7 +17,7 @@ import BoosterFloatingWidget from '@/features/fe2/components/BoosterFloatingWidg
  */
 const TAB_SCREENS: Record<string, string[]> = {
   index: [],
-  fe1: ['library', 'community'],
+  fe1: ['library', 'community', 'ranking'],
   fe2: ['user/mypage'],
 };
 

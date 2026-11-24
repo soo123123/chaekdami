@@ -8,9 +8,10 @@ import { Stack } from 'expo-router';
 export default function FE1Layout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* 탭 화면(서재 / 커뮤니티)은 슬라이드 없이 바로 바꾼다 */}
+      {/* 탭 화면(서재 / 커뮤니티 / 랭킹)은 슬라이드 없이 바로 바꾼다 */}
       <Stack.Screen name="library" options={{ animation: 'none' }} />
       <Stack.Screen name="community" options={{ animation: 'none' }} />
+      <Stack.Screen name="ranking" options={{ animation: 'none' }} />
     </Stack>
   );
 }

@@ -124,7 +124,7 @@ frontend/src/
 
 | 파트 | 범위 | 화면 |
 |---|---|---|
-| FE1 | 서재, 도서 검색·등록, 서재 꾸미기, 독서 시작·종료, 커뮤니티 | `features/fe1/screens` |
+| FE1 | 서재, 도서 검색·등록, 서재 꾸미기, 독서 시작·종료, 커뮤니티, 랭킹 | `features/fe1/screens` |
 | FE2 | 홈, 로그인·가입, 마이페이지, 독서 통계, D-day, 보상·퀘스트·상점, 독서 완료, 독후감 | `features/fe2/screens` |
 
 ### 라우트
@@ -140,6 +140,7 @@ frontend/src/
 | `/fe1/book-detail` | 서재 책 상세 |
 | `/fe1/reading-start` · `/fe1/reading-end` | 독서 시작(타이머) · 독서 종료 |
 | `/fe1/community` | 완독자 커뮤니티 |
+| `/fe1/ranking` | 주간 랭킹 (서버 API 병합 전이라 개발 빌드는 예시 데이터, [스펙 008](./specs/008-ranking-screen/)) |
 | `/fe2/reading/reading-complete` | 독서 완료(보상) |
 | `/fe2/review/review-write` · `/fe2/review/review-detail` | 독후감 작성 · 보기 |
 | `/fe2/user/mypage` · `/fe2/user/reading-stats` | 마이페이지 · 독서 통계 |
@@ -152,6 +153,7 @@ frontend/src/
 | `src/api/authApi.ts` | `/api/auth/*`, `/api/me` |
 | `features/fe1/api/readingApi.ts` | 검색, 서재, 독서 기록, 세션, 문장 |
 | `features/fe1/api/communityApi.ts` | 리뷰(평점·한줄평), 좋아요, 신고, 평점 요약 |
+| `features/fe1/api/rankingApi.ts` | 주간 랭킹 (경험치·독서 시간) |
 | `features/fe1/api/photoVerifyApi.ts` | `POST /api/reading-records/{id}/certifications` — 독서 인증 (가장 최근 회차) |
 | `features/fe2/api/rewardApi.ts` | 보상, 독서 완료 보상, 부스터, 퀘스트, 상점 |
 | `features/fe2/api/ddayApi.ts` | D-day |
