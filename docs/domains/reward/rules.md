@@ -129,7 +129,7 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 | 규칙 | 값 | 코드 위치 |
 |---|---|---|
 | 정산 시점 | `GET /api/rewards`, `GET /api/dday`, 독서 완료 보상 때 | `StreakService.settleBefore` |
-| 계정의 dday·max_dday | 달력으로 계산한 값을 위 시점에 반영 (저장값은 캐시) | `RewardAccount.syncStreak` |
+| 계정의 dday·max_dday | 독서 완료 보상 때만, 계정을 잠근 상태로 달력 계산값을 반영 (저장값은 캐시). 조회는 저장하지 않고 달력으로 계산한 값을 바로 응답 | `RewardAccount.syncStreak` |
 
 ## 7. 동시성
 
