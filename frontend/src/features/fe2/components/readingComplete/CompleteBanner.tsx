@@ -11,7 +11,7 @@ export function CompleteBanner() {
       <View style={styles.textBox}>
         <Text style={styles.subtitle}>오늘도 수고했어요!</Text>
         <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-          독서를 완료했어요!
+          독서 완료!
         </Text>
         <Text style={styles.description}>꾸준한 하루가 더 나은 내일을 만들어요.</Text>
       </View>
