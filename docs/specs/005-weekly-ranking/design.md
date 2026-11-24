@@ -1,5 +1,7 @@
-> 상태: approved (BE2 2026-11-23 · FE1 확인 대기: ⑤) · 작성: 2026-11-23 · 기준: feature/be2-ranking@9be251c · 담당: BE2 · 승인: BE2, FE1
+> 상태: in-progress (BE2 승인 2026-11-23) · 작성: 2026-11-23 · 기준: feature/be2-ranking@9be251c · 담당: BE2 · 승인: BE2
 > 요구사항: [requirements.md](./requirements.md)
+
+예외: S6의 "영향받는 파트 담당 1명"(FE1)의 승인 없이 BE2만 확인하고 진행했다 (사람 결정 2026-11-24).
 
 # 005 · 주간 랭킹 (경험치·독서 시간) — Design
 
