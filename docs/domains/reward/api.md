@@ -22,7 +22,18 @@
 
 ## GET /api/rewards
 
-홈·보상·마이페이지에서 부른다. **놓친 날이 있으면 방어권 자동 정산을 먼저 처리**하므로 조회지만 데이터가 바뀔 수 있다. 계정이 없으면 만든다.
+앱에서 부르는 곳:
+
+| 위치 | 언제 |
+|---|---|
+| 홈·레벨(보상)·마이페이지 | 화면에 들어올 때마다 (돌아올 때 포함) |
+| 상점 | 화면을 처음 열 때, 부스터 사용 직후 |
+| 부스터 위젯 (모든 화면) | 로그인 상태에서 화면 이동, 앱 복귀, 30초마다, 부스터 사용 직후 |
+| 독서 완료 화면 | 세션 번호가 없을 때만 (미리보기 등). 있으면 독서 완료 보상 API를 쓴다 |
+
+**놓친 날이 있으면 방어권 자동 정산을 먼저 처리**하므로 조회지만 데이터가 바뀔 수 있다. 계정이 없으면 만든다.
+
+> ⚠️ [ISSUE-BUG-9](../../known-issues.md#issue-bug-9) — 다른 요청과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있음
 
 코드: `RewardController` → `RewardService.getRewardStatus`
 
@@ -46,7 +57,9 @@
 | `nextLevelExperience` | 다음 레벨까지 필요한 구간 경험치 |
 | `experiencePercentage` | 구간 진행률 0~100 (버림) |
 | `currentStreak` | 연속 독서 일수 (D-day 달력 기준) |
-| `expBuffExpiredAt` | 부스터가 없으면 `null` |
+| `expBuffExpiredAt` | 부스터가 없으면 `null`. 시간대 표기 없음 |
+
+> ❓ [ASK-9](../../known-issues.md#ask-9) — 서버 날짜 기준과 응답 시각의 시간대 표기
 
 ## POST /api/rewards/reading-sessions/{readingSessionId}
 
