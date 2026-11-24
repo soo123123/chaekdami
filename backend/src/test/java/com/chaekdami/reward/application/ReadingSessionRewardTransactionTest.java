@@ -84,7 +84,8 @@ class ReadingSessionRewardTransactionTest {
         context.registerBean(ReadingSessionRewardRepository.class, () -> rewardRepository);
         context.registerBean(CertificationService.class, () -> new CertificationService(
                 mock(ReadingRecordRepository.class), certificationRepository,
-                mock(PageTextExtractor.class), new CertificationVerifier()));
+                mock(PageTextExtractor.class), new CertificationVerifier(),
+                new TransactionTemplate(transactionManager)));
         context.registerBean(CertificationPhotoChecker.class);
         context.registerBean(ReadingSessionRewardService.class);
         context.refresh();
