@@ -71,7 +71,7 @@
 | <a id="issue-bug-23"></a>ISSUE-BUG-23 | BE3 (+FE2) | 중간 | 열림 | 토큰 버전 확인 중의 모든 오류를 토큰 거절(401)로 처리한다 | DB 일시 오류가 로그아웃으로 이어질 수 있다 (ISSUE-BUG-12와 연결) | `JwtAuthenticationFilter` | — | — |
 | <a id="issue-bug-24"></a>ISSUE-BUG-24 | BE1 (+FE1) | 중간 | 열림 | 사진 중복 확인이 세션에 쓰지 않은 인증까지 비교한다 | 통과한 사진을 지웠다 다시 붙이면 재사용으로 거절될 수 있다 (규칙 변경 필요) | `CertificationService`, `CertificationVerifier` | — | — |
 | <a id="issue-bug-25"></a>ISSUE-BUG-25 | BE3 | 중간 | 열림 | 폐기된 Refresh Token이 오면 폐기 이유와 관계없이 모든 세션을 무효화한다 | 다른 기기의 옛 토큰 때문에 새 로그인까지 풀릴 수 있다 | `UserService.refresh` | — | — |
-| <a id="issue-bug-26"></a>ISSUE-BUG-26 | BE2 (+BE1) | 중간 | 진행 중 | 사진 인증 조회 오류를 잡지만 같은 트랜잭션에 참여한다 | 기본 보상까지 취소될 수 있다. reward/rules와 다름 (실행 확인 필요) | `ReadingSessionRewardService`, `CertificationService` | — | — |
+| <a id="issue-bug-26"></a>ISSUE-BUG-26 | BE2 (+BE1) | 중간 | 진행 중 | 사진 인증 조회 오류를 잡지만 같은 트랜잭션에 참여한다 | 기본 보상까지 취소될 수 있다. reward/rules와 다름 (실행 확인 필요) | `ReadingSessionRewardService`, `CertificationService` | — | — | 구현 완료, 병합 대기 (fix/be2-photo-reward-tx). 실제 DB 조회 오류 미확인 |
 | <a id="issue-bug-27"></a>ISSUE-BUG-27 | BE1 | 낮음 | 열림 | 일간 통계는 0~4시를 마지막 칸(21시)에 더하고, 월간은 세션마다 분을 버린다 | 새벽 기록이 21시에 보이고 월간 합이 작게 나온다 | `ReadingStatsService` | — | — |
 | <a id="issue-bug-28"></a>ISSUE-BUG-28 | BE1·BE3 | 낮음 | 열림 | 책 저장의 모든 무결성 오류를 "이미 서재에 있는 책입니다" 409로 바꾼다 | 너무 긴 입력도 중복으로 안내될 수 있다 (리뷰 ISBN 길이도 확인 필요) | `BookService` | — | — |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | BE1 (+BE2) | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
