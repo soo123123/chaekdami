@@ -19,11 +19,11 @@ AI(Claude)가 이 저장소 규칙([AGENTS.md](../../AGENTS.md))을 지키도록
 |---|---|---|---|---|
 | H1 | Claude가 문서(`docs/`, `AGENTS.md` 등)나 API 관련 파일(백엔드 `*Controller.java`, 프론트 `api/*.ts`, `constants/*.ts`)을 고친 직후 | `docs-check`, (API 파일이면) `contract-check` 실행 | 문제가 있을 때만 Claude에게 알림. **막지 않음** | AGENTS 5장 |
 | H2 | Claude가 셸 명령을 실행하기 전 | `git commit` · `git push` · `git merge` · `gh pr merge` 차단 (`git merge-base` 같은 조회 명령은 통과). `known-issues.py push`는 막지 않음 | 막고 사용자에게 명령을 안내하게 함 | AGENTS 7장 |
-| H4 | Claude Code 세션을 시작·재개할 때 | `known-issues.py news --quiet`, `drift --quiet` 실행 | main의 known-issues가 지난 확인 이후 바뀌었으면 알려줌 (내 파트 먼저). 지금 브랜치가 스펙 작업이면 등록 범위 밖 수정과 main에서 먼저 바뀐 내 파일도 알려줌. 알릴 것이 없거나 네트워크가 안 되면 조용히 넘어감. **막지 않음** | AGENTS 4장 |
+| H4 | Claude Code 세션을 시작·재개할 때 | `known-issues.py news --quiet`, `drift --quiet`, `main-news.py --quiet` 실행 | main의 known-issues가 지난 확인 이후 바뀌었으면 알려줌 (내 파트 먼저). 지금 브랜치가 스펙 작업이면 등록 범위 밖 수정과 main에서 먼저 바뀐 내 파일도 알려줌. main에 새로 올라온 코드·문서와 내 작업 영향(겹침·충돌·공용 파일·PR 없는 커밋 추정)과 받는 명령도 알려줌. 합치지는 않음. 알릴 것이 없거나 네트워크가 안 되면 조용히 넘어감. **막지 않음** | AGENTS 4장 |
 | H3 | Claude가 파일을 쓰기 전 | `frontend/ios·android/`, `.env` 류 비밀 파일 차단 / 브랜치의 `docs/known-issues.md` 차단(main 작업 공간에서 고치게 함) / 승인 이후 스펙의 requirements·design 수정은 **사람에게 확인** | 막거나 확인 창 | AGENTS 4·6·7장, S11 |
 
 - 스크립트: `guard-git.py`(H2), `guard-files.py`(H3), `check-after-edit.py`(H1), `session-news.py`(H4), 공통 `_hook.py`
-- H4의 "지난 확인 시점"과 내 파트는 이 컴퓨터의 `.git/` 안(`known-issues-seen`, `git config chaekdami.part`)에만 저장된다. 커밋되지 않는다.
+- H4의 "지난 확인 시점"과 내 파트는 이 컴퓨터의 `.git/` 안(`known-issues-seen`, `main-news-seen`, `git config chaekdami.part`)에만 저장된다. 커밋되지 않는다.
 - H1은 처음에 "알려주기만" 한다. `contract-check`에 이미 아는 불일치(독서 인증 옛 주소, 해결됨)가 있어서였다. 스펙 004로 불일치가 0건이 됐으니 막는 방식으로 올릴지 정한다.
 - H1은 main 작업 공간의 known-issues(`.worktrees/known-issues/`)를 고쳤을 때 그 작업 공간 기준으로 `docs-check`를 돌린다.
 - H2 때문에 Claude는 커밋하지 않는다. 예외는 known-issues 한 파일뿐이다 (`known-issues.py`가 이 파일만 바뀐 경우에만 커밋·push한다). 대신 커밋할 파일과 메시지([git.md](./git.md) 형식)를 제안한다. AI 커밋을 허용하려면 `guard-git.py`에서 `commit`을 빼고 AGENTS 7장을 함께 고친다.
@@ -48,6 +48,7 @@ Claude에게 아래처럼 말하면 해당 skill을 따른다. `/이름`으로 �
 | `python3 scripts/harness/known-issues.py news·part` | 지난 확인 이후 바뀐 것 요약 / 내 파트 저장 |
 | `python3 scripts/harness/known-issues.py drift` | 스펙 브랜치가 등록한 건드리는 곳 밖을 고쳤는지, 갈라진 뒤 main에서 내 파일이 먼저 바뀌었는지 |
 | `python3 scripts/harness/known-issues.py paths·overlap` | design ③ 경로 뽑기 / "🚧 진행 중 작업" 표와 건드릴 파일 겹침 확인 |
+| `python3 scripts/harness/main-news.py` | 지난 확인 이후 main에 올라온 커밋이 내 작업에 주는 영향과 받는 명령 (`--all`: 내 브랜치가 뒤처진 만큼 전부, 확인 시점은 그대로). 공용 파일 목록은 스크립트의 `SHARED` ([0010](../decisions/0010-main-news.md)) |
 | `python3 scripts/harness/contract-check.py` | 앱이 부르는 `/api` 경로가 백엔드에 있는지 (`--all`: 앱이 안 쓰는 API도) |
 
 ## 4. 막혔을 때
@@ -55,7 +56,7 @@ Claude에게 아래처럼 말하면 해당 skill을 따른다. `/이름`으로 �
 | 상황 | 할 일 |
 |---|---|
 | Claude가 커밋·push를 못 한다고 함 | 정상이다. 제안한 명령을 직접 실행한다 (known-issues만 예외) |
-| 세션 시작 알림을 다시 보고 싶음 | `python3 scripts/harness/known-issues.py news`는 확인 시점을 옮기므로 같은 소식은 다시 나오지 않는다. 전체는 `show` |
+| 세션 시작 알림을 다시 보고 싶음 | `python3 scripts/harness/known-issues.py news`는 확인 시점을 옮기므로 같은 소식은 다시 나오지 않는다. 전체는 `show`. main 업데이트는 `main-news.py --all` |
 | known-issues push가 "먼저 고쳤다"며 멈춤 | 다른 사람이 동시에 올렸다. `open` → 번호·내용 다시 맞추기 → `push` |
 | docs-check가 "known-issues 위치"를 알림 | 브랜치에서 known-issues를 고쳤다. `git checkout origin/main -- docs/known-issues.md`로 되돌리고 수정은 main 작업 공간에서 다시 한다 |
 | 승인된 스펙 수정 확인 창이 뜸 | 내가 수정 방향을 준 게 맞으면 허용, 아니면 거절 |
