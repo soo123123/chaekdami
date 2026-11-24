@@ -69,7 +69,7 @@
 | <a id="issue-bug-20"></a>ISSUE-BUG-20 | FE1 (+BE1) | 중간 | 열림 | 책 등록이 등록과 설정 저장 2번의 요청이다 | 두 번째가 실패하면 책은 남는데 실패로 보여, 다시 하면 중복되거나 409가 난다 | 앱 `readingApi.ts` `registerBook` | — | — |
 | <a id="issue-bug-21"></a>ISSUE-BUG-21 | FE1 (+BE1) | 중간 | 열림 | 수동 등록에서 고른 표지 사진을 서버로 보내지 않는다 | 저장 뒤 표지가 없다 (세션 사진은 TODO-2) | 앱 `registerManualBook` | — | — |
 | <a id="issue-bug-22"></a>ISSUE-BUG-22 | FE1 | 중간 | 열림 | 커뮤니티 더 불러오기 중 정렬이나 책을 바꾸면 로딩 상태가 풀리지 않는다 | 이후 한줄평을 더 불러오지 못한다 | 앱 `useBookReviews` | — | — |
-| <a id="issue-bug-23"></a>ISSUE-BUG-23 | BE3 (+FE2) | 중간 | 열림 | 토큰 버전 확인 중의 모든 오류를 토큰 거절(401)로 처리한다 | DB 일시 오류가 로그아웃으로 이어질 수 있다 (ISSUE-BUG-12와 연결) | `JwtAuthenticationFilter` | — | — |
+| <a id="issue-bug-23"></a>ISSUE-BUG-23 | BE3 (+FE2) | 중간 | 진행 중 | 토큰 버전 확인 중의 모든 오류를 토큰 거절(401)로 처리한다 | DB 일시 오류가 로그아웃으로 이어질 수 있다 (ISSUE-BUG-12와 연결) | `JwtAuthenticationFilter` | — | — |
 | <a id="issue-bug-24"></a>ISSUE-BUG-24 | BE1 (+FE1) | 중간 | 열림 | 사진 중복 확인이 세션에 쓰지 않은 인증까지 비교한다 | 통과한 사진을 지웠다 다시 붙이면 재사용으로 거절될 수 있다 (규칙 변경 필요) | `CertificationService`, `CertificationVerifier` | — | — |
 | <a id="issue-bug-25"></a>ISSUE-BUG-25 | BE3 | 중간 | 열림 | 폐기된 Refresh Token이 오면 폐기 이유와 관계없이 모든 세션을 무효화한다 | 다른 기기의 옛 토큰 때문에 새 로그인까지 풀릴 수 있다 | `UserService.refresh` | — | — |
 | <a id="issue-bug-26"></a>ISSUE-BUG-26 | BE2 (+BE1) | 중간 | 진행 중 | 사진 인증 조회 오류를 잡지만 같은 트랜잭션에 참여한다 | 기본 보상까지 취소될 수 있다. reward/rules와 다름 (실행 확인 필요) | `ReadingSessionRewardService`, `CertificationService` | — | — | 구현 완료, 병합 대기 (fix/be2-photo-reward-tx). 실제 DB 조회 오류 미확인 |
