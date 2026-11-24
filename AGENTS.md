@@ -44,6 +44,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 
 - 문제·할 일·질문은 [docs/known-issues.md](docs/known-issues.md) 한 곳에 ID로 기록한다: ⚠️ `ISSUE-<SEC|BUG|DATA|LIMIT>-N` · ⏳ `TODO-N` · ❓ `ASK-N`
 - **known-issues는 main에서만 고치고 바로 main에 올린다.** 브랜치의 사본은 읽지도 고치지도 않는다. 읽기 `python3 scripts/harness/known-issues.py show`, 고치기 `open` → 수정 → `push -m "docs: 요약"` ([decisions/0008](docs/decisions/0008-known-issues-on-main.md))
+- TODO·ISSUE를 골라 시작하면 **스펙이나 구현 전에** 적힌 설명(known-issues 행·비고, 노션 카드 본문)을 담당자에게 먼저 보여주고 답을 받는다. 동의하지 않은 제안은 확정으로 치지 않는다 ([decisions/0011](docs/decisions/0011-start-briefing.md))
 - 해결 처리는 고친 코드가 main에 병합된 뒤에 한다. 그 전에는 `진행 중`으로 둔다.
 - 작업을 시작하면 먼저 `python3 scripts/harness/known-issues.py news`로 지난 확인 이후 바뀐 것을 확인한다 (Claude Code는 세션 시작 때 hook이 자동으로 한다). main의 코드 업데이트는 `python3 scripts/harness/main-news.py`로 확인하고, 받을지는 작업자가 정한다.
 - 스펙 design이 승인되면 known-issues "🚧 진행 중 작업" 표에 건드리는 파일을 등록한다. 새 작업 전에는 `known-issues.py overlap`으로 겹침을, 작업 중에는 `known-issues.py drift`로 등록 범위 밖 수정과 main 변경을 확인한다.
