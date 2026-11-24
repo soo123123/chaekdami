@@ -82,6 +82,7 @@
 | 사진 크기 | 최대 10MB. AI에 보내기 전 긴 쪽 1600px로 줄임 (HEIC는 원본) | `application.properties`, `GeminiPageTextExtractor.MAX_SIDE` | ✅ |
 | 사진 저장 | 저장하지 않음 (`image_url` 항상 `null`) | `CertificationService` | ✅ |
 | 소유권 | 남의 회차면 404 | `CertificationService` | ✅ |
+| AI 대기 중 트랜잭션 | AI는 트랜잭션 밖에서 부르고, 저장할 때 회차를 다시 확인 (그사이 지워졌으면 404) | `CertificationService.certify` | ✅ |
 | 세션 연결 | 세션 저장 때 `photoVerificationId`가 내 인증 + `PASSED` + 아직 안 쓰임이면 그 세션에 연결 (회차는 비교·이동하지 않음). 안 맞으면 무시하고 저장은 성공. 인증 하나는 세션 하나에만 | `ReadingSessionService.linkCertification`, `Certification.linkSession` | ✅ |
 | 보상 연결 | 세션에 연결된 인증이 `PASSED`이고 `ai_skipped`가 아니면 사진 인증 보상 대상 ([reward/rules](../reward/rules.md#2-경험치)) | `CertificationService.isPhotoCertified`, `CertificationPhotoChecker` | ✅ |
 | 앱 연결 | 사진을 붙일 때 가장 최근 회차로 `image`만 보냄. `PASSED`만 통과, `UNVERIFIED`·`FAILED`는 사진을 지우고 다시 찍게 함. 45초 기다림 | 앱 `photoVerifyApi.ts`, `useReadingEnd.ts`, `config.ts` | ✅ |

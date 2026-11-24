@@ -10,7 +10,9 @@ import com.chaekdami.reading.presentation.dto.response.CertificationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,14 +28,15 @@ public class CertificationService {
     private final CertificationRepository certificationRepository;
     private final PageTextExtractor pageTextExtractor;
     private final CertificationVerifier verifier;
+    private final TransactionOperations transaction;
 
     // 독서 인증: 사진 → AI 글자 추출 → 검증 → 저장
     // startPage, endPage를 둘 다 보냈을 때만 사진의 쪽 번호가 그 범위(±3쪽) 안인지 확인
-    @Transactional
+    // AI를 기다리는 동안 DB 연결을 쥐지 않도록 트랜잭션 밖에서 부르고, 저장할 때 기록을 다시 확인
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CertificationResponse certify(Long userId, Long recordId, MultipartFile image,
                                          Integer startPage, Integer endPage, String sentence) {
-        ReadingRecord record = readingRecordRepository.findByIdAndUserId(recordId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다: " + recordId));
+        transaction.executeWithoutResult(status -> requireRecord(userId, recordId));
 
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("인증 사진을 올려주세요.");
@@ -57,6 +60,12 @@ public class CertificationService {
         // 읽은 범위는 둘 다 보냈을 때만 비교 (안 보내면 쪽 번호 비교를 건너뜀 → 억울한 "확인 불가" 방지)
         Integer from = (startPage != null && endPage != null) ? startPage : null;
         Integer to = (startPage != null && endPage != null) ? endPage : null;
+        return transaction.execute(status -> verifyAndSave(userId, recordId, extraction, from, to, sentence));
+    }
+
+    private CertificationResponse verifyAndSave(Long userId, Long recordId, PageExtraction extraction,
+                                                Integer from, Integer to, String sentence) {
+        ReadingRecord record = requireRecord(userId, recordId);
         List<String> previous = certificationRepository.findTop50ByUserIdOrderByIdDesc(userId).stream()
                 .map(Certification::getNormalizedText)
                 .toList();
@@ -74,6 +83,11 @@ public class CertificationService {
                 extraction.aiSkipped()
         ));
         return CertificationResponse.from(saved, result.sentenceFound());
+    }
+
+    private ReadingRecord requireRecord(Long userId, Long recordId) {
+        return readingRecordRepository.findByIdAndUserId(recordId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다: " + recordId));
     }
 
     // 사진 인증 추가 보상용: 이 세션에 보상 대상 인증(PASSED, AI 확인함)이 연결돼 있는가

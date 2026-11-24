@@ -56,7 +56,7 @@ class UserAdminServiceTest {
     void setUp() {
         CurrentUser currentUser = new CurrentUser();
         UserService userService = new UserService(userRepository, refreshTokenRepository, null, null, null,
-                null, null, currentUser, new AccessGuard(currentUser), null);
+                null, null, currentUser, new AccessGuard(currentUser), null, null);
         service = new UserAdminService(userRepository, userService, currentUser);
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 ADMIN_ID, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));

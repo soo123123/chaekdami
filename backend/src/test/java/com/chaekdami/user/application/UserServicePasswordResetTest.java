@@ -25,6 +25,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -64,7 +65,8 @@ class UserServicePasswordResetTest {
                 mock(LoginAttemptLimiter.class),
                 currentUser,
                 new AccessGuard(currentUser),
-                eventPublisher);
+                eventPublisher,
+                TransactionOperations.withoutTransaction());
         user = User.builder()
                 .email("reader@chaekdami.local")
                 .passwordHash("stored-hash")
@@ -72,8 +74,11 @@ class UserServicePasswordResetTest {
                 .role(Role.USER)
                 .build();
         ReflectionTestUtils.setField(user, "id", 1L);
-        when(passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(1L)).thenReturn(List.of());
-        when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> {
+            PasswordResetToken token = invocation.getArgument(0);
+            ReflectionTestUtils.setField(token, "id", 10L);
+            return token;
+        });
     }
 
     @AfterEach
