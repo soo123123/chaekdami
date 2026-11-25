@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-24 · 담당: BE1
+> 기준: test/be3-context-test · 최종 확인: 2026-11-25 · 담당: BE1
 
 # 실행과 테스트
 
@@ -68,7 +68,7 @@ npx expo start --tunnel      # 같은 와이파이가 아닐 때 실기기
 
 | 대상 | 명령 | 비고 |
 |---|---|---|
-| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | `ChaekdamiApplicationTests.contextLoads`는 DB 비밀번호가 없으면 실패. `connection/` 테스트는 H2로 앱을 띄워 DB 없이 실행됨 (PostgreSQL 전용 동작은 확인하지 않음) |
+| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | 환경변수와 DB 없이 모두 실행됨. 앱을 띄우는 테스트(`@SpringBootTest`)는 H2를 쓰므로 PostgreSQL 연결과 전용 동작은 확인하지 않음 → 서버를 실행해 확인 |
 | 백엔드 일부만 | `./gradlew test --tests '*ReadingSessionServiceTest'` | |
 | 프론트 린트 | `cd frontend && npm run lint` | ⏳ [TODO-20](../known-issues.md#todo-20) ESLint 설정 없음 |
 | 프론트 타입 검사 | `cd frontend && npx tsc --noEmit` | |
