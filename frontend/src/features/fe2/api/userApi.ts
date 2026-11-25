@@ -7,3 +7,15 @@ export const getMyProfile = async () => {
 
   return response.data;
 };
+
+// 닉네임 변경
+export const updateNickname = async (
+  nickname: string
+): Promise<{ nickname?: string }> => {
+  const response = await apiClient.patch(
+    '/api/me',
+    { nickname }
+  );
+
+  return response.data;
+};

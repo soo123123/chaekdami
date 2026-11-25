@@ -22,6 +22,7 @@ import { logout } from '@/api/authApi';
 import { clearTokens, getRefreshToken } from '@/utils/tokenStorage';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { ROUTES } from '@/constants/routes';
+import EditNicknameModal from '../components/EditNicknameModal';
 import { getDday } from '../api/ddayApi';
 import { getMyProfile } from '../api/userApi';
 import { getQuests, getRewardStatus } from '../api/rewardApi';
@@ -122,6 +123,7 @@ export default function MyPageScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [withdrawPassword, setWithdrawPassword] = useState('');
   const [accountBusy, setAccountBusy] = useState(false);
+  const [editingNickname, setEditingNickname] = useState(false);
 
   const { width } = useWindowDimensions();
 
@@ -374,7 +376,7 @@ export default function MyPageScreen() {
                 styles.avatar,
                 compact && styles.avatarCompact,
               ]}
-              onPress={() => pending('프로필 수정')}
+              onPress={() => setEditingNickname(true)}
             >
               <Image
                 source={ART.profileCat}
@@ -417,7 +419,7 @@ export default function MyPageScreen() {
 
               <TouchableOpacity
                 style={styles.editButton}
-                onPress={() => pending('프로필 수정')}
+                onPress={() => setEditingNickname(true)}
               >
                 <Text style={styles.editButtonText}>
                   프로필 편집
@@ -767,6 +769,17 @@ export default function MyPageScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {editingNickname ? (
+        <EditNicknameModal
+          nickname={profile?.nickname ?? ''}
+          onClose={() => setEditingNickname(false)}
+          onSaved={(nickname) => {
+            setProfile((current) => ({ ...current, nickname }));
+            setEditingNickname(false);
+          }}
+        />
+      ) : null}
 
       <BottomTabBar active="mypage" />
     </SafeAreaView>

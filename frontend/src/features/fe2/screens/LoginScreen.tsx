@@ -62,14 +62,10 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      console.log('[LOGIN] 1. 로그인 요청 시작');
-
       const response = await login({
         email: email.trim(),
         password,
       });
-
-      console.log('[LOGIN] 2. 로그인 API 응답 수신');
 
       if (
         !response?.accessToken ||
@@ -86,15 +82,10 @@ export default function LoginScreen() {
         return;
       }
 
-      console.log('[LOGIN] 3. 토큰 저장 시작');
-
       await saveTokens(
         response.accessToken,
         response.refreshToken
       );
-
-      console.log('[LOGIN] 4. 토큰 저장 완료');
-      console.log('[LOGIN] 5. 홈 화면 이동 시작');
 
       router.replace('/home');
 
