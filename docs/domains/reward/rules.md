@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 + 스펙 005 + 스펙 013 · 최종 확인: 2026-11-25 · 담당: BE2
 
 # reward 규칙
 
@@ -79,13 +79,13 @@
 
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
-| 출제 시점 | 그날 처음 `GET /api/quests`를 부를 때 사용자별로 생성 | `QuestService.getOrCreateTodayQuests` | ✅ |
+| 출제 시점 | 그날 처음 `GET /api/quests`를 부르거나 독서 완료 보상을 받을 때 사용자별로 생성 | `QuestService.getOrCreateDailyQuests` | ✅ |
 | 하루 출제 수 | 3개 (등록된 퀘스트가 적으면 전부) | `DailyQuest.DAILY_QUEST_COUNT` | ✅ |
 | 출제 방식 | `alwaysIncluded` 퀘스트는 항상, 나머지 칸은 랜덤 | `DailyQuestPicker` | ✅ |
 | 진행 반영 | 독서 완료 보상 때 세션 날짜의 퀘스트에 반영. 지난 날짜 퀘스트를 새로 만들지는 않음 | `QuestService.recordReadingSession` | ✅ |
 | 독서 시간 진행 | 분 단위, 30초 이상 반올림 | `QuestService` | ✅ |
 | 달성 시 | 바로 재화·경험치 지급 (`REWARDED`). 수령 API 없음 | `QuestService.grantReward` | ✅ |
-| 주간 퀘스트 | — | `QuestType.WEEKLY` | ⏳ [TODO-5](../../known-issues.md#todo-5) |
+| 보상 이력 | 사유 `DAILY_QUEST`, `reference_id`에 `user_quests.id`. 주간도 같다 (스펙 013 전의 이력은 `reference_id`가 NULL) | `RewardLedger.addCurrencyFor`, `addExperienceFor` | ✅ |
 
 ### 퀘스트 목록 (`DailyQuest` enum)
 
@@ -98,6 +98,26 @@
 - 퀘스트를 추가·수정하려면 `DailyQuest`에 상수를 추가·수정한다. 앱 시작 시 `DailyQuestSeeder`가 DB를 맞춘다.
 - **상수 이름(코드)은 바꾸지 않는다.** 바꾸면 다른 퀘스트로 취급된다.
 - 상수를 지우면 출제에서만 빠지고 DB 행은 남는다.
+
+### 주간 퀘스트
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 한 주 | 한국 시간 월요일 0시 ~ 다음 월요일 0시 직전 (주간 랭킹과 같음). 일일은 서버 시간대 날짜 기준 | `RankingWeek`, `QuestService.findWeeklyQuests` | ✅ |
+| 출제 | 그 주에 처음 `GET /api/quests`를 부르거나 독서 완료 보상을 받을 때 목록 전부 생성 (랜덤 없음) | `QuestService.getOrCreateWeeklyQuests` | ✅ |
+| 동시 첫 요청 | 보상 계정을 잠근 뒤 다시 확인하고 만들어 한 벌만 생김 | `QuestService.getOrCreate` | ✅ |
+| 진행 반영 | 세션 종료 시각이 속한 주의 퀘스트에 반영. 지난 주 퀘스트를 새로 만들지는 않음. 분 계산은 일일과 같음 | `QuestService.recordReadingSession` | ✅ |
+| 달성 시 | 바로 재화·경험치 지급. 부스터 미적용, 경험치는 주간 랭킹 점수에 포함 | `QuestService.grantReward` | ✅ |
+
+| 코드 (`WeeklyQuest` enum) | 제목 | 진행 기준 | 목표 | 재화 | 경험치 |
+|---|---|---|---|---|---|
+| `WEEKLY_SESSION_5` | 이번 주 독서 5번 하기 | 세션 수 | 5 | 150 | 30 |
+| `WEEKLY_READING_100_MINUTES` | 이번 주 100분 독서하기 | 독서 분 | 100 | 200 | 40 |
+| `WEEKLY_READING_200_MINUTES` | 이번 주 200분 독서하기 | 독서 분 | 200 | 300 | 60 |
+
+- 추가·수정·삭제 방법은 일일과 같다 (`WeeklyQuest`, `WeeklyQuestSeeder`).
+- 제목에 `30분`을 넣지 않는다. 앱 마이페이지가 제목의 `30분`으로 일일 퀘스트를 찾는다.
+- 독서 완료 화면은 일일 퀘스트만 목록에 보여주고, 주간 보상은 합계에만 넣는다.
 
 ## 5. 상점
 

@@ -1,4 +1,4 @@
-> 상태: draft (BE2 승인 2026-11-25 · FE2 승인 대기) · 작성: 2026-11-25 · 기준: feature/013-weekly-quest@1e66a58 · 담당: BE2 · 승인: BE2, FE2
+> 상태: in-progress (BE2 승인 2026-11-25 · FE2 2026-11-25 메시지 답변) · 작성: 2026-11-25 · 기준: feature/013-weekly-quest@1e66a58 · 담당: BE2 · 승인: BE2, FE2
 > 요구사항: [requirements.md](./requirements.md)
 
 # 013 · 주간 퀘스트 — Design
@@ -63,17 +63,16 @@
 
 ## ④ 고칠 docs 문서
 
-- [ ] `docs/domains/reward/rules.md` — 4장에 주간 퀘스트 규칙과 목록
-- [ ] `docs/domains/reward/api.md` — `GET /api/quests`
-- [ ] `docs/domains/reward/data.md` — `quests`, `user_quests`, `reward_transactions.reference_id`, 변경 이력
-- [ ] `docs/domains/reward/overview.md` — 핵심 개념, 현재 상태(TODO-5 표시)
-- [ ] `docs/glossary.md` — 퀘스트 종류 "주간은 미사용"
-- [ ] `docs/overview.md` — 기능 표의 주간 퀘스트
+- [x] `docs/domains/reward/rules.md` — 4장에 주간 퀘스트 규칙과 목록
+- [x] `docs/domains/reward/api.md` — `GET /api/quests`
+- [x] `docs/domains/reward/data.md` — `quests`, `user_quests`, `reward_transactions.reference_id`, 변경 이력
+- [x] `docs/domains/reward/overview.md` — 핵심 개념, 현재 상태(TODO-5 표시)
+- [x] `docs/glossary.md` — 퀘스트 종류 "주간은 미사용"
+- [x] `docs/overview.md` — 기능 표의 주간 퀘스트
 
 ## ⑤ 남은 질문 (❓)
 
-- ❓ (FE2) 독서 완료 화면에 주간 달성도 보여주나?
-- ❓ (FE2) 마이페이지의 `30분` 찾기 확인
+- 없음. 독서 완료 화면은 일일만 표시하고 주간은 합계에만 넣는다 (FE2 2026-11-25). 마이페이지는 제목의 `30분`을 찾는데, 주간 제목에는 `30분`이 없어 영향이 없다 (코드 확인).
 
 ---
 

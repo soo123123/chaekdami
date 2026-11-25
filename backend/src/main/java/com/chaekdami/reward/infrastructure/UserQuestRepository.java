@@ -1,5 +1,6 @@
 package com.chaekdami.reward.infrastructure;
 
+import com.chaekdami.reward.domain.QuestType;
 import com.chaekdami.reward.domain.UserQuest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,14 +13,17 @@ import java.util.List;
 public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
 
     /**
-     * user_quests 에 날짜 컬럼이 없으므로 created_at 이 [start, end) 구간인 행을 그날의 퀘스트로 본다.
+     * user_quests 에 날짜 컬럼이 없으므로 created_at 이 [start, end) 구간인 행을 그 기간의 퀘스트로 본다.
+     * 일일은 하루, 주간은 한 주 구간이라 종류를 나눠 찾는다.
      */
     @Query("select uq from UserQuest uq join fetch uq.quest"
-            + " where uq.userId = :userId and uq.createdAt >= :start and uq.createdAt < :end"
+            + " where uq.userId = :userId and uq.quest.type = :type"
+            + " and uq.createdAt >= :start and uq.createdAt < :end"
             + " order by uq.quest.id")
-    List<UserQuest> findAllCreatedBetween(@Param("userId") Long userId,
-                                          @Param("start") LocalDateTime start,
-                                          @Param("end") LocalDateTime end);
+    List<UserQuest> findAllByTypeCreatedBetween(@Param("userId") Long userId,
+                                                @Param("type") QuestType type,
+                                                @Param("start") LocalDateTime start,
+                                                @Param("end") LocalDateTime end);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from UserQuest uq where uq.userId = :userId")

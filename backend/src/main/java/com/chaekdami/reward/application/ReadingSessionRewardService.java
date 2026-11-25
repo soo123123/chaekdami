@@ -85,7 +85,8 @@ public class ReadingSessionRewardService {
         Long userId = account.getUserId();
         LocalDate readingDate = session.endedAt().toLocalDate();
         ReadingRewardResult readingReward = rewardService.grantReadingExperience(userId, session);
-        QuestSessionResult quests = questService.recordReadingSession(userId, session.durationSeconds(), readingDate);
+        QuestSessionResult quests = questService.recordReadingSession(
+                userId, session.durationSeconds(), session.endedAt());
         int shieldsUsed = streakService.settleBefore(userId, readingDate);
         boolean shieldRefunded = streakService.refundShieldIfProtected(userId, readingDate);
         ddayService.markRead(userId, readingDate);

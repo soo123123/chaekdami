@@ -89,6 +89,19 @@ class RewardLedgerTest {
     }
 
     @Test
+    void 대상이_있는_재화_지급은_대상_id_와_함께_이력을_남긴다() {
+        rewardLedger.addCurrencyFor(account, 150, TransactionReason.DAILY_QUEST, 7L);
+
+        ArgumentCaptor<RewardTransaction> saved = ArgumentCaptor.forClass(RewardTransaction.class);
+        verify(rewardTransactionRepository).save(saved.capture());
+        assertThat(account.getCurrency()).isEqualTo(150);
+        assertThat(saved.getValue().getReferenceId()).isEqualTo(7L);
+        assertThat(saved.getValue().getAmount()).isEqualTo(150);
+        assertThat(saved.getValue().getType()).isEqualTo(TransactionType.INCOME_CURRENCY);
+        assertThat(saved.getValue().getReason()).isEqualTo(TransactionReason.DAILY_QUEST);
+    }
+
+    @Test
     void 잠금_대기_시간을_넘기면_CONCURRENCY_001() {
         when(rewardAccountRepository.findByUserIdWithLock(USER_ID))
                 .thenThrow(new PessimisticLockingFailureException("lock timeout"));

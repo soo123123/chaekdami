@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: fix/fe1@ef397a6 + 스펙 013 · 최종 확인: 2026-11-25 · 담당: BE1
 
 # 용어집
 
@@ -13,7 +13,7 @@
 | `bookId` | 내 서재의 책 번호 | 서버 (`books.id`) | 서재 조회·삭제, 회차 시작, 세션 저장, 리뷰 작성 | 책 응답에서는 필드 이름이 `id` |
 | `readingRecordId` | 한 책을 **한 번 읽는 회차** | 서버 (`reading_records.id`) | 페이지 갱신, 완독, 문장, 독후감, 커뮤니티 항목 | 기록 응답에서는 `id`. 다회독이면 책 하나에 여러 개 |
 | `readingSessionId` | 타이머 **한 번** 읽은 기록 | 서버 (`reading_sessions.id`) | 독서 완료 보상 지급 | 세션 저장 응답의 `id`. `readingRecordId`와 다르다 |
-| `userQuestId` | 오늘 나에게 배정된 퀘스트 | 서버 (`user_quests.id`) | 퀘스트 목록 표시 | 퀘스트 정의 번호(`quests.id`)와 다르다 |
+| `userQuestId` | 오늘(일일)·이번 주(주간) 나에게 배정된 퀘스트 | 서버 (`user_quests.id`) | 퀘스트 목록 표시 | 퀘스트 정의 번호(`quests.id`)와 다르다 |
 | `itemId` (상점) | 상점 상품 번호 | 서버 (`shop_items.id`) | 상품 구매 | 위의 YES24 `itemId`와 **이름만 같고 다른 값** |
 | `reviewId` | 리뷰(평점·한줄평) 번호 | 서버 (`reviews.id`) | 리뷰 수정, 좋아요, 신고 | 책(`bookId`) 단위로 1개 |
 | `bookReportId` | 독후감 번호 | 서버 (`book_reports.id`) | 독후감 조회·수정·삭제 | 회차(`readingRecordId`) 단위로 1개 |
@@ -32,7 +32,7 @@ user ─1:N─ book(bookId) ─1:N─ reading_record(readingRecordId, round) ─
 |---|---|---|---|
 | 독서 기록 | `NOT_STARTED` · `IN_PROGRESS` · `COMPLETED` | 읽기 전 · 읽는 중 · 완독 | `ReadingStatus` |
 | 퀘스트 | `IN_PROGRESS` · `COMPLETED` · `REWARDED` | 진행 중 · 달성 · 보상 지급됨 | `QuestStatus` |
-| 퀘스트 종류 | `DAILY` · `WEEKLY` | 일일 · 주간 (주간은 미사용) | `QuestType` |
+| 퀘스트 종류 | `DAILY` · `WEEKLY` | 일일 · 주간 | `QuestType` |
 | 상점 상품 | `SHIELD` · `EXPERIENCE_BOOSTER` | 방어권 · 경험치 부스터 | `ShopItemType` |
 | D-day 달력 | `READ` · `PROTECTED` | 읽은 날 · 방어권으로 지킨 날 | `DdayRecordStatus` |
 | 권한 | `USER` · `ADMIN` | 일반 사용자 · 관리자 | `Role` |

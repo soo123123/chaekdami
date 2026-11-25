@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: fix/fe1@ef397a6 + 스펙 013 · 최종 확인: 2026-11-25 · 담당: BE2
 
 # reward 데이터
 
@@ -10,7 +10,7 @@
 ```mermaid
 erDiagram
   users ||--|| reward_accounts : "보상 계정"
-  users ||--o{ user_quests : "오늘의 퀘스트"
+  users ||--o{ user_quests : "일일·주간 퀘스트"
   quests ||--o{ user_quests : "정의"
   users ||--o{ user_items : "보유 아이템"
   shop_items ||--o{ user_items : "상품"
@@ -42,12 +42,12 @@ FK 제약은 `user_quests.quest_id`, `reading_session_reward_quests.reading_sess
 
 ## quests
 
-퀘스트 정의. 앱 시작 시 `DailyQuestSeeder`가 `DailyQuest` enum에 맞춘다. 엔티티: `Quest`
+퀘스트 정의. 앱 시작 시 `DailyQuestSeeder`·`WeeklyQuestSeeder`가 `DailyQuest`·`WeeklyQuest` enum에 맞춘다. 엔티티: `Quest`
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | id | bigint | PK | |
-| code | varchar(50) | **UNIQUE** `uk_quests_code` | `DailyQuest` 상수 이름. 바꾸면 다른 퀘스트가 됨 |
+| code | varchar(50) | **UNIQUE** `uk_quests_code` | `DailyQuest`·`WeeklyQuest` 상수 이름. 바꾸면 다른 퀘스트가 됨 |
 | type | varchar(20) | not null | `DAILY` · `WEEKLY` |
 | title | varchar | not null | |
 | target_value | int | not null | 목표 수치 |
@@ -57,7 +57,7 @@ FK 제약은 `user_quests.quest_id`, `reading_session_reward_quests.reading_sess
 
 ## user_quests
 
-사용자에게 출제된 그날의 퀘스트. 엔티티: `UserQuest`
+사용자에게 출제된 그날의 일일 퀘스트와 그 주의 주간 퀘스트. 엔티티: `UserQuest`
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -67,7 +67,7 @@ FK 제약은 `user_quests.quest_id`, `reading_session_reward_quests.reading_sess
 | progress | int | not null | 현재 진행 값 |
 | status | varchar(20) | not null | `IN_PROGRESS` · `COMPLETED` · `REWARDED` |
 | completed_at | timestamp | | 달성 시각 |
-| created_at, updated_at | timestamp | not null | 시각. **어느 날의 퀘스트인지는 `created_at` 날짜로 구분** |
+| created_at, updated_at | timestamp | not null | 시각. **어느 날(일일)·어느 주(주간)의 퀘스트인지는 `created_at`으로 구분** |
 
 ## shop_items
 
@@ -122,10 +122,10 @@ UNIQUE `uk_user_items_user_id_shop_item_id` (user_id, shop_item_id)
 | type | varchar(30) | not null | `INCOME_CURRENCY` · `EXPENSE_CURRENCY` · `INCOME_EXPERIENCE` |
 | amount | int | not null | |
 | reason | varchar(30) | not null | `DAILY_QUEST` · `SHOP_PURCHASE` · `READING_COMPLETE` · `LEVEL_UP` · `PHOTO_CERTIFICATION` |
-| reference_id | bigint | | 대상 id (세션 id 등) |
+| reference_id | bigint | | 대상 id. 독서·사진은 세션 id, `DAILY_QUEST`(일일·주간 공통)는 `user_quests.id` (스펙 013 전의 이력은 NULL) |
 | created_at | timestamp | not null | |
 
-UNIQUE `uk_reward_transactions_user_id_type_reason_reference_id` (user_id, type, reason, reference_id) — 같은 세션에 같은 사유의 경험치가 두 번 기록되지 않게 한다.
+UNIQUE `uk_reward_transactions_user_id_type_reason_reference_id` (user_id, type, reason, reference_id) — 같은 대상(세션·퀘스트)에 같은 사유의 보상이 두 번 기록되지 않게 한다.
 
 ## reading_session_rewards
 
@@ -161,6 +161,7 @@ UNIQUE `uk_reading_session_rewards_user_id_reading_session_id` (user_id, reading
 | 위치 | 내용 |
 |---|---|
 | `DailyQuestSeeder` | `quests`를 `DailyQuest` 목록에 맞춤 (추가·갱신, 삭제는 안 함) → [rules.md](./rules.md#4-일일-퀘스트) |
+| `WeeklyQuestSeeder` | `quests`를 `WeeklyQuest` 목록에 맞춤 (추가·갱신, 삭제는 안 함) → [rules.md](./rules.md#주간-퀘스트) |
 | `ShopItemSeeder` | 이름이 같은 상품이 없으면 추가 (기존 행 가격은 안 바꿈) → [rules.md](./rules.md#5-상점) |
 
 ## 삭제
@@ -179,3 +180,4 @@ UNIQUE `uk_reading_session_rewards_user_id_reading_session_id` (user_id, reading
 | `1ff5c0c` | `quests.code` 추가, 일일 퀘스트를 코드로 구분 |
 | `41b2cd0` | `reward_transactions.reference_id` 추가 (세션별 중복 지급 방지) |
 | `8b13aaa` | `reading_session_rewards`, `reading_session_reward_quests` 추가 ([specs/001](../../specs/001-reward-integration/)) |
+| 스펙 013 | `quests`에 주간 퀘스트 3행 추가, 퀘스트 보상 이력의 `reference_id`에 `user_quests.id` 저장 ([specs/013](../../specs/013-weekly-quest/)) |
