@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -168,7 +168,10 @@ export default function DdayScreen() {
   const [completedBooks, setCompletedBooks] = useState('0');
   const [error, setError] = useState('');
   const modalOpenRef = useRef(false);
-  modalOpenRef.current = modalOpen;
+
+  useEffect(() => {
+    modalOpenRef.current = modalOpen;
+  }, [modalOpen]);
 
   const today = dateString(new Date());
   const year = currentMonth.getFullYear();

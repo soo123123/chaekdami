@@ -255,7 +255,13 @@ export default function QuestScreen() {
   }, []);
 
   useEffect(() => {
-    loadQuests();
+    const timer = setTimeout(() => {
+      void loadQuests();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [loadQuests]);
 
   const dailyQuests = useMemo(
