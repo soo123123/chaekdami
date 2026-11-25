@@ -137,4 +137,4 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 |---|---|---|
 | 재화·경험치·아이템을 바꾸는 요청 | 보상 계정 행을 비관적 쓰기 잠금 | `RewardLedger.lockAccount` |
 | 잠금 대기 | 3초, 넘으면 409 `CONCURRENCY_001` | `RewardAccountRepository.LOCK_TIMEOUT_MILLIS` |
-| 계정 동시 생성 | 별도 트랜잭션으로 생성, UNIQUE 위반은 무시하고 기존 계정 사용 | `RewardAccountInitializer` |
+| 계정 동시 생성 | 같은 트랜잭션에서 없을 때만 저장(`ON CONFLICT DO NOTHING`), 이미 있으면 그 계정 사용. DB 연결을 더 쓰지 않음 | `RewardAccountRepository.insertIfAbsent` |
