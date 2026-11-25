@@ -119,7 +119,7 @@
 | <a id="todo-17"></a>TODO-17 | BE1 | YES24 장애를 502로 | 열림 | 지금은 500 `INTERNAL_ERROR`. 호출 시간 제한(연결·읽기) 설정도 없어 함께 추가 필요 | `Yes24Client` |
 | <a id="todo-18"></a>TODO-18 | 백엔드 공통 | DB 마이그레이션 도입 | 열림 | `ddl-auto=update` — 컬럼 삭제·이름 변경이 반영되지 않음. enum 값 추가·변경 때 이미 있는 CHECK 제약(`*_check`)도 바뀌지 않아, 오래된 DB(Supabase·로컬)에서만 저장이 실패함 (SQLState 23514). 예: `TransactionReason.PHOTO_CERTIFICATION` 추가 뒤 사진 인증 세션 저장 시 `reward_transactions_reason_check` 위반 → 보상 트랜잭션 전체 롤백·500. 도입 전까지는 enum을 바꾸면 해당 DB 제약도 SQL로 함께 고침 (enum 칸 10개) | `application.properties`, `@Enumerated` 필드 |
 | <a id="todo-19"></a>TODO-19 | BE2 | reward ↔ dday 직접 참조 정리 | 열림 | 서로 직접 부름 | [architecture](./architecture.md#3-도메인끼리-연결) |
-| <a id="todo-20"></a>TODO-20 | 프론트 공통 | 프론트 ESLint 설정 | 열림 | 설정 없음 | `frontend/` |
+| <a id="todo-20"></a>TODO-20 | 프론트 공통 | 프론트 ESLint 설정 | 진행 중 | 설정 없음 | `frontend/` |
 | <a id="todo-22"></a>TODO-22 | BE2 | 안 쓰는 메서드 정리 | 열림 | `DdayService.markTodayRead` 호출 없음. 호출 없다는 보고(확인 필요): `RewardService.createAccount`, `ReviewLikeRepository.existsByReview_IdAndUserId`, `BookReportReader.find`(TODO-4 준비용). `ReadingRecordService`의 완독 이벤트 TODO 주석도 유지할지 결정 | `DdayService` |
 | <a id="todo-23"></a>TODO-23 | BE1 | 독서 인증 429 임시 규칙 되돌리기 | 열림 | Gemini가 임시 API라 사용 한도 초과(429)면 `PASSED`(`ai_skipped`), 사진 인증 보상에서는 제외. 정식 AI API로 바꿀 때 둘 다 다시 정한다 | `GeminiRetryPolicy`, `CertificationVerifier`, `Certification.isRewardable` |
 | <a id="todo-24"></a>TODO-24 | BE1 (+FE1) | AI 장애를 앱에 따로 알리기 | 열림 | AI 장애(시간 초과·다시 시도 실패)도 글자 부족과 같은 `UNVERIFIED`로 와서 앱은 "다시 찍어주세요"만 보여준다 | `GeminiPageTextExtractor`, 앱 `useReadingEnd` |
