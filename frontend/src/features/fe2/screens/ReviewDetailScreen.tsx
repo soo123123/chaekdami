@@ -1,6 +1,6 @@
 import { toReviewWrite, ROUTES } from '@/constants/routes';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 
 import {
   View,
@@ -9,20 +9,25 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from 'react-native';
 import { goBackOr } from '@/utils/navigation';
 import { HIT_SLOP } from '@/constants/layout';
 
 import {
   router,
+  useFocusEffect,
   useLocalSearchParams,
 } from 'expo-router';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/common/Icon';
+import { showToast } from '@/components/Toast';
 
 import {
+  deleteBookReport,
   getReadingReview,
   type ReadingReviewResponse,
 } from '../api/reviewApi';
@@ -30,6 +35,27 @@ import {
 /** "2026-11-09T01:58:43" → "2026.11.09" */
 function formatDate(value: string) {
   return value.slice(0, 10).replace(/-/g, '.');
+}
+
+function confirmDelete(): Promise<boolean> {
+  const title = '독후감 삭제';
+  const message = '이 독후감을 삭제할까요? 삭제하면 되돌릴 수 없어요.';
+
+  if (Platform.OS === 'web') {
+    return Promise.resolve(window.confirm(`${title}\n${message}`));
+  }
+
+  return new Promise((resolve) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: '취소', style: 'cancel', onPress: () => resolve(false) },
+        { text: '삭제', style: 'destructive', onPress: () => resolve(true) },
+      ],
+      { cancelable: false }
+    );
+  });
 }
 
 /**
@@ -49,31 +75,77 @@ const ReviewDetailScreen = () => {
   const [isLoading, setIsLoading] = useState(hasRecordId);
   const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
-    if (!hasRecordId) return;
+  const [isDeleting, setIsDeleting] = useState(false);
+  // 확인 창이 떠 있거나 요청 중이면 다시 누를 수 없다
+  const deletingRef = useRef(false);
+  // 마지막 조회만 화면에 반영한다
+  const loadIdRef = useRef(0);
+  const focusedRef = useRef(false);
 
-    let active = true;
+  const load = useCallback(async () => {
+    const loadId = ++loadIdRef.current;
 
-    const load = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(false);
-        const response = await getReadingReview(readingRecordId);
-        if (active) setData(response);
-      } catch (error) {
-        console.error('독후감 상세 조회 실패:', error);
-        if (active) setLoadError(true);
-      } finally {
-        if (active) setIsLoading(false);
+    try {
+      const response = await getReadingReview(readingRecordId);
+      if (loadId !== loadIdRef.current) return;
+
+      setData(response);
+      setLoadError(false);
+    } catch (error) {
+      if (loadId !== loadIdRef.current) return;
+
+      console.error('독후감 상세 조회 실패:', error);
+      setLoadError(true);
+    }
+
+    setIsLoading(false);
+  }, [readingRecordId]);
+
+  // 수정·삭제하고 돌아왔을 때 이전 내용이 남지 않게 들어올 때마다 조회한다
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasRecordId) return undefined;
+
+      focusedRef.current = true;
+      void load();
+
+      return () => {
+        focusedRef.current = false;
+        loadIdRef.current += 1;
+      };
+    }, [hasRecordId, load])
+  );
+
+  const handleDelete = async (bookReportId: number) => {
+    if (deletingRef.current) return;
+
+    deletingRef.current = true;
+
+    try {
+      if (!(await confirmDelete())) return;
+
+      setIsDeleting(true);
+      await deleteBookReport(bookReportId);
+
+      showToast('독후감을 삭제했어요.');
+      // 요청 중에 이미 화면을 나갔으면 더 뒤로 가지 않는다
+      if (focusedRef.current) goBackOr(ROUTES.fe1.library);
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+
+      if (status === 404) {
+        // 다른 곳에서 이미 지워진 독후감
+        showToast('이미 삭제된 독후감이에요.', 'error');
+        if (focusedRef.current) await load();
+      } else {
+        console.error('독후감 삭제 실패:', error);
+        showToast('독후감을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
       }
-    };
-
-    load();
-
-    return () => {
-      active = false;
-    };
-  }, [hasRecordId, readingRecordId]);
+    } finally {
+      deletingRef.current = false;
+      setIsDeleting(false);
+    }
+  };
 
   const goWrite = () => router.push(toReviewWrite(readingRecordId));
   const containerPadding = { paddingTop: insets.top + 12 };
@@ -156,8 +228,24 @@ const ReviewDetailScreen = () => {
       </View>
 
       {/* 수정 */}
-      <TouchableOpacity style={styles.editButton} onPress={goWrite}>
+      <TouchableOpacity
+        style={[styles.editButton, isDeleting && styles.disabledButton]}
+        onPress={goWrite}
+        disabled={isDeleting}
+      >
         <Text style={styles.editButtonText}>독후감 수정하기</Text>
+      </TouchableOpacity>
+
+      {/* 삭제 */}
+      <TouchableOpacity
+        style={[styles.deleteButton, isDeleting && styles.disabledButton]}
+        onPress={() => handleDelete(report.bookReportId)}
+        disabled={isDeleting}
+        accessibilityRole="button"
+      >
+        <Text style={styles.deleteButtonText}>
+          {isDeleting ? '삭제 중...' : '독후감 삭제하기'}
+        </Text>
       </TouchableOpacity>
 
       {/* 안내 */}
@@ -266,7 +354,19 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 15,
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  deleteButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  deleteButtonText: {
+    color: '#a15a4a',
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   editButtonText: {
     color: '#4f7658',
