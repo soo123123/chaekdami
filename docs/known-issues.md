@@ -67,7 +67,7 @@
 | <a id="issue-bug-31"></a>ISSUE-BUG-31 | 프론트 공통 (FE2 주) | 중간 | 진행 중 | 토큰 재발급을 기다리는 동안 로그아웃하거나 새로 로그인해도 재발급 결과를 그대로 반영한다 | 로그아웃 뒤 토큰이 다시 저장될 수 있다. 재발급이 거절되면 새 로그인의 토큰까지 지워진다 (가짜 서버로 둘 다 재현, PR 28에도 남음) | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 21~42 검토에서 발견 (2026-11-25) |
 | <a id="issue-bug-32"></a>ISSUE-BUG-32 | FE2 | 낮음 | 진행 중 | D-day 목표 저장 중에도 입력 창을 닫고 다른 목표를 열 수 있다 | 먼저 한 저장이 끝나면 새로 연 창이 닫혀 입력이 사라진다 (코드로 확인, PR 27에도 남음) | 앱 `DdayScreen` | — | — | — |
 | <a id="issue-bug-33"></a>ISSUE-BUG-33 | BE2 (+FE2) | 중간 | 열림 | 부스터 사용(`POST /api/rewards/boosters/use`)에 같은 요청을 한 번만 처리하는 장치가 없다. 앱은 실패하면 보유 수량을 다시 조회한다 (PR 46) | 서버는 처리했는데 응답만 끊기면 실패로 보여, 다시 누르면 부스터가 하나 더 쓰일 수 있다 (코드로 확인, 재현하지 않음). 비슷한 문제: ISSUE-BUG-3 | `BoosterService`, 앱 `HomeScreen` | — | — |
-| <a id="issue-bug-34"></a>ISSUE-BUG-34 | FE2 | 낮음 | 열림 | 마이페이지의 "닉네임을 불러오지 못했어요"·"퀘스트를 불러오지 못했어요" 문구가 배경 그림 위에 놓인다 (PR 46) | 조회에 실패하면 안내가 그림과 겹쳐 읽기 어렵다 (iOS 시뮬레이터에서 확인) | 앱 `MyPageScreen` | — | — |
+| <a id="issue-bug-34"></a>ISSUE-BUG-34 | FE2 | 낮음 | 열림 | 마이페이지의 닉네임·소개 문구·퀘스트 글씨가 배경 그림 위에 놓인다 | 조회에 성공해도 글씨가 그림과 겹쳐 읽기 어렵고, 조회에 실패하면 안내 문구가 길어 더 겹친다 (iOS 시뮬레이터에서 확인) | 앱 `MyPageScreen` | — | — |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | BE1 (+BE2) | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
 | <a id="issue-data-4"></a>ISSUE-DATA-4 | 프론트 공통 | 중간 | 열림 | 로그아웃 때 토큰만 지운다. 서재 테마 저장에 사용자 구분이 없다 | 같은 기기의 다음 사용자에게 이전 테마 등이 남을 수 있다 (최근 검색어, 뒤로 가기 화면은 확인 필요) | 앱 `MyPageScreen`, `readingApi.ts` | — | — |
 | <a id="issue-limit-1"></a>ISSUE-LIMIT-1 | BE1 | 중간 | 열림 | 서버는 독서 시간이 3분~2시간인지만 검증한다 | 앱 종료 화면은 측정 시간 이내로 막지만, 측정값이 없을 때나 API를 직접 부를 때는 실제보다 긴 시간이 저장될 수 있다 (쪽수·겹치는 세션은 ISSUE-SEC-3) | `ReadingSession.of` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
@@ -75,7 +75,6 @@
 | <a id="issue-limit-3"></a>ISSUE-LIMIT-3 | BE1 | 낮음 | 열림 | 세션 목록 응답의 `status`·`currentPage`·`progressRate`는 회차에서 읽는다 | 저장 당시 값이 아니라 회차의 현재 값이 나온다 | `ReadingSessionResponse` | [reading/api](./domains/reading/api.md#get-apireading-recordsidsessions) | — |
 | <a id="issue-limit-4"></a>ISSUE-LIMIT-4 | FE2 (+FE1, BE2) | 높음 | 열림 | 독서 보상 요청은 독서 완료 화면에서만 보낸다 (스펙 001의 알려진 제한) | 실패한 채 나가거나 앱이 꺼지면 보상과 D-day 읽은 날을 놓친다. 서버 정산 기능 필요 | 앱 `useReadingComplete`, 서버 보상 | — | — |
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
-| <a id="issue-limit-6"></a>ISSUE-LIMIT-6 | FE2 | 낮음 | 진행 중 | 부스터 위젯의 이동 범위가 하단 탭바와 화면 버튼을 계산하지 않는다 (PR #23의 안전 영역 제한도 노치·제스처 바만 뺀다) | 위젯을 옮긴 위치에 따라 하단 탭(홈 등)이나 서재 오른쪽 위 버튼을 가린다. 위젯을 다시 옮기면 누를 수 있다 (시뮬레이터 확인). 제안: 탭바가 있는 화면에서는 탭바 위까지만 이동. 서재 버튼 가림은 TODO-41과 함께 검토 | 앱 `BoosterFloatingWidget` | — | — | 실기기 검토·피드백: FE1 |
 | <a id="issue-limit-7"></a>ISSUE-LIMIT-7 | FE2 | 낮음 | 진행 중 | 앱 시작 때 서버 연결 오류 화면에 다시 시도 버튼이 없다 | 연결이 돌아와도 앱을 다시 켜야 한다 | 앱 `home.tsx` | — | — | — |
 | <a id="issue-limit-8"></a>ISSUE-LIMIT-8 | BE2 (+FE2) | 중간 | 열림 | D-day 목표 저장은 목록 전체를 바꾸고, 그사이 바뀌었는지 확인하지 않는다 | 다른 기기에서 추가했거나 응답이 끊겨 앱이 모르는 목표가 다음 저장 때 지워질 수 있다 (코드로 확인, PR 27 범위 밖) | `DdayService.saveGoals`, 앱 `DdayScreen` | — | — | 여러 기기에서 생기는 문제는 TODO-47(단일 기기 로그인)로 대부분 사라질 것으로 보여 서버 수정은 대기 (BE2, 2026-11-25). 저장 응답이 끊긴 경우는 남음 (앱에서 처리할지 FE2 확인 필요) |
 
@@ -104,7 +103,6 @@
 | <a id="todo-33"></a>TODO-33 | FE1 | 도서 검색 결과 21번째 이후 보기 | 열림 | 1페이지 20권만 조회 | 앱 `readingApi.ts` | — |
 | <a id="todo-34"></a>TODO-34 | FE2 (+BE3) | 마이페이지 준비 중 항목 (프로필 편집·설정·고객센터·약관) | 진행 중 | 닉네임 변경 API는 완료 (`PATCH /api/me`, 스펙 010, PR #38). 앱의 프로필 편집·설정·고객센터·약관은 준비 중 (알림은 TODO-8) | 앱 `MyPageScreen` | [user/api](./domains/user/api.md) |
 | <a id="todo-35"></a>TODO-35 | FE1 (+BE3) | 공개 독후감·문장의 신고와 가려진 표시 (앱) | 열림 | 서버는 완료 (스펙 012, PR #40): 신고·블라인드·관리자 API, 정지 중 글 숨김, `isBlinded`. 앱의 신고 버튼과 가려진 표시가 없음. 커뮤니티 연결은 TODO-13 | 앱 `communityApi.ts` | [review/api](./domains/review/api.md#독후감문장-신고) |
-| <a id="todo-41"></a>TODO-41 | FE2 | (아이디어) 부스터 위젯을 놓으면 가장자리로 자동 이동 | 진행 중 | 놓은 자리에 그대로 멈춰 화면 가운데에도 남는다. 화면 내용을 덜 가리도록, 손을 떼면 가까운 좌우 가장자리로 붙인다 (제안 기준: 세로 위치는 유지, 안전 영역 안). 하단 탭 가림(ISSUE-LIMIT-6)과 함께 검토 | 앱 `BoosterFloatingWidget` | — | 실기기 검토·피드백: FE1 |
 | <a id="todo-42"></a>TODO-42 | BE3 | (확정) 미접속 사용자 복귀 알림 (기기 로컬, Android·iOS) | 열림 | 없음. 서버 푸시 대신 로컬 알림으로 통합 (BE3 결정, 2026-11-25. 2026-11-24의 Expo Push·Firebase·`device_tokens`·`push_logs`·스케줄러 기획을 대체). Apple 유료 개발자 계정 없이 두 플랫폼을 같은 방식으로 처리. TODO-8의 7일치 예약과 함께 8일 이상 미접속 시점의 알림도 미리 예약하고, 앱을 열면 다시 예약. 시점은 ASK-7. 무료 Apple 계정으로 설치한 앱은 7일 뒤 서명이 만료돼 8일 이상은 간격을 줄여 테스트. TODO-8과 한 브랜치에서 진행 | 앱 | [overview](./overview.md#3-주요-기능과-현재-상태) | 앱을 열기 전에는 서버가 예약을 바꿀 수 없음 (TODO-46) |
 | <a id="todo-46"></a>TODO-46 | BE3 | (아이디어) 독서 알림의 여러 기기 동기화 | 열림 | 없음. TODO-8·42는 기기마다 로컬로 예약하므로, 다른 기기에서 읽거나 설정을 바꿔도 이 기기의 앱을 열기 전까지 옛 예약이 남아 이미 읽었는데 알림이 올 수 있다. 추후 개발 (BE3 결정, 2026-11-25) | 앱 | [overview](./overview.md#3-주요-기능과-현재-상태) | TODO-8·42 범위 밖. 단일 기기 로그인은 TODO-47 |
 | <a id="todo-47"></a>TODO-47 | BE3 | 단일 기기 로그인 (다른 기기에서 로그인하면 기존 기기 자동 로그아웃) | 열림 | 여러 기기에서 함께 로그인할 수 있다 (로그인이 기존 세션을 무효화하지 않음). 세션 무효화 기능(`invalidateSessions`)은 있다. 여러 기기를 함께 쓸 때 생기는 문제를 막으려는 것 (BE3, 2026-11-25). 앱이 꺼진 기존 기기는 다시 열어 서버에 요청할 때 로그아웃을 알 수 있어, 그 전까지 예약된 로컬 알림은 울릴 수 있다. 로그아웃될 때 알림 취소(TODO-8)와 안내가 필요하다 | `UserService.login`, 앱 `apiClient.ts` | [user/rules](./domains/user/rules.md) | 관련: TODO-8, TODO-46, ASK-13, ASK-17, ISSUE-BUG-12(PR 28) |
@@ -128,7 +126,7 @@
 | <a id="todo-39"></a>TODO-39 | FE1·FE2·BE1·BE2·BE3 | 스펙 001·003·004 실기기 확인 | 열림 | 각 tasks에 4건·4건·6건 남음. 끝나면 스펙을 done으로 | [specs](./specs/README.md) |
 | <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름, H2로 재현. 지금은 3분 제한으로 생기기 어려움) ② 집계 쿼리를 실행하는 테스트가 없음 ③ `reading_sessions.ended_at` 인덱스가 없음 (제안) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
 | <a id="todo-44"></a>TODO-44 | FE1 | 주가 바뀌면 랭킹 화면 다시 불러오기 (스펙 008, PR 21) | 열림 | 병합 전. 월요일 0시가 지나도 다시 들어오기 전까지, 조회가 실패하면 그 뒤에도 지난주 순위가 "이번 주"로 남음 (제안: 종료 날짜가 지나면 다시 조회) | 앱 `useWeeklyRanking`, `RankingScreen` | 스펙 008 설계의 "실패하면 전에 보이던 순위 유지"와 함께 정함 |
-| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 병합 시점 main에 오류 37·경고 10이 남아 `npm run lint`가 실패한다 (도입 때 36·9에서 PR 46으로 1·1 늘어남). FE1 16·0, FE2 13·7, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
+| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 병합 뒤 main에 오류 29·경고 10이 남아 `npm run lint`가 실패한다 (PR 49 병합 시점 37·10, PR 51로 위젯 오류 8개 해결). FE1 16·0, FE2 5·7, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
 
 ## 3. ❓ 질문
 
@@ -189,3 +187,5 @@
 | ISSUE-BUG-15 상점 중복 구매 | 요청 중 구매·취소 차단, 실패하면 재화·보유 수량 재조회 (PR 46). 기기 연속 탭과 구매 실패 뒤 재조회는 확인 기록 없음 | 2026-11-25 | — |
 | ISSUE-BUG-18 상점·D-day 테스트용 문구 | 상점 안내 삭제, D-day 문구를 "독서를 완료하면 자동으로 기록돼요."로 수정 (PR 46). 기기 확인 기록 없음 | 2026-11-25 | — |
 | TODO-20 프론트 ESLint 설정 | `eslint` 9·`eslint-config-expo` 추가, Expo 기본 규칙 `eslint.config.js` (PR 49). Prettier 없음. 앱 실행은 미확인. 기존 오류 정리는 TODO-45, 자동 검사는 TODO-37 | 2026-11-25 | — |
+| TODO-41 부스터 위젯 가장자리 이동 | 손을 떼면 가까운 좌우 가장자리로 이동, 세로 위치 유지 (PR 51). iOS 시뮬레이터와 실제 서버에서 확인. Android·실물 기기는 확인 기록 없음. 애니메이션은 TODO-48 | 2026-11-25 | — |
+| ISSUE-LIMIT-6 부스터 위젯이 하단 탭을 가림 | 탭바가 있는 화면에서는 탭바 위까지만 이동 (PR 51). 홈·서재·커뮤니티·마이페이지를 iOS 시뮬레이터에서 확인. 키보드가 올라온 상태·Android는 확인 기록 없음. 서재 오른쪽 위 버튼은 여전히 가릴 수 있음. 랭킹 탭(스펙 008)을 추가하면 `TAB_BAR_PATHS`에도 추가 필요 | 2026-11-25 | — |
