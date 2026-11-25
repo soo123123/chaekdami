@@ -33,8 +33,6 @@
 
 **놓친 날이 있으면 방어권 자동 정산을 먼저 처리**하므로 조회지만 데이터가 바뀔 수 있다. 계정이 없으면 만든다.
 
-> ⚠️ [ISSUE-BUG-9](../../known-issues.md#issue-bug-9) — 다른 요청과 겹치면 재화·경험치가 옛값으로 돌아갈 수 있음
-
 코드: `RewardController` → `RewardService.getRewardStatus`
 
 ```json
