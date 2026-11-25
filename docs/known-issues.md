@@ -118,7 +118,6 @@
 | <a id="todo-17"></a>TODO-17 | BE1 | YES24 장애를 502로 | 열림 | 지금은 500 `INTERNAL_ERROR`. 호출 시간 제한(연결·읽기) 설정도 없어 함께 추가 필요 | `Yes24Client` |
 | <a id="todo-18"></a>TODO-18 | 백엔드 공통 | DB 마이그레이션 도입 | 열림 | `ddl-auto=update` — 컬럼 삭제·이름 변경이 반영되지 않음. enum 값 추가·변경 때 이미 있는 CHECK 제약(`*_check`)도 바뀌지 않아, 오래된 DB(Supabase·로컬)에서만 저장이 실패함 (SQLState 23514). 예: `TransactionReason.PHOTO_CERTIFICATION` 추가 뒤 사진 인증 세션 저장 시 `reward_transactions_reason_check` 위반 → 보상 트랜잭션 전체 롤백·500. 도입 전까지는 enum을 바꾸면 해당 DB 제약도 SQL로 함께 고침 (enum 칸 10개) | `application.properties`, `@Enumerated` 필드 |
 | <a id="todo-19"></a>TODO-19 | BE2 | reward ↔ dday 직접 참조 정리 | 열림 | 서로 직접 부름 | [architecture](./architecture.md#3-도메인끼리-연결) |
-| <a id="todo-20"></a>TODO-20 | 프론트 공통 | 프론트 ESLint 설정 | 진행 중 | 설정 없음 | `frontend/` |
 | <a id="todo-22"></a>TODO-22 | BE2 | 안 쓰는 메서드 정리 | 열림 | `DdayService.markTodayRead` 호출 없음. 호출 없다는 보고(확인 필요): `RewardService.createAccount`, `ReviewLikeRepository.existsByReview_IdAndUserId`, `BookReportReader.find`(TODO-4 준비용). `ReadingRecordService`의 완독 이벤트 TODO 주석도 유지할지 결정 | `DdayService` |
 | <a id="todo-23"></a>TODO-23 | BE1 | 독서 인증 429 임시 규칙 되돌리기 | 열림 | Gemini가 임시 API라 사용 한도 초과(429)면 `PASSED`(`ai_skipped`), 사진 인증 보상에서는 제외. 정식 AI API로 바꿀 때 둘 다 다시 정한다 | `GeminiRetryPolicy`, `CertificationVerifier`, `Certification.isRewardable` |
 | <a id="todo-24"></a>TODO-24 | BE1 (+FE1) | AI 장애를 앱에 따로 알리기 | 열림 | AI 장애(시간 초과·다시 시도 실패)도 글자 부족과 같은 `UNVERIFIED`로 와서 앱은 "다시 찍어주세요"만 보여준다 | `GeminiPageTextExtractor`, 앱 `useReadingEnd` |
@@ -128,7 +127,7 @@
 | <a id="todo-39"></a>TODO-39 | FE1·FE2·BE1·BE2·BE3 | 스펙 001·003·004 실기기 확인 | 열림 | 각 tasks에 4건·4건·6건 남음. 끝나면 스펙을 done으로 | [specs](./specs/README.md) |
 | <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름, H2로 재현. 지금은 3분 제한으로 생기기 어려움) ② 집계 쿼리를 실행하는 테스트가 없음 ③ `reading_sessions.ended_at` 인덱스가 없음 (제안) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
 | <a id="todo-44"></a>TODO-44 | FE1 | 주가 바뀌면 랭킹 화면 다시 불러오기 (스펙 008, PR 21) | 열림 | 병합 전. 월요일 0시가 지나도 다시 들어오기 전까지, 조회가 실패하면 그 뒤에도 지난주 순위가 "이번 주"로 남음 (제안: 종료 날짜가 지나면 다시 조회) | 앱 `useWeeklyRanking`, `RankingScreen` | 스펙 008 설계의 "실패하면 전에 보이던 순위 유지"와 함께 정함 |
-| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 도입 때 오류 36·경고 9가 남아 `npm run lint`가 실패한다. FE1 16·0, FE2 12·6, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
+| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 병합 시점 main에 오류 37·경고 10이 남아 `npm run lint`가 실패한다 (도입 때 36·9에서 PR 46으로 1·1 늘어남). FE1 16·0, FE2 13·7, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
 
 ## 3. ❓ 질문
 
@@ -188,3 +187,4 @@
 | ISSUE-BUG-14 독서 완료 화면의 고정 목표 | `useReadingComplete`·`ReadingResultCard`의 고정 목표 제거 (PR 46). 기기 확인 기록 없음. 실제 목표 연결은 하지 않음 (FE1과 정할 것) | 2026-11-25 | — |
 | ISSUE-BUG-15 상점 중복 구매 | 요청 중 구매·취소 차단, 실패하면 재화·보유 수량 재조회 (PR 46). 기기 연속 탭과 구매 실패 뒤 재조회는 확인 기록 없음 | 2026-11-25 | — |
 | ISSUE-BUG-18 상점·D-day 테스트용 문구 | 상점 안내 삭제, D-day 문구를 "독서를 완료하면 자동으로 기록돼요."로 수정 (PR 46). 기기 확인 기록 없음 | 2026-11-25 | — |
+| TODO-20 프론트 ESLint 설정 | `eslint` 9·`eslint-config-expo` 추가, Expo 기본 규칙 `eslint.config.js` (PR 49). Prettier 없음. 앱 실행은 미확인. 기존 오류 정리는 TODO-45, 자동 검사는 TODO-37 | 2026-11-25 | — |
