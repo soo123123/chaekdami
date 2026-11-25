@@ -1,4 +1,4 @@
-> 상태: draft (구현 전) · 작성: 2026-11-25 · 기준: main@9e4a7c5 · 담당: BE2 (+FE2)
+> 상태: approved (구현 전) · 작성: 2026-11-25 · 기준: main@9e4a7c5 · 담당: BE2 (+FE2)
 > 요구사항: [requirements.md](./requirements.md) · 설계: [design.md](./design.md)
 
 # 015 · 부스터 사용 중복 방지 — Tasks
@@ -10,7 +10,7 @@
 
 ## 1. 시작 전
 
-- [ ] 1.1 FE2의 설계 확인을 받고 design 상태를 approved로 바꾸기
+- [x] 1.1 설계 승인 (FE2 설계 확인은 design의 예외대로 병합 전에 받음)
       검증: design 상태 줄
 - [ ] 1.2 스펙 009가 main에 병합됐는지 확인하고 main 반영
       검증: `git merge-base --is-ancestor origin/feature/009-booster-reading-time origin/main`
@@ -38,5 +38,7 @@
 - [ ] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test`
 - [ ] 9.2 계약 검사 — 검증: `python3 scripts/harness/contract-check.py`
 - [ ] 9.3 실제 PostgreSQL에서 동시 요청 확인 — R1.3
-- [ ] 9.4 **docs 반영**: design ④의 문서 전부 수정 — 검증: `python3 scripts/harness/docs-check.py`
-- [ ] 9.5 상태 줄을 done으로, `docs/specs/README.md` 목록 갱신
+- [ ] 9.4 FE2에게 필드 이름과 에러 코드 확인
+      검증: FE2 답변
+- [ ] 9.5 **docs 반영**: design ④의 문서 전부 수정 — 검증: `python3 scripts/harness/docs-check.py`
+- [ ] 9.6 상태 줄을 done으로, `docs/specs/README.md` 목록 갱신
