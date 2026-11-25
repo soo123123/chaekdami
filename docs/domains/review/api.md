@@ -1,4 +1,4 @@
-> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-community-report (스펙 012) · 최종 확인: 2026-11-25 · 담당: BE3
 > 원본: `docs/review-api-for-frontend.md` (커밋 `209eec7`)를 옮기고 현재 코드와 대조해 보정했다.
 
 # review API (독후활동)
@@ -50,7 +50,7 @@ Authorization: Bearer {accessToken}
 | 204 | 성공. JSON 본문이 없다 | `response.json()` 을 호출하지 않는다 |
 | 400, 401, 403, 404, 409, 500 | 실패. 아래 에러 JSON이 있다 | `code` 로 분기한다 |
 
-신고 `POST /api/reviews/{reviewId}/reports` 만 예외다. 성공이 201이면서 본문이 없다. `response.json()` 을 호출하지 않는다.
+신고(`POST /api/reviews/{reviewId}/reports`, `/api/book-reports/{bookReportId}/reports`, `/api/sentences/{sentenceId}/reports`)만 예외다. 성공이 201이면서 본문이 없다. `response.json()` 을 호출하지 않는다.
 
 204는 실패가 아니다. 문장 삭제, 독후감 삭제가 이 코드다.
 
@@ -97,8 +97,14 @@ Authorization: Bearer {accessToken}
 | GET | `/api/books/{bookId}/community` | 완독자 커뮤니티 요약 | 필요 | 200 |
 | GET | `/api/books/{bookId}/community/entries` | 커뮤니티 항목 목록 | 필요 | 200 |
 | GET | `/api/books/{bookId}/community/entries/{readingRecordId}` | 커뮤니티 항목 상세 | 필요 | 200 |
+| POST | `/api/book-reports/{bookReportId}/reports` | 공개 독후감 신고 | 필요 | 201 |
+| POST | `/api/sentences/{sentenceId}/reports` | 공개 문장 신고 | 필요 | 201 |
 | GET | `/api/admin/reviews/reported` | 신고된 리뷰 목록 | 필요, ADMIN | 200 |
 | PATCH | `/api/admin/reviews/{reviewId}/blind` | 블라인드 또는 해제 | 필요, ADMIN | 200 |
+| GET | `/api/admin/book-reports/reported` | 신고된 독후감 목록 | 필요, ADMIN | 200 |
+| PATCH | `/api/admin/book-reports/{bookReportId}/blind` | 독후감 블라인드 또는 해제 | 필요, ADMIN | 200 |
+| GET | `/api/admin/sentences/reported` | 신고된 문장 목록 | 필요, ADMIN | 200 |
+| PATCH | `/api/admin/sentences/{sentenceId}/blind` | 문장 블라인드 또는 해제 | 필요, ADMIN | 200 |
 
 모음집 공개를 바꾸는 주소는 독서 API `PATCH /api/reading-records/{readingRecordId}` 다. `PUT /api/reading-records/{readingRecordId}/sentence-collection/visibility` 는 없다.
 
@@ -134,24 +140,28 @@ Authorization: Bearer {accessToken}
 | 400 | `VALIDATION_ERROR` | 형식, 길이, 쪽 번호, 별점, 정렬값, 필수값 누락 | `fields` 의 메시지를 해당 입력칸에 표시 |
 | 400 | `CANNOT_LIKE_OWN_REVIEW` | 내 한줄평에 좋아요 | 메시지 표시 |
 | 400 | `CANNOT_REPORT_OWN_REVIEW` | 내 한줄평 신고 | 메시지 표시 |
+| 400 | `CANNOT_REPORT_OWN_CONTENT` | 내 독후감·문장 신고 | 메시지 표시 |
 | 401 | `UNAUTHORIZED` | Access Token이 없거나 만료되었거나 폐기됨 | 인증 API의 refresh를 시도하고, 그것도 실패하면 로그인 화면 |
 | 403 | `COMMUNITY_LOCKED` | 완독하지 않은 책의 커뮤니티 항목 조회 | 잠금 화면 |
 | 403 | `FORBIDDEN` | 일반 사용자의 관리자 API 호출 | 메시지 표시 |
 | 404 | `READING_RECORD_NOT_FOUND` | 회차가 없거나 내 회차가 아님 | 없는 화면 |
 | 404 | `BOOK_NOT_FOUND` | 책이 없거나 내 책이 아님 | 없는 화면 |
-| 404 | `SENTENCE_NOT_FOUND` | 문장이 없거나 내 문장이 아님 | 없는 화면 |
-| 404 | `REVIEW_NOT_FOUND` | 리뷰가 없음. 좋아요에서는 비공개, 블라인드, 한줄평 없는 리뷰도 이 코드 | 없는 화면 |
-| 404 | `BOOK_REPORT_NOT_FOUND` | 독후감이 없거나 내 독후감이 아님 | 없는 화면 |
+| 404 | `SENTENCE_NOT_FOUND` | 문장이 없거나 내 문장이 아님. 신고에서는 커뮤니티에서 볼 수 없는 문장 | 없는 화면 |
+| 404 | `REVIEW_NOT_FOUND` | 리뷰가 없음. 좋아요·신고에서는 비공개, 블라인드, 한줄평 없는 리뷰, 정지 중인 회원의 리뷰도 이 코드 | 없는 화면 |
+| 404 | `BOOK_REPORT_NOT_FOUND` | 독후감이 없거나 내 독후감이 아님. 신고에서는 커뮤니티에서 볼 수 없는 독후감 | 없는 화면 |
 | 404 | `COMMUNITY_ENTRY_NOT_FOUND` | 커뮤니티에 공개되지 않은 회차 | 없는 화면 |
 | 409 | `READING_NOT_COMPLETED` | 완독 전에 리뷰 또는 독후활동 저장 | 완독 후 작성할 수 있다고 표시 |
 | 409 | `REVIEW_ALREADY_EXISTS` | 같은 책에 리뷰를 다시 생성 | 수정을 호출 |
 | 409 | `BOOK_REPORT_ALREADY_EXISTS` | 같은 회차에 독후감이 동시에 생성됨 | 다시 조회한 뒤 수정 |
-| 409 | `ALREADY_REPORTED` | 같은 한줄평을 다시 신고 | 이미 신고했다고 표시 |
+| 409 | `ALREADY_REPORTED` | 같은 글을 다시 신고 | 이미 신고했다고 표시 |
+| 429 | `TOO_MANY_ATTEMPTS` | 한줄평·독후감·문장을 합쳐 하루 신고 20번을 넘음 | 메시지 표시 |
 | 500 | `INTERNAL_ERROR` | 서버 오류 | 잠시 후 다시 시도하라고 표시 |
 
 ---
 
 ## 각 API
+
+내 독후감·내 문장·모음집의 문장에는 `isBlinded` 가 있다. true면 신고나 관리자가 가려 커뮤니티에서 보이지 않는다. 본인 조회에서만 true가 나온다.
 
 ### 문장 추가
 
@@ -690,7 +700,15 @@ Content-Type: application/json
 
 `reason` 은 `SPOILER`, `ABUSIVE`, `SPAM`, `INAPPROPRIATE`, `OTHER` 중 하나다. `OTHER` 는 `detail` 이 필수다.
 
-같은 글을 다시 신고하면 409 `ALREADY_REPORTED` 다. 서로 다른 사람의 신고가 3건이 되면 그 글은 블라인드되어 목록과 별점 통계에서 빠진다.
+같은 글을 다시 신고하면 409 `ALREADY_REPORTED` 다. 한 회원이 한줄평·독후감·문장을 합쳐 한국 날짜로 하루 20번을 넘겨 신고하면 429 `TOO_MANY_ATTEMPTS` 이고 저장하지 않는다. 서로 다른 사람의 신고가 3건이 되면 그 글은 블라인드되어 목록과 별점 통계에서 빠진다.
+
+### 독후감·문장 신고
+
+`POST /api/book-reports/{bookReportId}/reports`, `POST /api/sentences/{sentenceId}/reports`
+
+요청과 사유 규칙은 한줄평 신고와 같다. 성공 `201`. 본문이 없다.
+
+같은 책(ISBN)을 완독해 커뮤니티에서 볼 수 있는 글만 신고한다. 비공개, 가려진 글, 정지 중인 회원의 글, 없는 글은 404 다. 내 글은 400 `CANNOT_REPORT_OWN_CONTENT`, 같은 글을 다시 신고하면 409 `ALREADY_REPORTED`, 하루 20번을 넘으면 429 `TOO_MANY_ATTEMPTS` 다. 서로 다른 사람의 신고가 3건이 되면 커뮤니티에서 빠진다.
 
 ### 완독자 커뮤니티 요약
 
@@ -872,6 +890,16 @@ Content-Type: application/json
 ```
 
 성공 `200`. 신고된 리뷰 목록의 항목과 같은 JSON이다.
+
+### 신고된 독후감·문장 목록과 블라인드 처리
+
+`GET /api/admin/book-reports/reported`, `GET /api/admin/sentences/reported`, `PATCH /api/admin/book-reports/{bookReportId}/blind`, `PATCH /api/admin/sentences/{sentenceId}/blind`
+
+`ADMIN` 만 호출한다. 파라미터와 동작은 리뷰와 같다. 정지 중인 회원의 글도 나온다. 없는 글은 404 다.
+
+독후감 항목: `bookReportId`, `author`, `readingRecordId`, `bookId`, `content`, `isPublic`, `reportCount`, `isBlinded`, `blindedAt`, `reportReasons`, `createdAt`, `updatedAt`
+
+문장 항목: `sentenceId`, `author`, `readingRecordId`, `bookId`, `pageNumber`, `content`, `reportCount`, `isBlinded`, `blindedAt`, `reportReasons`, `createdAt`, `updatedAt`
 
 ---
 

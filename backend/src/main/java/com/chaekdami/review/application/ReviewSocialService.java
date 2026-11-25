@@ -4,14 +4,13 @@ import com.chaekdami.global.dto.PageResponse;
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.review.application.command.ReviewReportCommand;
 import com.chaekdami.review.application.port.UserNicknameReader;
+import com.chaekdami.review.application.port.UserSuspensionReader;
 import com.chaekdami.review.application.result.CommunityAuthor;
 import com.chaekdami.review.application.result.LikeResult;
 import com.chaekdami.review.application.result.PublicReviewResult;
 import com.chaekdami.review.application.result.RatingSummary;
-import com.chaekdami.review.domain.ReportReason;
 import com.chaekdami.review.domain.Review;
 import com.chaekdami.review.domain.ReviewErrorCode;
-import com.chaekdami.review.domain.ReviewReport;
 import com.chaekdami.review.infrastructure.ReviewLikeRepository;
 import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
@@ -27,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,6 +50,8 @@ public class ReviewSocialService {
     private final ReviewLikeRepository reviewLikeRepository;
     private final ReviewReportRepository reviewReportRepository;
     private final UserNicknameReader userNicknameReader;
+    private final ReportQuota reportQuota;
+    private final UserSuspensionReader userSuspensionReader;
     private final CurrentUser currentUser;
     private final KoreanTime koreanTime;
 
@@ -59,7 +61,8 @@ public class ReviewSocialService {
     public PageResponse<PublicReviewResult> publicReviews(String isbn, String sort, int page, int size) {
         Long userId = currentUser.requireId();
         PageRequest pageable = Paging.of(page, size).withSort(sortOf(sort));
-        Page<Review> reviews = reviewRepository.findPublicByIsbn(normalizeIsbn(isbn), pageable);
+        Page<Review> reviews = reviewRepository.findPublicByIsbn(
+                normalizeIsbn(isbn), LocalDateTime.now(), pageable);
 
         List<Long> reviewIds = reviews.getContent().stream().map(Review::getId).toList();
         Set<Long> liked = reviewIds.isEmpty() ? Set.of()
@@ -123,38 +126,21 @@ public class ReviewSocialService {
     @Transactional
     public void report(Long reviewId, ReviewReportCommand command) {
         Long userId = currentUser.requireId();
-        validateReport(command);
+        ReportRules.validate(command);
         Review review = requireVisible(reviewId);
         if (review.ownedBy(userId)) {
             throw new BusinessException(ReviewErrorCode.CANNOT_REPORT_OWN_REVIEW);
         }
-        String detail = command.detail() == null || command.detail().isBlank() ? null : command.detail().strip();
-        int inserted = reviewReportRepository.insertIfAbsent(
-                reviewId, userId, command.reason().name(), detail, koreanTime.now());
-        if (inserted == 0) {
-            throw new BusinessException(ReviewErrorCode.ALREADY_REPORTED);
-        }
-        reviewRepository.addReport(reviewId, blindThreshold, koreanTime.now());
+        LocalDateTime reportedAt = reportQuota.save(userId, now -> reviewReportRepository.insertIfAbsent(
+                reviewId, userId, command.reason().name(), ReportRules.detailOf(command), now));
+        reviewRepository.addReport(reviewId, blindThreshold, reportedAt);
     }
 
     private Review requireVisible(Long reviewId) {
         return reviewRepository.findById(reviewId)
                 .filter(Review::publiclyVisible)
+                .filter(review -> !userSuspensionReader.isSuspended(review.getUserId()))
                 .orElseThrow(() -> new BusinessException(ReviewErrorCode.REVIEW_NOT_FOUND));
-    }
-
-    private static void validateReport(ReviewReportCommand command) {
-        if (command.reason() == null) {
-            throw new InvalidRequestException("reason", "신고 사유를 선택해야 합니다.");
-        }
-        boolean blankDetail = command.detail() == null || command.detail().isBlank();
-        if (command.reason() == ReportReason.OTHER && blankDetail) {
-            throw new InvalidRequestException("detail", "기타 사유는 내용을 입력해야 합니다.");
-        }
-        if (!blankDetail && command.detail().strip().length() > ReviewReport.MAX_DETAIL_LENGTH) {
-            throw new InvalidRequestException("detail",
-                    "신고 내용은 " + ReviewReport.MAX_DETAIL_LENGTH + "자 이하여야 합니다.");
-        }
     }
 
     private static Sort sortOf(String sort) {

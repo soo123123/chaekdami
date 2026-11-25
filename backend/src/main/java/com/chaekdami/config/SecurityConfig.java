@@ -111,7 +111,7 @@ public class SecurityConfig {
         return source;
     }
 
-    private static void writeJson(HttpServletResponse response, int status, String code, String message) throws java.io.IOException {
+    static void writeJson(HttpServletResponse response, int status, String code, String message) throws java.io.IOException {
         response.setStatus(status);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

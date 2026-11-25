@@ -1,9 +1,11 @@
 package com.chaekdami.review.application;
 
+import com.chaekdami.review.infrastructure.BookReportReportRepository;
 import com.chaekdami.review.infrastructure.BookReportRepository;
 import com.chaekdami.review.infrastructure.ReviewLikeRepository;
 import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
+import com.chaekdami.review.infrastructure.SentenceReportRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ public class ReviewCleanupService {
     private final ReviewRepository reviewRepository;
     private final ReviewLikeRepository reviewLikeRepository;
     private final ReviewReportRepository reviewReportRepository;
+    private final BookReportReportRepository bookReportReportRepository;
+    private final SentenceReportRepository sentenceReportRepository;
     private final BookReportRepository bookReportRepository;
     private final SentenceRepository sentenceRepository;
 
@@ -29,6 +33,9 @@ public class ReviewCleanupService {
         reviewRepository.decrementLikesGivenBy(userId);
         reviewLikeRepository.deleteAllByUserId(userId);
         reviewReportRepository.deleteAllByUserId(userId);
+        // 글에 달린 독후감·문장 신고는 글이 지워질 때 FK로 함께 지워진다.
+        bookReportReportRepository.deleteAllByUserId(userId);
+        sentenceReportRepository.deleteAllByUserId(userId);
         reviewLikeRepository.deleteAllOnReviewsOf(userId);
         reviewReportRepository.deleteAllOnReviewsOf(userId);
         reviewRepository.deleteAllByUserId(userId);

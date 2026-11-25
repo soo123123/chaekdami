@@ -6,6 +6,7 @@ import com.chaekdami.user.application.command.LoginCommand;
 import com.chaekdami.user.application.command.PasswordResetCommand;
 import com.chaekdami.user.application.command.PasswordResetRequestCommand;
 import com.chaekdami.user.application.command.SignupCommand;
+import com.chaekdami.user.presentation.dto.ChangeNicknameRequest;
 import com.chaekdami.user.presentation.dto.ChangePasswordRequest;
 import com.chaekdami.user.presentation.dto.LoginRequest;
 import com.chaekdami.user.presentation.dto.LoginResponse;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -88,6 +90,11 @@ public class UserController {
     @GetMapping("/api/me")
     public ResponseEntity<UserResponse> me() {
         return ResponseEntity.ok(UserResponse.from(userService.getMe()));
+    }
+
+    @PatchMapping("/api/me")
+    public ResponseEntity<UserResponse> changeNickname(@RequestBody @Valid ChangeNicknameRequest request) {
+        return ResponseEntity.ok(UserResponse.from(userService.changeNickname(request.getNickname())));
     }
 
     @DeleteMapping("/api/me")

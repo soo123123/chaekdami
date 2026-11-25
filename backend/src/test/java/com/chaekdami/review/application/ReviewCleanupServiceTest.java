@@ -1,9 +1,11 @@
 package com.chaekdami.review.application;
 
+import com.chaekdami.review.infrastructure.BookReportReportRepository;
 import com.chaekdami.review.infrastructure.BookReportRepository;
 import com.chaekdami.review.infrastructure.ReviewLikeRepository;
 import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
+import com.chaekdami.review.infrastructure.SentenceReportRepository;
 import com.chaekdami.review.infrastructure.SentenceRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -16,10 +18,13 @@ class ReviewCleanupServiceTest {
     private final ReviewRepository reviewRepository = mock(ReviewRepository.class);
     private final ReviewLikeRepository reviewLikeRepository = mock(ReviewLikeRepository.class);
     private final ReviewReportRepository reviewReportRepository = mock(ReviewReportRepository.class);
+    private final BookReportReportRepository bookReportReportRepository = mock(BookReportReportRepository.class);
+    private final SentenceReportRepository sentenceReportRepository = mock(SentenceReportRepository.class);
     private final BookReportRepository bookReportRepository = mock(BookReportRepository.class);
     private final SentenceRepository sentenceRepository = mock(SentenceRepository.class);
     private final ReviewCleanupService service = new ReviewCleanupService(reviewRepository, reviewLikeRepository,
-            reviewReportRepository, bookReportRepository, sentenceRepository);
+            reviewReportRepository, bookReportReportRepository, sentenceReportRepository,
+            bookReportRepository, sentenceRepository);
 
     @Test
     void withdrawalCorrectsLikeCountsBeforeDeletingLikes() {

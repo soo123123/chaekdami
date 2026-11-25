@@ -18,6 +18,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -54,7 +55,8 @@ class UserServiceTokenVersionTest {
                 mock(LoginAttemptLimiter.class),
                 currentUser,
                 new AccessGuard(currentUser),
-                mock(ApplicationEventPublisher.class));
+                mock(ApplicationEventPublisher.class),
+                TransactionOperations.withoutTransaction());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 1L, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         user = User.builder()
@@ -65,6 +67,7 @@ class UserServiceTokenVersionTest {
                 .build();
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
     }
 
     @AfterEach
@@ -90,8 +93,7 @@ class UserServiceTokenVersionTest {
         assertEquals(1L, user.getTokenVersion());
 
         String raw = "refresh-token";
-        RefreshToken stored = new RefreshToken(user, sha256(raw), LocalDateTime.now().plusDays(1));
-        when(refreshTokenRepository.findByTokenHash(sha256(raw))).thenReturn(Optional.of(stored));
+        when(refreshTokenRepository.findUserIdByTokenHash(sha256(raw))).thenReturn(Optional.of(1L));
 
         userService.logout(raw);
 
@@ -103,6 +105,7 @@ class UserServiceTokenVersionTest {
         String raw = "stolen-refresh";
         RefreshToken stored = new RefreshToken(user, sha256(raw), LocalDateTime.now().plusDays(1));
         stored.revoke(LocalDateTime.now());
+        when(refreshTokenRepository.findUserIdByTokenHash(sha256(raw))).thenReturn(Optional.of(1L));
         when(refreshTokenRepository.findByTokenHash(sha256(raw))).thenReturn(Optional.of(stored));
 
         assertThrows(UnauthorizedException.class, () -> userService.refresh(raw));

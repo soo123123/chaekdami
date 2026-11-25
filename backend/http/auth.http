@@ -31,6 +31,33 @@ Content-Type: application/json
 GET {{baseUrl}}/api/me
 Authorization: Bearer {{accessToken}}
 
+### 3-1. 닉네임 변경 — 200
+PATCH {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "새닉네임"
+}
+
+### 3-2. 짧은 닉네임 — 400 VALIDATION_ERROR
+PATCH {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "a"
+}
+
+### 3-3. 원래 닉네임으로 되돌리기 — 200 (19번에서 사용)
+PATCH {{baseUrl}}/api/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "{{nickname}}"
+}
+
 ### 4. 예전 경로 /api/auth/me — 404
 GET {{baseUrl}}/api/auth/me
 Authorization: Bearer {{accessToken}}

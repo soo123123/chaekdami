@@ -2,15 +2,19 @@ package com.chaekdami.review.application;
 
 import com.chaekdami.global.error.BusinessException;
 import com.chaekdami.review.application.command.ReviewReportCommand;
+import com.chaekdami.review.application.port.UserLock;
 import com.chaekdami.review.application.port.UserNicknameReader;
+import com.chaekdami.review.application.port.UserSuspensionReader;
 import com.chaekdami.review.application.result.LikeResult;
 import com.chaekdami.review.application.result.RatingSummary;
 import com.chaekdami.review.domain.ReportReason;
 import com.chaekdami.review.domain.Review;
 import com.chaekdami.review.domain.ReviewErrorCode;
+import com.chaekdami.review.infrastructure.BookReportReportRepository;
 import com.chaekdami.review.infrastructure.ReviewLikeRepository;
 import com.chaekdami.review.infrastructure.ReviewReportRepository;
 import com.chaekdami.review.infrastructure.ReviewRepository;
+import com.chaekdami.review.infrastructure.SentenceReportRepository;
 import com.chaekdami.user.application.CurrentUser;
 import com.chaekdami.user.application.exception.InvalidRequestException;
 import org.junit.jupiter.api.AfterEach;
@@ -45,7 +49,9 @@ class ReviewSocialServiceTest {
     @BeforeEach
     void setUp() {
         service = new ReviewSocialService(reviewRepository, reviewLikeRepository, reviewReportRepository,
-                mock(UserNicknameReader.class), new CurrentUser(), new KoreanTime());
+                mock(UserNicknameReader.class), new ReportQuota(mock(UserLock.class), reviewReportRepository,
+                        mock(BookReportReportRepository.class), mock(SentenceReportRepository.class), new KoreanTime()),
+                mock(UserSuspensionReader.class), new CurrentUser(), new KoreanTime());
         ReflectionTestUtils.setField(service, "blindThreshold", 3);
         signIn(1L);
     }

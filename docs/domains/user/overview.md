@@ -1,4 +1,4 @@
-> 기준: fix/be3-mail-password · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-nickname (스펙 010) · 최종 확인: 2026-11-25 · 담당: BE3
 > 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
 
 # user — 회원과 인증
@@ -26,7 +26,7 @@ backend/src/main/java/com/chaekdami/
     ├── presentation/    UserController, EmailPageController(/email/reset), GlobalExceptionHandler(전체 공통),
     │                    ClientAddress, dto/, validation/(비밀번호·닉네임 규칙)
     ├── application/     UserService, CurrentUser, AccessGuard, LoginAttemptLimiter, TokenVersionChecker,
-    │                    NicknameChanger, PasswordResetNotifier, OutboundMail, event/UserWithdrawnEvent, exception/
+    │                    PasswordResetNotifier, OutboundMail, event/UserWithdrawnEvent, exception/
     ├── domain/          User, RefreshToken, PasswordResetToken, AuthAttempt, Role
     └── infrastructure/  Repository, SmtpOutboundMail, SmtpPasswordResetNotifier
 ```
@@ -43,5 +43,5 @@ backend/src/main/java/com/chaekdami/
 
 ## 현재 상태
 
-- ✅ 가입, 로그인, 재발급, 로그아웃(단일·전체), 비밀번호 변경·재설정, 내 정보, 탈퇴, 로그인·재설정 요청 제한
+- ✅ 가입, 로그인, 재발급, 로그아웃(단일·전체), 비밀번호 변경·재설정, 내 정보, 닉네임 변경 (스펙 010), 탈퇴, 로그인·재설정 요청 제한
 - ✅ 관리자 회원 목록·검색·상세, 이용 정지·해제, 역할 변경 (스펙 007)

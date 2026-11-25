@@ -16,7 +16,7 @@ public interface ReviewLikeRepository extends JpaRepository<ReviewLike, Long> {
     @Query(value = """
             insert into review_likes (review_id, user_id, created_at)
             values (:reviewId, :userId, :now)
-            on conflict (review_id, user_id) do nothing
+            on conflict do nothing
             """, nativeQuery = true)
     int insertIfAbsent(@Param("reviewId") Long reviewId, @Param("userId") Long userId,
                        @Param("now") LocalDateTime now);
