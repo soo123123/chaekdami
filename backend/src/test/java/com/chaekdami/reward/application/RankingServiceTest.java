@@ -1,5 +1,6 @@
 package com.chaekdami.reward.application;
 
+import com.chaekdami.reward.application.port.RankingTargetChecker;
 import com.chaekdami.reward.application.port.UserNicknameReader;
 import com.chaekdami.reward.application.port.WeeklyReadingTimeReader;
 import com.chaekdami.reward.domain.RewardAccount;
@@ -40,6 +41,7 @@ class RankingServiceTest {
     private static final ZonedDateTime NOW = ZonedDateTime.of(2026, 11, 25, 12, 0, 0, 0, SEOUL);
     private static final LocalDateTime START = LocalDateTime.of(2026, 11, 23, 0, 0);
     private static final LocalDateTime END = LocalDateTime.of(2026, 11, 30, 0, 0);
+    private static final LocalDateTime SERVER_NOW = LocalDateTime.of(2026, 11, 25, 12, 0);
     private static final TransactionType EXP = TransactionType.INCOME_EXPERIENCE;
     private static final Long ME = 2L;
 
@@ -51,17 +53,20 @@ class RankingServiceTest {
     private UserNicknameReader userNicknameReader;
     @Mock
     private WeeklyReadingTimeReader weeklyReadingTimeReader;
+    @Mock
+    private RankingTargetChecker rankingTargetChecker;
     @InjectMocks
     private RankingService rankingService;
 
     @Test
     void 독서_시간_랭킹은_이번_주_세션_독서_시간_합으로_순위를_매긴다() {
-        given(weeklyReadingTimeReader.findTop(START, END, 30)).willReturn(List.of(
+        given(weeklyReadingTimeReader.findTop(START, END, SERVER_NOW, 30)).willReturn(List.of(
                 new WeeklyReadingTimeReader.UserSeconds(3L, 7200),
                 new WeeklyReadingTimeReader.UserSeconds(ME, 3600),
                 new WeeklyReadingTimeReader.UserSeconds(1L, 3600)));
         given(weeklyReadingTimeReader.sumOf(ME, START, END)).willReturn(3600L);
-        given(weeklyReadingTimeReader.countUsersGreaterThan(START, END, 3600L)).willReturn(1L);
+        given(weeklyReadingTimeReader.countUsersGreaterThan(START, END, SERVER_NOW, 3600L)).willReturn(1L);
+        given(rankingTargetChecker.isTarget(ME, SERVER_NOW)).willReturn(true);
         givenNicknames(Map.of(1L, "책벌레", ME, "다독왕", 3L, "밤독서"));
 
         WeeklyRankingResult result = rankingService.getWeeklyReadingTimeRanking(ME, NOW, SEOUL);
@@ -71,12 +76,12 @@ class RankingServiceTest {
                 new WeeklyRankingResult.Entry(2, "다독왕", 1, 3600, true),
                 new WeeklyRankingResult.Entry(2, "책벌레", 1, 3600, false));
         assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(2, "다독왕", 1, 3600));
-        verify(rewardTransactionRepository, never()).findTopAmounts(any(), any(), any(), any());
+        verify(rewardTransactionRepository, never()).findTopAmounts(any(), any(), any(), any(), any());
     }
 
     @Test
     void 이번_주_독서_시간이_없으면_내_순위는_없다() {
-        given(weeklyReadingTimeReader.findTop(START, END, 30)).willReturn(List.of());
+        given(weeklyReadingTimeReader.findTop(START, END, SERVER_NOW, 30)).willReturn(List.of());
         given(weeklyReadingTimeReader.sumOf(ME, START, END)).willReturn(0L);
         givenNicknames(Map.of(ME, "다독왕"));
 
@@ -84,7 +89,7 @@ class RankingServiceTest {
 
         assertThat(result.rankings()).isEmpty();
         assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(null, "다독왕", 1, 0));
-        verify(weeklyReadingTimeReader, never()).countUsersGreaterThan(any(), any(), anyLong());
+        verify(weeklyReadingTimeReader, never()).countUsersGreaterThan(any(), any(), any(), anyLong());
     }
 
     @Test
@@ -115,7 +120,7 @@ class RankingServiceTest {
 
         rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
 
-        verify(rewardTransactionRepository).findTopAmounts(eq(EXP), eq(START), eq(END),
+        verify(rewardTransactionRepository).findTopAmounts(eq(EXP), eq(START), eq(END), eq(SERVER_NOW),
                 argThat((Pageable p) -> p.getPageNumber() == 0 && p.getPageSize() == 30));
     }
 
@@ -142,7 +147,21 @@ class RankingServiceTest {
 
         assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(null, "다독왕", 1, 0));
         verify(rewardTransactionRepository, never())
-                .countUsersWithAmountGreaterThan(any(), any(), any(), anyLong());
+                .countUsersWithAmountGreaterThan(any(), any(), any(), any(), anyLong());
+    }
+
+    @Test
+    void 랭킹_제외_대상이면_점수가_있어도_내_순위는_없다() {
+        givenTop(row(1L, 100));
+        given(rewardTransactionRepository.sumAmount(ME, EXP, START, END)).willReturn(500L);
+        given(rankingTargetChecker.isTarget(ME, SERVER_NOW)).willReturn(false);
+        givenNicknames(Map.of(1L, "책벌레", ME, "관리자"));
+
+        WeeklyRankingResult result = rankingService.getWeeklyExperienceRanking(ME, NOW, SEOUL);
+
+        assertThat(result.myRanking()).isEqualTo(new WeeklyRankingResult.MyRanking(null, "관리자", 1, 500));
+        verify(rewardTransactionRepository, never())
+                .countUsersWithAmountGreaterThan(any(), any(), any(), any(), anyLong());
     }
 
     @Test
@@ -169,19 +188,21 @@ class RankingServiceTest {
     }
 
     private void givenTop(UserAmount... rows) {
-        given(rewardTransactionRepository.findTopAmounts(eq(EXP), eq(START), eq(END), any(Pageable.class)))
+        given(rewardTransactionRepository.findTopAmounts(eq(EXP), eq(START), eq(END), eq(SERVER_NOW), any(Pageable.class)))
                 .willReturn(List.of(rows));
     }
 
     private void givenEmptyTopInUtc() {
         given(rewardTransactionRepository.findTopAmounts(eq(EXP), eq(LocalDateTime.of(2026, 11, 22, 15, 0)),
-                eq(LocalDateTime.of(2026, 11, 29, 15, 0)), any(Pageable.class))).willReturn(List.of());
+                eq(LocalDateTime.of(2026, 11, 29, 15, 0)), eq(LocalDateTime.of(2026, 11, 25, 3, 0)),
+                any(Pageable.class))).willReturn(List.of());
     }
 
     private void givenMine(long amount, long greaterCount) {
         given(rewardTransactionRepository.sumAmount(ME, EXP, START, END)).willReturn(amount);
         if (amount > 0) {
-            given(rewardTransactionRepository.countUsersWithAmountGreaterThan(EXP, START, END, amount))
+            given(rankingTargetChecker.isTarget(ME, SERVER_NOW)).willReturn(true);
+            given(rewardTransactionRepository.countUsersWithAmountGreaterThan(EXP, START, END, SERVER_NOW, amount))
                     .willReturn(greaterCount);
         }
     }

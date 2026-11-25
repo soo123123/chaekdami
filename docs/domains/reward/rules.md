@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-25 · 담당: BE2
 
 # reward 규칙
 
@@ -152,7 +152,9 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 | 한 주 | 한국 시간 월요일 0시 ≤ 시각 < 다음 월요일 0시. 서버 시간대와 무관 | 같음 | `RankingWeek` |
 | 상위 인원 | 30명 | 같음 | `RankingService.TOP_SIZE` |
 | 동점 | 같은 순위, 다음 순위는 건너뜀 (1, 2, 2, 4). 같은 순위 안에서는 사용자 번호 작은 순 | 같음 | `RankingService.toEntries` |
-| 내 순위 | 나보다 점수가 큰 사용자 수 + 1. 0점이면 `null` | 같음 | `countUsers…GreaterThan` |
+| 제외 | 조회하는 순간 정지 중인 회원, 관리자. 다른 사람의 순위에도 세지 않음 | 같음 | `RankingTargets` (정지 기준은 `User.isSuspendedAt`과 같음) |
+| 0점 | 합계가 0보다 큰 사용자만 나옴 | 같음 | 쿼리 `having` |
+| 내 순위 | 나보다 점수가 큰 사용자 수 + 1. 0점이거나 본인이 제외 대상이면 `null` (점수는 그대로) | 같음 | `countUsers…GreaterThan` |
 | 탈퇴한 사용자 | 탈퇴 때 이력이 지워져 나오지 않음 | 탈퇴 때 세션이 지워져 나오지 않음 | `RewardCleanupService`, `ReadingCleanupListener` |
 | 책 삭제 | 경험치 이력이 남아 점수 유지 ([ISSUE-DATA-3](../../known-issues.md#issue-data-3)) | 세션이 지워져 점수에서 빠짐 | — |
 | 닉네임 | user 도메인을 읽기만 함. 못 찾으면 목록에서 뺌 | 같음 | port `UserNicknameReader` → `RewardUserNicknameReader` |
