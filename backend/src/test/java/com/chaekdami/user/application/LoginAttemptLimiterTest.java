@@ -29,10 +29,11 @@ class LoginAttemptLimiterTest {
         AuthAttemptRepository repository = mock(AuthAttemptRepository.class);
         when(repository.findByAttemptKey(any())).thenAnswer(invocation ->
                 Optional.ofNullable(store.get(invocation.getArgument(0))));
-        when(repository.save(any())).thenAnswer(invocation -> {
-            AuthAttempt attempt = invocation.getArgument(0);
-            store.put(attempt.getAttemptKey(), attempt);
-            return attempt;
+        when(repository.findByAttemptKeyForUpdate(any())).thenAnswer(invocation ->
+                Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(repository.insertIfAbsent(any(), any())).thenAnswer(invocation -> {
+            String key = invocation.getArgument(0);
+            return store.putIfAbsent(key, new AuthAttempt(key, invocation.getArgument(1))) == null ? 1 : 0;
         });
         limiter = new LoginAttemptLimiter(repository);
     }

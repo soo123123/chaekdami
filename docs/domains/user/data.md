@@ -1,4 +1,4 @@
-> 기준: feature/be3-nickname (스펙 010) · 최종 확인: 2026-11-25 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 데이터
 
@@ -67,7 +67,7 @@ erDiagram
 | 컬럼 | 설명 |
 |---|---|
 | id | PK |
-| attempt_key | `login|{email}|{ip}` 또는 `reset|{email}|{ip}`, UNIQUE |
+| attempt_key | `login|{email}|{ip}` · `reset|{email}|{ip}` · `reset|{email}|*`(이메일별), UNIQUE |
 | attempt_count | 현재 집계 창 안의 시도 수 |
 | window_started_at | 집계 창 시작 |
 | locked_until | 잠금 해제 시각 |

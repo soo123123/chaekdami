@@ -20,7 +20,8 @@ public enum ReviewErrorCode implements ErrorCode {
     READING_NOT_COMPLETED(409, "완독한 뒤에 작성할 수 있습니다."),
     REVIEW_ALREADY_EXISTS(409, "이 책의 리뷰가 이미 있습니다. 수정해 주세요."),
     BOOK_REPORT_ALREADY_EXISTS(409, "이 회차의 독후감이 이미 있습니다. 수정해 주세요."),
-    ALREADY_REPORTED(409, "이미 신고한 한줄평입니다.");
+    ALREADY_REPORTED(409, "이미 신고한 한줄평입니다."),
+    TOO_MANY_ATTEMPTS(429, "오늘 신고할 수 있는 횟수를 모두 사용했습니다.");
 
     private final int status;
     private final String message;

@@ -55,3 +55,4 @@
 | 006 | [review-delete](./006-review-delete/) — 리뷰(별점) 삭제 API | done | BE3 |
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
 | 010 | [nickname-change](./010-nickname-change/) — 닉네임 변경 API | done | BE3 |
+| 011 | [request-limits](./011-request-limits/) — 신고·비밀번호 재설정 요청 제한 | done | BE3 |

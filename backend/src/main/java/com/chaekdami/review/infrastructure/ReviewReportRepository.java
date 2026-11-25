@@ -17,11 +17,13 @@ public interface ReviewReportRepository extends JpaRepository<ReviewReport, Long
     @Query(value = """
             insert into review_reports (review_id, user_id, reason, detail, created_at)
             values (:reviewId, :userId, :reason, :detail, :now)
-            on conflict (review_id, user_id) do nothing
+            on conflict do nothing
             """, nativeQuery = true)
     int insertIfAbsent(@Param("reviewId") Long reviewId, @Param("userId") Long userId,
                        @Param("reason") String reason, @Param("detail") String detail,
                        @Param("now") LocalDateTime now);
+
+    long countByUserIdAndCreatedAtGreaterThanEqual(Long userId, LocalDateTime from);
 
     @Query("""
             select r.review.id as reviewId, r.reason as reason, count(r) as count

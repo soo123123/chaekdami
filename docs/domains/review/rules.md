@@ -1,4 +1,4 @@
-> 기준: fix/be3-review-isbn · 최종 확인: 2026-11-24 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # review 규칙
 
@@ -63,6 +63,7 @@
 | 내 리뷰 좋아요·신고 | 400 `CANNOT_LIKE_OWN_REVIEW` · `CANNOT_REPORT_OWN_REVIEW` | `ReviewErrorCode` | ✅ |
 | 좋아요 | PUT 추가 / DELETE 취소. 중복은 무시 | `ReviewLike` (on conflict do nothing) | ✅ |
 | 신고 | 같은 사람 같은 리뷰 1번 (409 `ALREADY_REPORTED`). `OTHER`면 상세 필수(300자) | `ReviewReport` | ✅ |
+| 하루 신고 제한 | 회원별 한국 날짜로 하루 20번 (429 `TOO_MANY_ATTEMPTS`). 거절된 신고는 세지 않음. 지워진 리뷰의 신고는 횟수에서 빠짐. 회원 행을 잠가 동시 신고도 넘지 않음 | `ReviewSocialService.MAX_REPORTS_PER_DAY` | ✅ |
 | 자동 블라인드 | 신고 수가 기준 이상이면 블라인드 | `review.blind-threshold` (기본 3) | ✅ |
 | 블라인드 해제 | 관리자만. 해제하면 신고 수 0으로, 신고 기록은 남김 | `ReviewAdminService` | ✅ |
 | 동시성 | 좋아요 수·신고 수·블라인드는 원자적 UPDATE로만 변경 | `ReviewRepository` | ✅ |

@@ -1,4 +1,4 @@
-> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 > 원본: `docs/review-api-for-frontend.md` (커밋 `209eec7`)를 옮기고 현재 코드와 대조해 보정했다.
 
 # review API (독후활동)
@@ -147,6 +147,7 @@ Authorization: Bearer {accessToken}
 | 409 | `REVIEW_ALREADY_EXISTS` | 같은 책에 리뷰를 다시 생성 | 수정을 호출 |
 | 409 | `BOOK_REPORT_ALREADY_EXISTS` | 같은 회차에 독후감이 동시에 생성됨 | 다시 조회한 뒤 수정 |
 | 409 | `ALREADY_REPORTED` | 같은 한줄평을 다시 신고 | 이미 신고했다고 표시 |
+| 429 | `TOO_MANY_ATTEMPTS` | 하루 신고 20번을 넘음 | 메시지 표시 |
 | 500 | `INTERNAL_ERROR` | 서버 오류 | 잠시 후 다시 시도하라고 표시 |
 
 ---
@@ -690,7 +691,7 @@ Content-Type: application/json
 
 `reason` 은 `SPOILER`, `ABUSIVE`, `SPAM`, `INAPPROPRIATE`, `OTHER` 중 하나다. `OTHER` 는 `detail` 이 필수다.
 
-같은 글을 다시 신고하면 409 `ALREADY_REPORTED` 다. 서로 다른 사람의 신고가 3건이 되면 그 글은 블라인드되어 목록과 별점 통계에서 빠진다.
+같은 글을 다시 신고하면 409 `ALREADY_REPORTED` 다. 한 회원이 한국 날짜로 하루 20번을 넘겨 신고하면 429 `TOO_MANY_ATTEMPTS` 이고 저장하지 않는다. 서로 다른 사람의 신고가 3건이 되면 그 글은 블라인드되어 목록과 별점 통계에서 빠진다.
 
 ### 완독자 커뮤니티 요약
 

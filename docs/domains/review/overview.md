@@ -1,4 +1,4 @@
-> 기준: feature/be3-review-delete (스펙 006) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # review — 독후활동
 
@@ -43,6 +43,7 @@ backend/src/main/java/com/chaekdami/review/
 |---|---|---|
 | review → reading | 책(소유자·ISBN·쪽수), 회차(소유자·완독 여부) 조회 | port `BookReader`, `ReadingRecordReader` + JDBC 구현 |
 | review → user | 작성자 닉네임 | `UserNicknameReader` |
+| review → user | 신고할 때 회원 행 잠금 | port `UserLock` → `UserRepositoryLock` |
 | review → user | 현재 사용자 | `user.application.CurrentUser` |
 | user → review | 회원 탈퇴 시 독후활동 삭제 | 이벤트 `UserWithdrawnEvent` → `ReviewCleanupListener` |
 | reading → review | 책 삭제 시 독후활동 삭제 | reading port `BookActivityCleaner` → `ReviewBookActivityCleaner` → `ReviewCleanupService.deleteAllOfBook` (책 삭제와 같은 트랜잭션) |
