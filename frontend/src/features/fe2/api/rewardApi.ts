@@ -114,13 +114,15 @@ export const getShopItems =
     return response.data;
   };
 
+// ownedQuantity: 화면이 아는 그 상품의 보유 개수. 서버의 개수와 다르면 사지 않고 409 SHOP_002 (스펙 016)
 export const purchaseItem = async (
   itemId: number,
-  purchaseQuantity = 1
+  purchaseQuantity: number,
+  ownedQuantity: number
 ): Promise<PurchaseResult> => {
   const response = await apiClient.post<PurchaseResult>(
     `/api/shop/items/${itemId}/purchase`,
-    { purchaseQuantity }
+    { purchaseQuantity, ownedQuantity }
   );
 
   return response.data;

@@ -18,7 +18,7 @@ import { goBackOr } from '@/utils/navigation';
 import { HIT_SLOP } from '@/constants/layout';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import {
   formatBuffEndTime,
   getRewardStatus,
@@ -91,14 +91,54 @@ function toProduct(item: ShopItemResult): Product {
   };
 }
 
-function errorMessage(error: unknown, fallback = '구매에 실패했어요.') {
-  if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string' && message.length > 0) {
-      return message;
-    }
+function errorMessage(error: unknown) {
+  const response = isAxiosError(error) ? error.response : undefined;
+  const message = response?.data?.message;
+
+  return response &&
+    response.status < 500 &&
+    typeof message === 'string' &&
+    message.length > 0
+    ? message
+    : '구매에 실패했어요.';
+}
+
+// 응답이 끊겼거나 서버 오류거나 보유 개수가 달라졌으면 이미 구매됐을 수 있다
+function mayHavePurchased(error: unknown) {
+  if (!isAxiosError(error)) return false;
+
+  const status = error.response?.status;
+
+  return (
+    status === undefined ||
+    status >= 500 ||
+    error.response?.data?.code === 'SHOP_002'
+  );
+}
+
+// 구매에 실패한 뒤 다시 조회한 개수로 실제 결과를 안내한다 (ISSUE-BUG-35)
+// after: 다시 조회하지 못했으면 null
+function purchaseFailureMessage(
+  error: unknown,
+  before: number,
+  after: number | null
+) {
+  if (after === null) {
+    return mayHavePurchased(error)
+      ? '구매 결과를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'
+      : errorMessage(error);
   }
-  return fallback;
+
+  const owned = `보유 ${after.toLocaleString()}개`;
+
+  // 요청이 자동으로 다시 보내져 오류를 받았어도 처음 요청은 처리됐을 수 있다
+  if (after > before) return `이미 구매됐어요. ${owned}`;
+
+  if (after < before && mayHavePurchased(error)) {
+    return `보유 개수가 바뀌었어요. ${owned}`;
+  }
+
+  return errorMessage(error);
 }
 
 function CoinIcon({ size = 24 }: { size?: number }) {
@@ -221,7 +261,7 @@ export default function ShopScreen() {
         getShopItems(),
       ]);
 
-      if (!isActive()) return;
+      if (!isActive()) return null;
 
       if (typeof reward?.currency === 'number') {
         setCoins(reward.currency);
@@ -237,8 +277,12 @@ export default function ShopScreen() {
         }
       }
       setInventory(owned);
+
+      return owned;
     } catch (error) {
       console.warn('상점 조회 실패:', error);
+
+      return null;
     }
   }, []);
 
@@ -270,6 +314,8 @@ export default function ShopScreen() {
     if (!selectedProduct || purchasingRef.current) return;
 
     const product = selectedProduct;
+    // 사용자가 보고 누른 개수
+    const before = inventory[product.id] ?? 0;
 
     if (coins < product.price) {
       setSelectedProduct(null);
@@ -281,7 +327,7 @@ export default function ShopScreen() {
     setPurchasing(true);
 
     try {
-      const result = await purchaseItem(Number(product.id), 1);
+      const result = await purchaseItem(Number(product.id), 1, before);
       setCoins(result.remainingCurrency);
       setInventory((current) => ({
         ...current,
@@ -290,10 +336,17 @@ export default function ShopScreen() {
       setSelectedProduct(null);
       showMessage(`${product.name} 구매가 완료됐어요.`);
     } catch (error) {
+      // 실제 재화와 보유 수량을 다시 확인해 안내만 한다 (자동으로 다시 구매하지 않는다)
+      const owned = await loadShop();
+
       setSelectedProduct(null);
-      showMessage(errorMessage(error));
-      // 응답만 끊겼을 수 있어 실제 재화와 보유 수량을 다시 확인한다
-      await loadShop();
+      showMessage(
+        purchaseFailureMessage(
+          error,
+          before,
+          owned ? owned[product.id] ?? 0 : null
+        )
+      );
     } finally {
       purchasingRef.current = false;
       setPurchasing(false);

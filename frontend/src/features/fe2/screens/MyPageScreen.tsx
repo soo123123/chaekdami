@@ -469,7 +469,7 @@ export default function MyPageScreen() {
               style={styles.summaryHint}
               numberOfLines={2}
             >
-              꾸준히 읽고 있어요!
+              {stats.dday === null ? '불러오지 못했어요' : '꾸준히 읽고 있어요!'}
             </Text>
           </TouchableOpacity>
 
@@ -532,7 +532,7 @@ export default function MyPageScreen() {
               style={styles.summaryHint}
               numberOfLines={2}
             >
-              상점에서 사용해요
+              {stats.reward ? '상점에서 사용해요' : '불러오지 못했어요'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -564,7 +564,7 @@ export default function MyPageScreen() {
                 오늘의 퀘스트
               </Text>
 
-              <Text style={styles.questDescription}>
+              <Text style={styles.questDescription} numberOfLines={2}>
                 {stats.quest ? stats.quest.title : '퀘스트를 불러오지 못했어요'}
               </Text>
 
@@ -581,15 +581,15 @@ export default function MyPageScreen() {
                 <Text style={styles.questCount}>
                   {stats.quest ? `${stats.quest.minutes}/${stats.quest.target}분` : '-'}
                 </Text>
-              </View>
-            </View>
 
-            <View style={styles.questArrow}>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={COLORS.green}
-              />
+                <View style={styles.questArrow}>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={15}
+                    color={COLORS.green}
+                  />
+                </View>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -965,9 +965,14 @@ const styles = StyleSheet.create({
 
   profileRow: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 15,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    // 글씨가 배경 그림과 섞이지 않게 한다 (ISSUE-BUG-34)
+    backgroundColor: 'rgba(255,253,249,0.88)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 11,
@@ -975,9 +980,9 @@ const styles = StyleSheet.create({
   },
 
   profileRowCompact: {
-    left: 12,
-    right: 12,
-    bottom: 12,
+    left: 8,
+    right: 8,
+    bottom: 8,
     gap: 8,
   },
 
@@ -1038,20 +1043,20 @@ const styles = StyleSheet.create({
   },
 
   quote: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#4E4942',
     marginTop: 5,
-    lineHeight: 15,
+    lineHeight: 16,
   },
 
   quoteCompact: {
-    fontSize: 9,
-    lineHeight: 13,
+    fontSize: 10,
+    lineHeight: 14,
   },
 
   editButton: {
     marginTop: 9,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#EFE7DA',
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 11,
@@ -1148,19 +1153,17 @@ const styles = StyleSheet.create({
 
   questDetails: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 13,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
+    // 배경 그림의 빈 초록 영역 (ISSUE-BUG-34)
+    left: '59%',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
     zIndex: 2,
   },
 
   questInfo: {
-    flex: 1,
     minWidth: 0,
-    paddingRight: 4,
   },
 
   questTitle: {
@@ -1186,7 +1189,9 @@ const styles = StyleSheet.create({
   questDescription: {
     fontSize: 11,
     color: '#F0F6EE',
-    marginTop: 6,
+    lineHeight: 15,
+    marginTop: 2,
+    paddingRight: 22,
     textAlign: 'left',
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: {
@@ -1200,7 +1205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
+    marginTop: 6,
   },
 
   questTrack: {
@@ -1217,15 +1222,15 @@ const styles = StyleSheet.create({
   },
 
   questCount: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#FFFFFF',
   },
 
   questArrow: {
     backgroundColor: '#FFFFFF',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 3,
