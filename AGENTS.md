@@ -61,7 +61,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 |---|---|
 | 백엔드 테스트 | `cd backend && ./gradlew test` |
 | 프론트 타입 검사 | `cd frontend && npx tsc --noEmit` |
-| 프론트 린트 | `cd frontend && npx expo lint` (ESLint 설정 전) |
+| 프론트 린트 | `cd frontend && npm run lint` (기존 오류가 남아 있어 새 오류가 늘지 않았는지 본다) |
 | 프론트↔백엔드 API 경로 | `python3 scripts/harness/contract-check.py` |
 | 문서 상태 | `python3 scripts/harness/docs-check.py` |
 
