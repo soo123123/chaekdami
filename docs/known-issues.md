@@ -68,8 +68,8 @@
 | <a id="issue-bug-27"></a>ISSUE-BUG-27 | BE1 | 낮음 | 열림 | 일간 통계는 0~4시를 마지막 칸(21시)에 더하고, 월간은 세션마다 분을 버린다 | 새벽 기록이 21시에 보이고 월간 합이 작게 나온다 | `ReadingStatsService` | — | — |
 | <a id="issue-bug-28"></a>ISSUE-BUG-28 | BE1·BE3 | 낮음 | 진행 중 | 책 저장의 모든 무결성 오류를 "이미 서재에 있는 책입니다" 409로 바꾼다 | 너무 긴 입력도 중복으로 안내될 수 있다 (리뷰 ISBN 길이도 확인 필요) | `BookService` | — | — | BE3 리뷰 쪽 완료 (PR #29). BE1 `BookService`는 시작 전 |
 | <a id="issue-bug-29"></a>ISSUE-BUG-29 | BE2 | 낮음 | 진행 중 | 보상 계정을 처음 만들 때 별도 트랜잭션(`REQUIRES_NEW`)을 열어 한 요청이 DB 연결을 2개 쓴다 | 처음 보상을 받는 요청이 동시에 몰리면 연결을 기다리다 500이 날 수 있다 (ISSUE-BUG-8에서 발견, 재현하지 않음) | `RewardAccountInitializer`, `RewardLedger` | — | — | 구현 완료, 병합 대기 (fix/be2-account-create, PR 42). H2에서 재현·수정 확인, 실제 PostgreSQL 미확인. PR 35를 합쳐 충돌 해결 (PR 42를 병합하면 PR 35도 함께 들어감) |
-| <a id="issue-bug-31"></a>ISSUE-BUG-31 | 프론트 공통 (FE2 주) | 중간 | 열림 | 토큰 재발급을 기다리는 동안 로그아웃하거나 새로 로그인해도 재발급 결과를 그대로 반영한다 | 로그아웃 뒤 토큰이 다시 저장될 수 있다. 재발급이 거절되면 새 로그인의 토큰까지 지워진다 (가짜 서버로 둘 다 재현, PR 28에도 남음) | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 21~42 검토에서 발견 (2026-11-25) |
-| <a id="issue-bug-32"></a>ISSUE-BUG-32 | FE2 | 낮음 | 열림 | D-day 목표 저장 중에도 입력 창을 닫고 다른 목표를 열 수 있다 | 먼저 한 저장이 끝나면 새로 연 창이 닫혀 입력이 사라진다 (코드로 확인, PR 27에도 남음) | 앱 `DdayScreen` | — | — | — |
+| <a id="issue-bug-31"></a>ISSUE-BUG-31 | 프론트 공통 (FE2 주) | 중간 | 진행 중 | 토큰 재발급을 기다리는 동안 로그아웃하거나 새로 로그인해도 재발급 결과를 그대로 반영한다 | 로그아웃 뒤 토큰이 다시 저장될 수 있다. 재발급이 거절되면 새 로그인의 토큰까지 지워진다 (가짜 서버로 둘 다 재현, PR 28에도 남음) | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 21~42 검토에서 발견 (2026-11-25) |
+| <a id="issue-bug-32"></a>ISSUE-BUG-32 | FE2 | 낮음 | 진행 중 | D-day 목표 저장 중에도 입력 창을 닫고 다른 목표를 열 수 있다 | 먼저 한 저장이 끝나면 새로 연 창이 닫혀 입력이 사라진다 (코드로 확인, PR 27에도 남음) | 앱 `DdayScreen` | — | — | — |
 | <a id="issue-data-3"></a>ISSUE-DATA-3 | BE1 (+BE2) | 낮음 | 열림 | 책 삭제 시 보상 데이터는 그대로 둔다 | `reading_session_rewards`·`reward_transactions`가 지워진 세션 번호를 가리킨 채 남는다 (받은 경험치·재화는 유지) | `BookService.deleteBook` | [reward/data](./domains/reward/data.md#삭제) | ASK-4 |
 | <a id="issue-data-4"></a>ISSUE-DATA-4 | 프론트 공통 | 중간 | 열림 | 로그아웃 때 토큰만 지운다. 서재 테마 저장에 사용자 구분이 없다 | 같은 기기의 다음 사용자에게 이전 테마 등이 남을 수 있다 (최근 검색어, 뒤로 가기 화면은 확인 필요) | 앱 `MyPageScreen`, `readingApi.ts` | — | — |
 | <a id="issue-limit-1"></a>ISSUE-LIMIT-1 | BE1 | 중간 | 열림 | 서버는 독서 시간이 3분~2시간인지만 검증한다 | 앱 종료 화면은 측정 시간 이내로 막지만, 측정값이 없을 때나 API를 직접 부를 때는 실제보다 긴 시간이 저장될 수 있다 (쪽수·겹치는 세션은 ISSUE-SEC-3) | `ReadingSession.of` | [reading/rules](./domains/reading/rules.md#3-독서-세션) | — |
@@ -78,7 +78,7 @@
 | <a id="issue-limit-4"></a>ISSUE-LIMIT-4 | FE2 (+FE1, BE2) | 높음 | 열림 | 독서 보상 요청은 독서 완료 화면에서만 보낸다 (스펙 001의 알려진 제한) | 실패한 채 나가거나 앱이 꺼지면 보상과 D-day 읽은 날을 놓친다. 서버 정산 기능 필요 | 앱 `useReadingComplete`, 서버 보상 | — | — |
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
 | <a id="issue-limit-6"></a>ISSUE-LIMIT-6 | FE2 | 낮음 | 열림 | 부스터 위젯의 이동 범위가 하단 탭바와 화면 버튼을 계산하지 않는다 (PR #23의 안전 영역 제한도 노치·제스처 바만 뺀다) | 위젯을 옮긴 위치에 따라 하단 탭(홈 등)이나 서재 오른쪽 위 버튼을 가린다. 위젯을 다시 옮기면 누를 수 있다 (시뮬레이터 확인). 제안: 탭바가 있는 화면에서는 탭바 위까지만 이동. 서재 버튼 가림은 TODO-41과 함께 검토 | 앱 `BoosterFloatingWidget` | — | — | 실기기 검토·피드백: FE1 |
-| <a id="issue-limit-7"></a>ISSUE-LIMIT-7 | FE2 | 낮음 | 열림 | 앱 시작 때 서버 연결 오류 화면에 다시 시도 버튼이 없다 | 연결이 돌아와도 앱을 다시 켜야 한다 | 앱 `home.tsx` | — | — | — |
+| <a id="issue-limit-7"></a>ISSUE-LIMIT-7 | FE2 | 낮음 | 진행 중 | 앱 시작 때 서버 연결 오류 화면에 다시 시도 버튼이 없다 | 연결이 돌아와도 앱을 다시 켜야 한다 | 앱 `home.tsx` | — | — | — |
 | <a id="issue-limit-8"></a>ISSUE-LIMIT-8 | BE2 (+FE2) | 중간 | 열림 | D-day 목표 저장은 목록 전체를 바꾸고, 그사이 바뀌었는지 확인하지 않는다 | 다른 기기에서 추가했거나 응답이 끊겨 앱이 모르는 목표가 다음 저장 때 지워질 수 있다 (코드로 확인, PR 27 범위 밖) | `DdayService.saveGoals`, 앱 `DdayScreen` | — | — | — |
 
 ## 2. ⏳ 할 일
