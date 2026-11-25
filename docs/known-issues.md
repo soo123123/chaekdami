@@ -104,7 +104,7 @@
 | <a id="todo-31"></a>TODO-31 | FE2 | 완독 후 독후감 UI 개선 | 열림 | 노션 Notice에만 적혀 있던 항목. 개선할 내용은 정해지지 않음 | 앱 독후감 화면 | — |
 | <a id="todo-32"></a>TODO-32 | FE1 (+BE1) | 독서 목표·공개 설정을 등록 뒤에도 보기·수정 | 열림 | 등록 화면에서만 입력. 새 회차에는 설정할 방법이 없다는 보고 | 앱 책 상세 | — |
 | <a id="todo-33"></a>TODO-33 | FE1 | 도서 검색 결과 21번째 이후 보기 | 열림 | 1페이지 20권만 조회 | 앱 `readingApi.ts` | — |
-| <a id="todo-34"></a>TODO-34 | FE2 (+BE3) | 마이페이지 준비 중 항목 (프로필 편집·설정·고객센터·약관) | 열림 | 닉네임 변경 API는 완료 (`PATCH /api/me`, 스펙 010, PR #38). 앱의 프로필 편집·설정·고객센터·약관은 준비 중 (알림은 TODO-8) | 앱 `MyPageScreen` | [user/api](./domains/user/api.md) |
+| <a id="todo-34"></a>TODO-34 | FE2 (+BE3) | 마이페이지 준비 중 항목 (프로필 편집·설정·고객센터·약관) | 진행 중 | 닉네임 변경 API는 완료 (`PATCH /api/me`, 스펙 010, PR #38). 앱의 프로필 편집·설정·고객센터·약관은 준비 중 (알림은 TODO-8) | 앱 `MyPageScreen` | [user/api](./domains/user/api.md) |
 | <a id="todo-35"></a>TODO-35 | FE1 (+BE3) | 공개 독후감·문장의 신고와 가려진 표시 (앱) | 열림 | 서버는 완료 (스펙 012, PR #40): 신고·블라인드·관리자 API, 정지 중 글 숨김, `isBlinded`. 앱의 신고 버튼과 가려진 표시가 없음. 커뮤니티 연결은 TODO-13 | 앱 `communityApi.ts` | [review/api](./domains/review/api.md#독후감문장-신고) |
 | <a id="todo-40"></a>TODO-40 | FE2 | 부스터 사용 버튼을 상점에서 홈 보유 아이템으로 이동 | 진행 중 | 사용 버튼은 상점에만 있고, 홈 "나의 보유 아이템"은 개수만 보여준다. 보유 아이템을 보는 곳에서 바로 쓰는 것이 자연스러워, 홈 경험치병에 사용 버튼을 넣고 상점의 사용 버튼은 뺀다 (FE1 제안, FE2 동의 2026-11-25). 제안 기준: 상점의 적용 상태·보유 개수 표시는 유지, 사용 전 확인 창, 0개면 비활성, 방어권은 버튼 없음, 사용 후 홈 개수와 위젯 바로 갱신. 스펙 001 D10·R5.1(상점에 사용 버튼)과 달라진다. API 변경 없음 | 앱 `HomeScreen`, `ShopScreen` | [스펙 001](./specs/001-reward-integration/requirements.md) | 실기기 검토·피드백: FE1 |
 | <a id="todo-41"></a>TODO-41 | FE2 | (아이디어) 부스터 위젯을 놓으면 가장자리로 자동 이동 | 열림 | 놓은 자리에 그대로 멈춰 화면 가운데에도 남는다. 화면 내용을 덜 가리도록, 손을 떼면 가까운 좌우 가장자리로 붙인다 (제안 기준: 세로 위치는 유지, 안전 영역 안). 하단 탭 가림(ISSUE-LIMIT-6)과 함께 검토 | 앱 `BoosterFloatingWidget` | — | 실기기 검토·피드백: FE1 |
@@ -123,13 +123,13 @@
 | <a id="todo-22"></a>TODO-22 | BE2 | 안 쓰는 메서드 정리 | 열림 | `DdayService.markTodayRead` 호출 없음. 호출 없다는 보고(확인 필요): `RewardService.createAccount`, `ReviewLikeRepository.existsByReview_IdAndUserId`, `BookReportReader.find`(TODO-4 준비용). `ReadingRecordService`의 완독 이벤트 TODO 주석도 유지할지 결정 | `DdayService` |
 | <a id="todo-23"></a>TODO-23 | BE1 | 독서 인증 429 임시 규칙 되돌리기 | 열림 | Gemini가 임시 API라 사용 한도 초과(429)면 `PASSED`(`ai_skipped`), 사진 인증 보상에서는 제외. 정식 AI API로 바꿀 때 둘 다 다시 정한다 | `GeminiRetryPolicy`, `CertificationVerifier`, `Certification.isRewardable` |
 | <a id="todo-24"></a>TODO-24 | BE1 (+FE1) | AI 장애를 앱에 따로 알리기 | 열림 | AI 장애(시간 초과·다시 시도 실패)도 글자 부족과 같은 `UNVERIFIED`로 와서 앱은 "다시 찍어주세요"만 보여준다 | `GeminiPageTextExtractor`, 앱 `useReadingEnd` |
-| <a id="todo-36"></a>TODO-36 | 공통 | 출시 준비 정리 | 열림 | 비밀번호 재설정 주소 기본값이 `localhost`, 앱이 사용자 정보를 console에 남김. 앱 이름·번들 ID와 템플릿 화면·파일 정리도 필요하다는 보고 | `application.properties`, 앱 `home.tsx`, `app.json` |
+| <a id="todo-36"></a>TODO-36 | 공통 | 출시 준비 정리 | 진행 중 | 비밀번호 재설정 주소 기본값이 `localhost`, 앱이 사용자 정보를 console에 남김. 앱 이름·번들 ID와 템플릿 화면·파일 정리도 필요하다는 보고 | `application.properties`, 앱 `home.tsx`, `app.json` |
 | <a id="todo-37"></a>TODO-37 | 공통 | main 보호와 자동 검사(CI), 작업 도구 정리 | 열림 | main 보호와 CI 없음. PR 없는 직접 push가 있었음. known-issues 예외를 먼저 정해야 함. Cursor 규칙에 push 규칙, issue-log 스킬에 노션 `완료일` 칸도 추가 | GitHub 설정, `.cursor/rules`, `.claude/skills` |
 | <a id="todo-38"></a>TODO-38 | 백엔드 공통 | 핵심 로직 테스트 보강 | 열림 | BE3 몫(user·review)은 완료 (2026-11-25, `test/be3-core-tests`). BE1·BE2 몫이 남음: 인증·통계·독서 기록 등 테스트가 없는 서비스가 있다는 보고 (TODO-21과 별개) | `backend/src/test` |
 | <a id="todo-39"></a>TODO-39 | FE1·FE2·BE1·BE2·BE3 | 스펙 001·003·004 실기기 확인 | 열림 | 각 tasks에 4건·4건·6건 남음. 끝나면 스펙을 done으로 | [specs](./specs/README.md) |
 | <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름, H2로 재현. 지금은 3분 제한으로 생기기 어려움) ② 집계 쿼리를 실행하는 테스트가 없음 ③ `reading_sessions.ended_at` 인덱스가 없음 (제안) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
 | <a id="todo-44"></a>TODO-44 | FE1 | 주가 바뀌면 랭킹 화면 다시 불러오기 (스펙 008, PR 21) | 열림 | 병합 전. 월요일 0시가 지나도 다시 들어오기 전까지, 조회가 실패하면 그 뒤에도 지난주 순위가 "이번 주"로 남음 (제안: 종료 날짜가 지나면 다시 조회) | 앱 `useWeeklyRanking`, `RankingScreen` | 스펙 008 설계의 "실패하면 전에 보이던 순위 유지"와 함께 정함 |
-| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 열림 | 설정(TODO-20, PR 49) 도입 때 오류 36·경고 9가 남아 `npm run lint`가 실패한다. FE1 16·0, FE2 12·6, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
+| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 도입 때 오류 36·경고 9가 남아 `npm run lint`가 실패한다. FE1 16·0, FE2 12·6, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
 
 ## 3. ❓ 질문
 
