@@ -79,7 +79,7 @@
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
 | <a id="issue-limit-6"></a>ISSUE-LIMIT-6 | FE2 | 낮음 | 진행 중 | 부스터 위젯의 이동 범위가 하단 탭바와 화면 버튼을 계산하지 않는다 (PR #23의 안전 영역 제한도 노치·제스처 바만 뺀다) | 위젯을 옮긴 위치에 따라 하단 탭(홈 등)이나 서재 오른쪽 위 버튼을 가린다. 위젯을 다시 옮기면 누를 수 있다 (시뮬레이터 확인). 제안: 탭바가 있는 화면에서는 탭바 위까지만 이동. 서재 버튼 가림은 TODO-41과 함께 검토 | 앱 `BoosterFloatingWidget` | — | — | 실기기 검토·피드백: FE1 |
 | <a id="issue-limit-7"></a>ISSUE-LIMIT-7 | FE2 | 낮음 | 진행 중 | 앱 시작 때 서버 연결 오류 화면에 다시 시도 버튼이 없다 | 연결이 돌아와도 앱을 다시 켜야 한다 | 앱 `home.tsx` | — | — | — |
-| <a id="issue-limit-8"></a>ISSUE-LIMIT-8 | BE2 (+FE2) | 중간 | 열림 | D-day 목표 저장은 목록 전체를 바꾸고, 그사이 바뀌었는지 확인하지 않는다 | 다른 기기에서 추가했거나 응답이 끊겨 앱이 모르는 목표가 다음 저장 때 지워질 수 있다 (코드로 확인, PR 27 범위 밖) | `DdayService.saveGoals`, 앱 `DdayScreen` | — | — | — |
+| <a id="issue-limit-8"></a>ISSUE-LIMIT-8 | BE2 (+FE2) | 중간 | 열림 | D-day 목표 저장은 목록 전체를 바꾸고, 그사이 바뀌었는지 확인하지 않는다 | 다른 기기에서 추가했거나 응답이 끊겨 앱이 모르는 목표가 다음 저장 때 지워질 수 있다 (코드로 확인, PR 27 범위 밖) | `DdayService.saveGoals`, 앱 `DdayScreen` | — | — | 여러 기기에서 생기는 문제는 TODO-47(단일 기기 로그인)로 대부분 사라질 것으로 보여 서버 수정은 대기 (BE2, 2026-11-25). 저장 응답이 끊긴 경우는 남음 (앱에서 처리할지 FE2 확인 필요) |
 
 ## 2. ⏳ 할 일
 
@@ -89,7 +89,7 @@
 |---|---|---|---|---|---|---|---|
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | 열림 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE1 | AI 기능 (독후감 피드백, 문장 인증) | 열림 | 없음. `book_reports.revision`만 준비. 책 추천은 TODO-27로 분리 | — | [review/rules](./domains/review/rules.md#3-독후감) |
-| <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 진행 중 (스펙 013) | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
+| <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 진행 중 (스펙 013) | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) | 일일은 서버 시간대 날짜, 주간은 한국 시간 기준(스펙 013). ASK-9가 정해지면 맞춤 |
 | <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 공개 전 결정: ASK-14, ASK-18, ISSUE-SEC-3. 보강: TODO-43 |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 (사용자 구분도 없음, ISSUE-DATA-4) | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | BE3 | (확정) 독서 독려 알림 (기기 로컬, Android·iOS) | 열림 | 없음. 기획(2026-11-24, 2026-11-23의 자정까지 반복 알림을 대체): 시간대·요일, 금일 독서 여부, 금일·금주 독서량, 연속 독서, 미접속을 활용해 독서를 유도하는 알림 (듀오링고 방식). 앱이 7일치를 예약하고 독서 저장·접속 때 다시 예약, 마이페이지에서 설정. 저장 성공·보상 처리 뒤와 앱 시작·복귀 때 다시 예약하고, 로그아웃·탈퇴·세션 만료 때 취소 (BE3 결정, 2026-11-25). 서버는 알림용 상태 조회와 `reminder_settings` 테이블(마지막 접속·푸시 수신 값은 서버 푸시를 빼서 필요 없음. 칸은 스펙에서 정함). 독서 여부·독서량은 저장하지 않고 세션에서 계산. 세부 값은 ASK-7, 날짜 기준은 ASK-9. 복귀 알림은 TODO-42, 여러 기기 동기화는 TODO-46 | 앱 `MyPageScreen`, `useReadingEnd`, `app/_layout.tsx` | [overview](./overview.md#3-주요-기능과-현재-상태) | 담당은 BE3 단독이지만 FE1·FE2 화면 파일을 고침 |
