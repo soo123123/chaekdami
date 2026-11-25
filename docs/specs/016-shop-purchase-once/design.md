@@ -1,4 +1,4 @@
-> 상태: draft (BE2 승인 2026-11-25, FE2 확인 대기) · 작성: 2026-11-25 · 기준: main@4cc8ce1 · 담당: BE2 · 승인: BE2(2026-11-25), FE2(대기)
+> 상태: in-progress · 작성: 2026-11-25 · 기준: main@4cc8ce1 · 담당: BE2 · 승인: BE2(2026-11-25), FE2(2026-11-25, 메시지에 체크 반응)
 > 요구사항: [requirements.md](./requirements.md)
 
 # 016 · 상점 구매 중복 방지 — Design
@@ -68,13 +68,13 @@
 
 ## ④ 고칠 docs 문서
 
-- [ ] `docs/domains/reward/api.md` — 구매 요청 본문, `SHOP_002`
-- [ ] `docs/domains/reward/rules.md` — 상점 개수 비교 규칙
+- [x] `docs/domains/reward/api.md` — 구매 요청 본문, `SHOP_002`
+- [x] `docs/domains/reward/rules.md` — 상점 개수 비교 규칙
 - [ ] `docs/known-issues.md` — 서버와 앱이 모두 main에 병합된 뒤 ISSUE-BUG-35 해결 처리 (main에서)
 
 ## ⑤ 남은 질문 (❓)
 
-- FE2: 필드 이름(`ownedQuantity`), 에러 코드(`SHOP_002`), 안내 문구 확인과 일정. 서버와 앱은 어느 쪽을 먼저 병합해도 된다 (지금 서버는 모르는 필드를 쓰지 않는다). 409 확인은 서버 병합 뒤에 한다.
+- FE2: 안내 문구와 앱 수정 일정 (필드 이름과 에러 코드는 동의, 2026-11-25). 서버와 앱은 어느 쪽을 먼저 병합해도 된다 (지금 서버는 모르는 필드를 쓰지 않는다). 409 확인은 서버 병합 뒤에 한다.
 
 ### 순서와 알려진 한계
 
