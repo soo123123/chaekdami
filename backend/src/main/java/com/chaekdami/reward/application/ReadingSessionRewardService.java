@@ -15,7 +15,7 @@ import com.chaekdami.reward.infrastructure.ReadingSessionRewardRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -45,9 +45,19 @@ public class ReadingSessionRewardService {
     private final ReadingSessionReader readingSessionReader;
     private final PhotoCertificationChecker photoCertificationChecker;
     private final ReadingSessionRewardRepository readingSessionRewardRepository;
+    private final TransactionOperations transactionOperations;
 
-    @Transactional
+    /**
+     * 사진 인증 조회는 보상 트랜잭션을 시작하기 전에 끝낸다. 같은 트랜잭션에서 조회하면 실패를 잡아도
+     * 트랜잭션이 롤백 전용이 되어 기본 보상까지 취소된다. (조회용 새 트랜잭션을 안에서 열면 DB 연결을 2개 쓴다)
+     * 그래서 이 메서드는 트랜잭션 밖에서 호출해야 한다.
+     */
     public ReadingSessionRewardResult grant(Long userId, Long readingSessionId) {
+        boolean photoCertified = isPhotoCertified(userId, readingSessionId);
+        return transactionOperations.execute(status -> grantInTransaction(userId, readingSessionId, photoCertified));
+    }
+
+    private ReadingSessionRewardResult grantInTransaction(Long userId, Long readingSessionId, boolean photoCertified) {
         RewardAccount account = rewardLedger.lockAccount(userId);
         ReadingSessionReader.Session session = readingSessionReader.findOwnSession(userId, readingSessionId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.READING_SESSION_NOT_FOUND));
@@ -66,7 +76,7 @@ public class ReadingSessionRewardService {
             grantBase(account, session, reward);
         }
 
-        if (isPhotoCertified(userId, readingSessionId)
+        if (photoCertified
                 && !rewardLedger.isExperienceGranted(userId, TransactionReason.PHOTO_CERTIFICATION, readingSessionId)) {
             int experience = ExperiencePolicy.PHOTO_CERTIFICATION_EXPERIENCE;
             int promotionReward = rewardLedger.addExperienceFor(

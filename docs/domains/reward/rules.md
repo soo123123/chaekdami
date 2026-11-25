@@ -11,6 +11,7 @@
 ### 처리 순서
 
 ```
+0. 사진 인증 여부 조회 (트랜잭션 시작 전. 실패하면 인증 안 됨으로 봄)
 1. 보상 계정 잠금 (비관적 쓰기, 대기 3초 → 초과 시 409 CONCURRENCY_001)
 2. 내 세션인지 확인 (아니면 404 REWARD_005)
 3. 세션이 3분 미만이면 거절 (400 REWARD_007)
@@ -32,7 +33,7 @@
 | 재호출 응답 | 처음 받은 내역 그대로, `baseGranted=false` | `ReadingSessionReward` | ✅ |
 | 보상 거절 최소 시간 | 3분 미만 | `ReadingSession.MIN_SECONDS` | ✅ |
 | 퀘스트·D-day 기준 날짜 | 세션 종료 날짜 (`endedAt`) | `grantBase` | ✅ |
-| 사진 인증 조회 실패 시 | 기본 보상만 지급, 추가 보상 건너뜀 | `isPhotoCertified` | ✅ |
+| 사진 인증 조회 실패 시 | 기본 보상만 지급, 추가 보상 건너뜀. 조회는 보상 트랜잭션을 시작하기 전에 끝내서, 실패해도 기본 보상이 취소되지 않음 | `isPhotoCertified` | ✅ |
 
 ## 2. 경험치
 
@@ -129,7 +130,7 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 | 규칙 | 값 | 코드 위치 |
 |---|---|---|
 | 정산 시점 | `GET /api/rewards`, `GET /api/dday`, 독서 완료 보상 때 | `StreakService.settleBefore` |
-| 계정의 dday·max_dday | 달력으로 계산한 값을 위 시점에 반영 (저장값은 캐시) | `RewardAccount.syncStreak` |
+| 계정의 dday·max_dday | 독서 완료 보상 때만, 계정을 잠근 상태로 달력 계산값을 반영 (저장값은 캐시). 조회는 저장하지 않고 달력으로 계산한 값을 바로 응답 | `RewardAccount.syncStreak` |
 
 ## 7. 동시성
 

@@ -51,19 +51,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 : null;
         Long authenticatedUserId = null;
         if (claims != null) {
+            boolean versionMatches;
             try {
-                if (!tokenVersionChecker.matches(claims.userId(), claims.tokenVersion())) {
-                    log.warn(">>> [JWT] Access token version rejected");
-                } else {
-                    List<SimpleGrantedAuthority> authorities =
-                            Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(claims.role())));
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(claims.userId(), null, authorities);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    authenticatedUserId = claims.userId();
-                }
+                versionMatches = tokenVersionChecker.matches(claims.userId(), claims.tokenVersion());
             } catch (RuntimeException exception) {
-                log.warn(">>> [JWT] Access token rejected");
+                // 토큰이 틀린 것이 아니므로 401로 알리지 않는다. 401이면 앱이 로그아웃할 수 있다.
+                log.error(">>> [JWT] Access token version check failed", exception);
+                SecurityConfig.writeJson(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "INTERNAL_ERROR", "요청을 처리하지 못했습니다.");
+                return;
+            }
+            if (!versionMatches) {
+                log.warn(">>> [JWT] Access token version rejected");
+            } else {
+                List<SimpleGrantedAuthority> authorities =
+                        Collections.singletonList(new SimpleGrantedAuthority(toSpringRole(claims.role())));
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(claims.userId(), null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                authenticatedUserId = claims.userId();
             }
         }
 

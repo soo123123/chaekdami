@@ -27,7 +27,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
 
 @Slf4j
 @RestControllerAdvice
@@ -159,17 +158,9 @@ public class GlobalExceptionHandler {
         };
     }
 
+    /** 어느 값이 겹쳤는지는 서비스가 구분한다. DB 오류 문구에는 사용자가 쓴 글이 섞일 수 있어 문구로 판단하지 않는다. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException exception) {
-        String detail = String.valueOf(exception.getMostSpecificCause().getMessage()).toLowerCase(Locale.ROOT);
-        if (detail.contains("nickname")) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiErrorResponse.of("NICKNAME_ALREADY_EXISTS", "이미 사용 중인 닉네임입니다."));
-        }
-        if (detail.contains("email")) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiErrorResponse.of("EMAIL_ALREADY_EXISTS", "이미 존재하는 이메일입니다."));
-        }
         log.error("Data integrity violation", exception);
         return internalError();
     }

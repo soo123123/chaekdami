@@ -72,6 +72,7 @@ public class RewardAccount extends BaseTimeEntity {
 
     /**
      * D-day 달력으로 계산한 연속 일수를 반영한다. (연속 기록의 기준은 달력이고, 이 값은 그 사본이다)
+     * 계정을 잠근 트랜잭션에서만 호출한다.
      */
     public void syncStreak(int currentStreak, int longestStreak) {
         this.dday = currentStreak;

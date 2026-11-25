@@ -11,6 +11,7 @@ import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
 import com.chaekdami.user.domain.UserErrorCode;
 import com.chaekdami.user.infrastructure.AuthAttemptRepository;
+import com.chaekdami.user.infrastructure.LoginCredential;
 import com.chaekdami.user.infrastructure.PasswordResetTokenRepository;
 import com.chaekdami.user.infrastructure.RefreshTokenRepository;
 import com.chaekdami.user.infrastructure.UserRepository;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -50,7 +52,9 @@ class UserServiceLoginAttemptTest {
         ReflectionTestUtils.setField(user, "id", 1L);
 
         UserRepository userRepository = mock(UserRepository.class);
-        when(userRepository.findByEmail("reader@chaekdami.local")).thenReturn(Optional.of(user));
+        when(userRepository.findLoginCredential("reader@chaekdami.local"))
+                .thenReturn(Optional.of(new LoginCredential(1L, "stored-hash")));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
 
         passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
@@ -59,10 +63,11 @@ class UserServiceLoginAttemptTest {
         AuthAttemptRepository authAttemptRepository = mock(AuthAttemptRepository.class);
         when(authAttemptRepository.findByAttemptKey(any())).thenAnswer(invocation ->
                 Optional.ofNullable(store.get(invocation.getArgument(0))));
-        when(authAttemptRepository.save(any())).thenAnswer(invocation -> {
-            AuthAttempt attempt = invocation.getArgument(0);
-            store.put(attempt.getAttemptKey(), attempt);
-            return attempt;
+        when(authAttemptRepository.findByAttemptKeyForUpdate(any())).thenAnswer(invocation ->
+                Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(authAttemptRepository.insertIfAbsent(any(), any())).thenAnswer(invocation -> {
+            String key = invocation.getArgument(0);
+            return store.putIfAbsent(key, new AuthAttempt(key, invocation.getArgument(1))) == null ? 1 : 0;
         });
 
         CurrentUser currentUser = new CurrentUser();
@@ -76,7 +81,8 @@ class UserServiceLoginAttemptTest {
                 new LoginAttemptLimiter(authAttemptRepository),
                 currentUser,
                 new AccessGuard(currentUser),
-                mock(ApplicationEventPublisher.class));
+                mock(ApplicationEventPublisher.class),
+                TransactionOperations.withoutTransaction());
     }
 
     @Test

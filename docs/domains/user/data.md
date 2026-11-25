@@ -1,4 +1,4 @@
-> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 데이터
 
@@ -16,7 +16,7 @@ erDiagram
 
 ## users
 
-엔티티: `User`
+엔티티: `User` (`@DynamicUpdate`: 동시에 다른 컬럼을 고친 값을 덮어쓰지 않도록 바뀐 컬럼만 UPDATE)
 
 | 컬럼 | 설명 |
 |---|---|
@@ -45,7 +45,7 @@ erDiagram
 | token_hash | SHA-256 해시 (원문 저장 안 함), UNIQUE |
 | expires_at | 발급 + 90일 |
 | created_at | |
-| revoked_at | 폐기 시각 |
+| revoked_at | 재발급으로 교체된 시각. 로그아웃·일괄 무효화된 토큰은 행을 삭제 (이 변경 전에 폐기된 토큰은 이유와 관계없이 값이 남아 있음) |
 
 ## password_reset_tokens
 
@@ -67,7 +67,7 @@ erDiagram
 | 컬럼 | 설명 |
 |---|---|
 | id | PK |
-| attempt_key | `login|{email}|{ip}` 또는 `reset|{email}|{ip}`, UNIQUE |
+| attempt_key | `login|{email}|{ip}` · `reset|{email}|{ip}` · `reset|{email}|*`(이메일별), UNIQUE |
 | attempt_count | 현재 집계 창 안의 시도 수 |
 | window_started_at | 집계 창 시작 |
 | locked_until | 잠금 해제 시각 |
@@ -75,3 +75,5 @@ erDiagram
 ## 삭제
 
 회원 탈퇴는 `UserWithdrawnEvent`를 발행하고, 같은 트랜잭션에서 review·reward·dday·reading 리스너가 그 사용자의 데이터를 먼저 지운다. reading은 인증 → 세션 → 독서 기록 → 책 순서로 지운다.
+
+`refresh_tokens`·`password_reset_tokens`와 그 이메일의 `auth_attempts`(로그인·재설정, 모든 IP)도 같은 트랜잭션에서 지운다. 가입하지 않은 이메일로 시도한 기록과 오래된 기록을 지우는 작업은 없다.
