@@ -434,10 +434,7 @@ class CommunityReportTest {
     @Test
     void contentOfASuspendedUserIsHiddenOnlyWhileSuspended() {
         Long reviewId = saveReview(author.userId(), author.bookId());
-        // 좋아요 저장 SQL은 H2에서 실행할 수 없어 직접 넣는다.
-        jdbc.update("insert into review_likes (review_id, user_id, created_at) values (?, ?, localtimestamp)",
-                reviewId, reader.userId());
-        jdbc.update("update reviews set like_count = 1 where id = ?", reviewId);
+        socialService.like(reviewId);
         assertVisible(reviewId);
 
         suspend(author, "dateadd('hour', 1, localtimestamp)");
