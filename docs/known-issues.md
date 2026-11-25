@@ -90,7 +90,7 @@
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | 열림 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE1 | AI 기능 (독후감 피드백, 문장 인증) | 열림 | 없음. `book_reports.revision`만 준비. 책 추천은 TODO-27로 분리 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 진행 중 (스펙 013) | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) | 일일은 서버 시간대 날짜, 주간은 한국 시간 기준(스펙 013). ASK-9가 정해지면 맞춤 |
-| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 공개 전 결정: ASK-14, ASK-18, ISSUE-SEC-3. 보강: TODO-43 |
+| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 정지 회원·관리자 제외(ASK-14, ASK-18에서 결정)를 PR 35에 반영해야 함. 공개 전 결정: ISSUE-SEC-3. 보강: TODO-43 |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 (사용자 구분도 없음, ISSUE-DATA-4) | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | BE3 | (확정) 독서 독려 알림 (기기 로컬, Android·iOS) | 열림 | 없음. 기획(2026-11-24, 2026-11-23의 자정까지 반복 알림을 대체): 시간대·요일, 금일 독서 여부, 금일·금주 독서량, 연속 독서, 미접속을 활용해 독서를 유도하는 알림 (듀오링고 방식). 앱이 7일치를 예약하고 독서 저장·접속 때 다시 예약, 마이페이지에서 설정. 저장 성공·보상 처리 뒤와 앱 시작·복귀 때 다시 예약하고, 로그아웃·탈퇴·세션 만료 때 취소 (BE3 결정, 2026-11-25). 서버는 알림용 상태 조회와 `reminder_settings` 테이블(마지막 접속·푸시 수신 값은 서버 푸시를 빼서 필요 없음. 칸은 스펙에서 정함). 독서 여부·독서량은 저장하지 않고 세션에서 계산. 세부 값은 ASK-7, 날짜 기준은 ASK-9. 복귀 알림은 TODO-42, 여러 기기 동기화는 TODO-46 | 앱 `MyPageScreen`, `useReadingEnd`, `app/_layout.tsx` | [overview](./overview.md#3-주요-기능과-현재-상태) | 담당은 BE3 단독이지만 FE1·FE2 화면 파일을 고침 |
 | <a id="todo-11"></a>TODO-11 | FE1 | 바코드 스캔 검색 | 열림 | 앱에 "준비 중" 안내 | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
@@ -146,10 +146,8 @@
 | <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
 | <a id="ask-12"></a>ASK-12 | FE1 · 기획 | 책 정보의 찜하기를 유지하나? (지금은 화면을 나가면 사라짐) | 앱 `BookInfoScreen` |
 | <a id="ask-13"></a>ASK-13 | BE3 · FE2 | 토큰 재발급 응답이 끊겨 앱이 교체된 토큰을 다시 보내면 어떻게 하나? (지금 서버는 도난으로 보고 모든 세션을 끊음. 제안: 직전 토큰을 짧은 시간만 허용) | ISSUE-BUG-12, PR 28 |
-| <a id="ask-14"></a>ASK-14 | BE2 · FE1 · BE3 · 기획 | 주간 랭킹에 이용 정지된 회원을 보여주나? (PR 35에는 제외 조건이 없음. 커뮤니티는 정지 중 글을 숨김, ASK-11) | TODO-6, PR 35 |
 | <a id="ask-16"></a>ASK-16 | FE1 · BE2 · 기획 | 랭킹에서 30위 동점이면 내 순위가 30위 안인데 목록에 없을 수 있다. 동점자를 모두 보여주거나 안내하나? | TODO-6, TODO-30, PR 21·35 |
 | <a id="ask-17"></a>ASK-17 | FE1 · FE2 | 독서 중에 로그인 세션이 끝나면 화면 이동을 미루거나 입력을 저장하나? (PR 28은 바로 로그인 화면으로 이동해 타이머와 문장이 사라짐. ASK-13에서 나눔) | ISSUE-BUG-12, PR 28 |
-| <a id="ask-18"></a>ASK-18 | BE2 · FE1 · 기획 | 주간 랭킹에 관리자 계정을 보여주나? (PR 35에는 제외 조건이 없음. ASK-14에서 나눔) | TODO-6, PR 35 |
 | <a id="ask-19"></a>ASK-19 | FE1 · 기획 | 랭킹의 독서 시간을 초까지 보여주나? (지금은 분까지라 같은 시간인데 순위가 다를 수 있음. ASK-16에서 나눔) | TODO-30, PR 21 |
 
 ## 4. 해결됨
@@ -186,3 +184,5 @@
 | ISSUE-BUG-26 사진 인증 조회 실패 시 기본 보상 취소 | 사진 인증 조회를 보상 트랜잭션 시작 전으로 이동 (PR 34). 실제 DB 조회 오류 미확인 | 2026-11-25 | — |
 | ISSUE-BUG-10 D-day 조회 실패 뒤 추가하면 목표가 지워짐 | 조회에 성공하기 전에는 추가·저장 차단, "다시 불러오기" 추가 (PR 27). 실제 서버·기기 미확인, 여러 기기의 덮어쓰기는 ISSUE-LIMIT-8 | 2026-11-25 | — |
 | ASK-15 랭킹 공개 전에 ISSUE-SEC-3을 먼저 고치나 | 정해진 것이 아니라 중복 질문이라 ISSUE-SEC-3 비고로 합침 (FE1 결정). 고칠 시점은 아직 안 정함 | 2026-11-25 | — |
+| ASK-14 랭킹에 정지된 회원을 보여주나 | 정지 중인 회원은 주간 랭킹에서 제외 (BE2·FE1·BE3 결정). 구현은 TODO-6 (PR 35에 반영 예정) | 2026-11-25 | 005 |
+| ASK-18 랭킹에 관리자 계정을 보여주나 | 관리자 계정은 주간 랭킹에서 제외 (BE2·FE1 결정, BE3 동의). 구현은 TODO-6 (PR 35에 반영 예정) | 2026-11-25 | 005 |
