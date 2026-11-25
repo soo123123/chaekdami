@@ -69,16 +69,15 @@ public class UserService {
     @Value("${jwt.refresh-token-validity-in-seconds:7776000}")
     private long refreshTokenValidityInSeconds;
 
-    @Transactional
+    /**
+     * 비밀번호 해시(BCrypt)는 트랜잭션 밖에서 만든다.
+     * 동시에 가입해 저장에 실패하면 어느 값이 겹쳤는지 다시 조회해 구분한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public UserAccount signup(SignupCommand command) {
         String email = normalizeEmail(command.email());
         String nickname = command.nickname().trim();
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new DuplicateEmailException();
-        }
-        if (userRepository.existsByNicknameIgnoreCase(nickname)) {
-            throw new DuplicateNicknameException();
-        }
+        transaction.executeWithoutResult(status -> rejectDuplicate(email, nickname));
 
         User user = User.builder()
                 .email(email)
@@ -87,7 +86,21 @@ public class UserService {
                 .role(Role.USER)
                 .build();
 
-        return UserAccount.from(userRepository.save(user));
+        try {
+            return transaction.execute(status -> UserAccount.from(userRepository.save(user)));
+        } catch (DataIntegrityViolationException exception) {
+            transaction.executeWithoutResult(status -> rejectDuplicate(email, nickname));
+            throw exception;
+        }
+    }
+
+    private void rejectDuplicate(String email, String nickname) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException();
+        }
+        if (userRepository.existsByNicknameIgnoreCase(nickname)) {
+            throw new DuplicateNicknameException();
+        }
     }
 
     /**
