@@ -149,11 +149,13 @@ export function notifyBoosterUsed(): void {
   boosterUsedListeners.forEach((listener) => listener());
 }
 
+// ownedBoosters: 화면에 보이는 부스터 개수. 서버의 개수와 다르면 쓰지 않고 409 REWARD_008 (스펙 015)
 export const activateExpBooster =
-  async (): Promise<BoosterUseResult> => {
+  async (ownedBoosters: number): Promise<BoosterUseResult> => {
     const response =
       await apiClient.post<BoosterUseResult>(
-        '/api/rewards/boosters/use'
+        '/api/rewards/boosters/use',
+        { ownedBoosters }
       );
 
     notifyBoosterUsed();
