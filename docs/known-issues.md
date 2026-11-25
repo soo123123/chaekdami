@@ -57,8 +57,8 @@
 | <a id="issue-bug-13"></a>ISSUE-BUG-13 | FE2 | 중간 | 진행 중 | 조회 실패를 예시 값이나 기본값으로 보여준다 (마이페이지 닉네임, 홈 재화·레벨. 레벨·퀘스트·통계도 예시 값을 쓴다는 보고) | 내 기록이 아닌 값이 실제처럼 보인다 | 앱 `MyPageScreen`, `HomeScreen`, `RewardScreen`, `QuestScreen`, `ReadingStatsScreen` | — | — |
 | <a id="issue-bug-14"></a>ISSUE-BUG-14 | FE2 (+FE1) | 중간 | 진행 중 | 독서 완료 화면의 목표 1시간 30분·60쪽이 고정 예시 값이다 | 모든 사용자에게 같은 목표가 보인다 | 앱 `useReadingComplete` | — | — |
 | <a id="issue-bug-15"></a>ISSUE-BUG-15 | FE2 | 중간 | 진행 중 | 상점 구매 버튼에 요청 중 막는 처리가 없다 | 연타하면 중복 구매될 수 있다 | 앱 `ShopScreen` | — | — |
-| <a id="issue-bug-16"></a>ISSUE-BUG-16 | FE2 (+BE2) | 중간 | 열림 | 레벨 화면의 레벨표(3~7)와 혜택이 고정 값이다 | 서버 레벨 규칙과 다르고, 없는 해금이 보인다 (해금은 TODO-6) | 앱 `RewardScreen`, `LevelPolicy` | — | — |
-| <a id="issue-bug-17"></a>ISSUE-BUG-17 | FE2 (+BE1) | 중간 | 열림 | 통계에서 지난 날짜로 가면 빈 목록을 쓴다. 서버도 이번 기간만 준다는 보고 | 기록이 있어도 없다고 보인다 | 앱 `ReadingStatsScreen`, `ReadingStatsService` | — | — |
+| <a id="issue-bug-16"></a>ISSUE-BUG-16 | FE2 (+BE2) | 중간 | 진행 중 | 레벨 화면의 레벨표(3~7)와 혜택이 고정 값이다 | 서버 레벨 규칙과 다르고, 없는 해금이 보인다 (해금은 TODO-6) | 앱 `RewardScreen`, `LevelPolicy` | — | — |
+| <a id="issue-bug-17"></a>ISSUE-BUG-17 | FE2 (+BE1) | 중간 | 진행 중 | 통계에서 지난 날짜로 가면 빈 목록을 쓴다. 서버도 이번 기간만 준다는 보고 | 기록이 있어도 없다고 보인다 | 앱 `ReadingStatsScreen`, `ReadingStatsService` | — | — |
 | <a id="issue-bug-18"></a>ISSUE-BUG-18 | FE2 | 중간 | 진행 중 | 상점에 "구매 화면 테스트용" 안내가 있다. D-day 등 다른 문구도 실제와 다르다는 보고 | 실제로는 재화가 차감된다 | 앱 `ShopScreen`, `DdayScreen` | — | — |
 | <a id="issue-bug-19"></a>ISSUE-BUG-19 | FE1 | 중간 | 열림 | 독서 시작 화면의 오늘·이번 주 시간이 이 책의 세션만 합산한다 | 다른 책을 읽은 시간이 빠진다 | 앱 `readingApi.ts` | — | — |
 | <a id="issue-bug-20"></a>ISSUE-BUG-20 | FE1 (+BE1) | 중간 | 열림 | 책 등록이 등록과 설정 저장 2번의 요청이다 | 두 번째가 실패하면 책은 남는데 실패로 보여, 다시 하면 중복되거나 409가 난다 | 앱 `readingApi.ts` `registerBook` | — | — |
