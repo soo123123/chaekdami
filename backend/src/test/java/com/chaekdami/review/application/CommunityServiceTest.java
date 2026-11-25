@@ -131,7 +131,7 @@ class CommunityServiceTest {
         when(readingRecordReader.hasCompletedRoundByIsbn(1L, ISBN)).thenReturn(true);
         when(queryRepository.findEntry(ISBN, 31L)).thenReturn(Optional.of(new EntryRow(
                 31L, 1, LocalDateTime.of(2026, 10, 1, 20, 0), COMPLETED_AT, 4L, "책벌레", 1L, null, null, null)));
-        when(sentenceRepository.findAllByReadingRecordId(31L))
+        when(sentenceRepository.findVisibleByReadingRecordId(31L))
                 .thenReturn(List.of(sentence(101L, 4L, 31L, LocalDate.of(2026, 10, 3), 68, "남의 공개 문장")));
 
         CommunityEntryDetail detail = service.entry(7L, 31L);

@@ -100,7 +100,7 @@ public class CommunityService {
         CommunityEntryDetail.SentenceCollection collection = null;
         if (row.sentenceCount() != null) {
             SentenceCollectionBody body = SentenceCollectionAssembler.assemble(
-                    sentenceRepository.findAllByReadingRecordId(readingRecordId),
+                    sentenceRepository.findVisibleByReadingRecordId(readingRecordId),
                     row.startedAt(), row.completedAt(), koreanTime.today());
             collection = new CommunityEntryDetail.SentenceCollection(body.readingPeriodDays(),
                     body.recordedDayCount(), body.sentenceCount(), body.days());
