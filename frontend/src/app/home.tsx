@@ -4,6 +4,7 @@ import {
   View,
   Text,
   ActivityIndicator,
+  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -13,7 +14,8 @@ import HomeScreen from '../features/fe2/screens/HomeScreen';
 
 import {
   getAccessToken,
-  clearTokens,
+  clearTokensOf,
+  getSessionId,
 } from '../utils/tokenStorage';
 
 import { getMyProfile } from '../features/fe2/api/userApi';
@@ -37,6 +39,15 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
+  // 다시 시도를 누를 때마다 늘려 로그인 확인을 다시 실행한다
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = () => {
+    setErrorMessage(null);
+    setChecking(true);
+    setAttempt((current) => current + 1);
+  };
+
   useEffect(() => {
     // 개발 모드 UI 미리보기에서는 인증 요청 생략
     if (devPreviewEnabled) {
@@ -49,6 +60,8 @@ export default function HomePage() {
     let active = true;
 
     const checkLogin = async () => {
+      const session = getSessionId();
+
       try {
         // 1. 저장된 Access Token 확인
         const token = await getAccessToken();
@@ -78,11 +91,11 @@ export default function HomePage() {
           (error.response?.status === 401 ||
             error.response?.status === 403)
         ) {
-          await clearTokens();
+          // 세션이 이미 끝났거나 새로 로그인했으면 그 처리를 덮지 않는다
+          if (await clearTokensOf(session)) {
+            router.replace('/auth/login');
+          }
 
-          if (!active) return;
-
-          router.replace('/auth/login');
           return;
         }
 
@@ -101,7 +114,7 @@ export default function HomePage() {
     return () => {
       active = false;
     };
-  }, [devPreviewEnabled]);
+  }, [devPreviewEnabled, attempt]);
 
   // 인증 확인 중
   if (checking) {
@@ -130,6 +143,17 @@ export default function HomePage() {
         <Text style={styles.message}>
           {errorMessage}
         </Text>
+
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={retry}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+        >
+          <Text style={styles.retryText}>
+            다시 시도
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -158,6 +182,20 @@ const styles = StyleSheet.create({
     color: '#315E49',
     textAlign: 'center',
     lineHeight: 22,
+  },
+
+  retryButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 999,
+    backgroundColor: '#315E49',
+  },
+
+  retryText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 
   errorTitle: {

@@ -40,6 +40,8 @@ API 요청 → 401
 
 `/api/auth/*` 요청의 401은 재발급을 시도하지 않는다 (로그인이 필요한 `/api/auth/password`는 예외). `INVALID_CREDENTIALS`와 토큰 없이 보낸 요청의 401도 재발급하지 않는다. 토큰은 `expo-secure-store`에 저장한다 (`frontend/src/utils/tokenStorage.ts`).
 
+재발급을 기다리는 동안 로그아웃하거나 새로 로그인하면 그 재발급 결과는 버린다 (저장·삭제·화면 이동·재요청을 하지 않음).
+
 ### X-User-Id 헤더 (과도기)
 
 독서(`reading`)·보상(`reward`) 컨트롤러는 아직 `@RequestHeader("X-User-Id")`로 사용자를 받는다.

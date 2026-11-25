@@ -385,6 +385,11 @@ export default function DdayScreen() {
     setModalOpen(false);
   };
 
+  // 저장·삭제 중에는 닫지 않는다 (먼저 한 저장이 새로 연 창을 닫지 않게)
+  const closeModal = () => {
+    if (!saving) setModalOpen(false);
+  };
+
   const deleteGoal = () => {
     if (editingId === null) return;
 
@@ -831,7 +836,7 @@ export default function DdayScreen() {
         visible={modalOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setModalOpen(false)}
+        onRequestClose={closeModal}
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
@@ -852,7 +857,11 @@ export default function DdayScreen() {
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => setModalOpen(false)}
+                  onPress={closeModal}
+                  disabled={saving}
+                  style={saving && styles.closeDisabled}
+                  accessibilityRole="button"
+                  accessibilityLabel="닫기"
                 >
                   <Ionicons
                     name="close"
@@ -1409,6 +1418,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 450,
     alignSelf: 'center',
+  },
+
+  closeDisabled: {
+    opacity: 0.3,
   },
 
   modalHeader: {

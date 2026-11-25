@@ -6,10 +6,11 @@ import { router } from 'expo-router';
 import { showToast } from '../components/Toast';
 
 import {
-  clearTokens,
+  clearTokensOf,
   getAccessToken,
   getRefreshToken,
-  saveTokens,
+  getSessionId,
+  replaceTokens,
 } from '../utils/tokenStorage';
 
 // .env 파일에서 백엔드 서버 주소 가져오기
@@ -32,11 +33,24 @@ const apiClient = axios.create({
   },
 });
 
+// 요청을 보낸 세션과 재시도 여부
+type RetryConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  _session?: number;
+};
+
 // 모든 API 요청에 로그인 토큰 자동 첨부
 apiClient.interceptors.request.use(
-  async (config) => {
+  async (config: RetryConfig) => {
     try {
+      config._session ??= getSessionId();
+
       const token = await getAccessToken();
+
+      // 이전 세션의 요청을 새로 로그인한 사용자의 토큰으로 다시 보내지 않는다
+      if (config._retry && config._session !== getSessionId()) {
+        throw new axios.CanceledError('로그인 세션이 바뀌었습니다.');
+      }
 
       if (token) {
         config.headers.set(
@@ -58,29 +72,31 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 재시도 요청 설정
-type RetryConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean;
-};
-
-// 중복 토큰 갱신 방지
-let refreshRequest: Promise<string | null> | null = null;
+// 중복 토큰 갱신 방지 (세션마다 따로)
+let refreshRequest: {
+  session: number;
+  promise: Promise<string | null>;
+} | null = null;
 
 // 비밀번호 변경은 로그인이 필요한 API라 /api/auth/ 중에서도 갱신 대상이다
 const PASSWORD_CHANGE_PATH = '/api/auth/password';
 
 // 세션 종료: 토큰을 지우고 로그인 화면으로 보낸다
-async function endSession(): Promise<void> {
-  await clearTokens();
+// 이미 로그아웃했거나 새로 로그인했으면 아무것도 하지 않는다
+async function endSession(session: number): Promise<void> {
+  if (!(await clearTokensOf(session))) return;
+
   showToast('로그인이 만료되었어요. 다시 로그인해 주세요.', 'error');
   router.replace('/auth/login');
 }
 
-// 액세스 토큰 갱신. 다시 로그인해야 하면 null (서버 장애·네트워크 오류는 예외)
-async function refreshAccessToken(): Promise<string | null> {
+// 액세스 토큰 갱신. 다시 로그인해야 하거나 세션이 바뀌었으면 null (서버 장애·네트워크 오류는 예외)
+async function refreshAccessToken(
+  session: number
+): Promise<string | null> {
   const refreshToken = await getRefreshToken();
 
-  if (!refreshToken) {
+  if (!refreshToken || session !== getSessionId()) {
     return null;
   }
 
@@ -116,12 +132,13 @@ async function refreshAccessToken(): Promise<string | null> {
     throw new Error('토큰 재발급 응답이 올바르지 않습니다.');
   }
 
-  await saveTokens(
+  const saved = await replaceTokens(
+    session,
     data.accessToken,
     data.refreshToken
   );
 
-  return data.accessToken;
+  return saved ? data.accessToken : null;
 }
 
 // 공통 API 응답 오류 처리
@@ -141,33 +158,40 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       original &&
       !original._retry &&
+      // 그사이 로그아웃했거나 새로 로그인했으면 갱신하지 않는다
+      original._session === getSessionId() &&
       // 로그인하지 않은 요청이거나 비밀번호가 틀린 응답이면 갱신하지 않는다
       original.headers.has('Authorization') &&
       error.response.data?.code !== 'INVALID_CREDENTIALS' &&
       (!url.includes('/api/auth/') || url === PASSWORD_CHANGE_PATH);
 
     if (canRefresh && original) {
+      const session = getSessionId();
+
       original._retry = true;
 
       try {
-        if (!refreshRequest) {
-          refreshRequest = refreshAccessToken()
+        if (refreshRequest?.session !== session) {
+          const promise = refreshAccessToken(session)
             .then(async (token) => {
-              // 이미 로그아웃했으면(토큰 없음) 다시 안내하지 않는다
-              if (!token && (await getAccessToken())) {
-                await endSession();
+              if (!token) {
+                await endSession(session);
               }
 
               return token;
             })
             .finally(() => {
-              refreshRequest = null;
+              if (refreshRequest?.promise === promise) {
+                refreshRequest = null;
+              }
             });
+
+          refreshRequest = { session, promise };
         }
 
-        const accessToken = await refreshRequest;
+        const accessToken = await refreshRequest.promise;
 
-        if (!accessToken) {
+        if (!accessToken || session !== getSessionId()) {
           return Promise.reject(error);
         }
 
