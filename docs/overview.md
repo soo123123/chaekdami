@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE1
 
 # 서비스 개요
 
@@ -39,7 +39,7 @@
 | 서재 꾸미기 | 테마 3종 | ⏳ [TODO-7](./known-issues.md#todo-7) 기기에만 저장 | |
 | 관리자 | 신고 리뷰 블라인드, 회원 조회·정지·역할 변경 (API만, 앱 화면 없음) | ✅ | [review](./domains/review/), [user](./domains/user/) |
 | AI | 책 추천, 독후감 피드백, 문장 인증 | ⏳ [TODO-4](./known-issues.md#todo-4) | |
-| 기타 | 푸시 알림, 랭킹, 주간 퀘스트, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) ⏳ [TODO-5](./known-issues.md#todo-5) | |
+| 기타 | 주간 랭킹(경험치·독서 시간) API ✅, 푸시 알림, 주간 퀘스트, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) ⏳ [TODO-5](./known-issues.md#todo-5) | [reward](./domains/reward/) |
 
 향후 가능성(기획): 소셜·경쟁, 외부 공유, e-book·오디오북, 도서관·서점 연계.
 
@@ -74,4 +74,4 @@
 └── user     사용자 — 회원, 인증, 권한
 ```
 
-초기 기획에는 "서재(꾸미기)"와 "랭킹"이 별도 영역으로 있었다. 지금은 서재가 reading에 포함되고, 꾸미기·랭킹은 서버 구현이 없다.
+초기 기획에는 "서재(꾸미기)"와 "랭킹"이 별도 영역으로 있었다. 지금은 서재가 reading에 포함되고, 꾸미기는 서버 구현이 없고, 랭킹은 reward의 주간 랭킹 API(경험치·독서 시간)로 있다 (화면은 TODO-6).

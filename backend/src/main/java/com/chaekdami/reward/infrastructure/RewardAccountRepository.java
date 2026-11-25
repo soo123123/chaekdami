@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface RewardAccountRepository extends JpaRepository<RewardAccount, Long> {
@@ -18,6 +20,8 @@ public interface RewardAccountRepository extends JpaRepository<RewardAccount, Lo
     String LOCK_TIMEOUT_MILLIS = "3000";
 
     Optional<RewardAccount> findByUserId(Long userId);
+
+    List<RewardAccount> findAllByUserIdIn(Collection<Long> userIds);
 
     /**
      * 재화/경험치를 변경하기 전에 사용자 보상 계정 행을 잠근다. (SELECT ... FOR UPDATE)
