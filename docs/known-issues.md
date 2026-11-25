@@ -129,6 +129,7 @@
 | <a id="todo-39"></a>TODO-39 | FE1·FE2·BE1·BE2·BE3 | 스펙 001·003·004 실기기 확인 | 열림 | 각 tasks에 4건·4건·6건 남음. 끝나면 스펙을 done으로 | [specs](./specs/README.md) |
 | <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름, H2로 재현. 지금은 3분 제한으로 생기기 어려움) ② 집계 쿼리를 실행하는 테스트가 없음 ③ `reading_sessions.ended_at` 인덱스가 없음 (제안) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
 | <a id="todo-44"></a>TODO-44 | FE1 | 주가 바뀌면 랭킹 화면 다시 불러오기 (스펙 008, PR 21) | 열림 | 병합 전. 월요일 0시가 지나도 다시 들어오기 전까지, 조회가 실패하면 그 뒤에도 지난주 순위가 "이번 주"로 남음 (제안: 종료 날짜가 지나면 다시 조회) | 앱 `useWeeklyRanking`, `RankingScreen` | 스펙 008 설계의 "실패하면 전에 보이던 순위 유지"와 함께 정함 |
+| <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 열림 | 설정(TODO-20, PR 49) 도입 때 오류 36·경고 9가 남아 `npm run lint`가 실패한다. FE1 16·0, FE2 12·6, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `BoosterFloatingWidget`, `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
 
 ## 3. ❓ 질문
 
