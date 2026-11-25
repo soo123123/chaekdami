@@ -10,7 +10,7 @@ public record SentenceCollectionBody(int readingPeriodDays, int recordedDayCount
     public record Day(LocalDate readDate, int dayNumber, List<Item> sentences) {
     }
 
-    public record Item(Long sentenceId, String content, Integer pageNumber,
+    public record Item(Long sentenceId, String content, Integer pageNumber, boolean isBlinded,
                        LocalDateTime createdAt, LocalDateTime updatedAt) {
     }
 }

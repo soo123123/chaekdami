@@ -12,8 +12,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sentences", indexes = {
@@ -48,6 +50,18 @@ public class Sentence extends BaseTimeEntity {
 
     @Column(nullable = false, length = MAX_CONTENT_LENGTH)
     private String content;
+
+    /** 신고 수와 블라인드는 리포지토리의 원자적 UPDATE로만 바꾼다. 기존 행을 위해 DB 기본값을 둔다. */
+    @ColumnDefault("0")
+    @Column(name = "report_count", nullable = false, updatable = false)
+    private int reportCount;
+
+    @ColumnDefault("false")
+    @Column(name = "is_blinded", nullable = false, updatable = false)
+    private boolean isBlinded;
+
+    @Column(name = "blinded_at", updatable = false)
+    private LocalDateTime blindedAt;
 
     @Builder
     public Sentence(Long userId, Long readingRecordId, Long bookId, LocalDate readDate,

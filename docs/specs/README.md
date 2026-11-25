@@ -56,3 +56,4 @@
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
 | 010 | [nickname-change](./010-nickname-change/) — 닉네임 변경 API | done | BE3 |
 | 011 | [request-limits](./011-request-limits/) — 신고·비밀번호 재설정 요청 제한 | done | BE3 |
+| 012 | [community-report](./012-community-report/) — 공개 독후감·문장의 신고와 블라인드, 정지 회원 글 숨김 | done | BE3 |

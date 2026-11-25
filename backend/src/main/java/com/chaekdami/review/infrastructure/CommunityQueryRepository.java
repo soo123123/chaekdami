@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 같은 ISBN을 완독한 다른 사용자의 공개 모음집과 독후감을 읽는 읽기 전용 조회.
+ * 같은 ISBN을 완독한 다른 사용자의 공개 모음집과 독후감을 읽는 읽기 전용 조회. 가려진 글과 정지 중인 회원의 글은 뺀다.
  * books, reading_records, users는 다른 도메인 테이블이라 쓰지 않고 읽기만 한다.
  */
 @Repository
@@ -25,26 +25,32 @@ public class CommunityQueryRepository {
 
     private static final int BOOK_REPORT_PREVIEW_LENGTH = 150;
 
+    /** {@code User.isSuspendedAt}과 같은 기준이다. */
+    private static final String AUTHOR_ACTIVE =
+            "(u.status is null or u.status <> 'SUSPENDED' or u.suspended_until <= :now)";
+
+    private static final String RECORDS = """
+            (select r.*, (select count(*) from sentences s
+                          where s.reading_record_id = r.id and not s.is_blinded) as sentence_cnt
+             from reading_records r) rr
+            """;
+
     /**
      * 한 행이 완독한 회차 하나다. 같은 사람이 여러 번 완독했으면 회차마다 행이 따로 나온다.
      */
-    private static final String ENTRY_FROM = """
-            from reading_records rr
+    private static final String ENTRY_FROM = "from " + RECORDS + """
             join books b on b.id = rr.book_id
             join users u on u.id = rr.user_id
-            left join lateral (
-                select count(*) as cnt from sentences s where s.reading_record_id = rr.id
-            ) sc on true
-            left join book_reports br on br.reading_record_id = rr.id and br.is_public
+            left join book_reports br on br.reading_record_id = rr.id and br.is_public and not br.is_blinded
             where b.isbn = :isbn
               and rr.status = 'COMPLETED'
-              and ((rr.is_public and sc.cnt > 0) or br.id is not null)
-            """;
+              and ((rr.is_public and rr.sentence_cnt > 0) or br.id is not null)
+              and """ + " " + AUTHOR_ACTIVE + "\n";
 
     private static final String ENTRY_SELECT = """
             select rr.id as reading_record_id, rr.round, rr.started_at, rr.completed_at,
                    rr.user_id, u.nickname,
-                   case when rr.is_public and sc.cnt > 0 then sc.cnt end as sentence_count,
+                   case when rr.is_public and rr.sentence_cnt > 0 then rr.sentence_cnt end as sentence_count,
                    br.id as book_report_id,
                    left(br.content, :previewLength) as book_report_preview,
                    char_length(br.content) as book_report_length
@@ -67,16 +73,15 @@ public class CommunityQueryRepository {
     public Counts counts(String isbn) {
         return jdbc.queryForObject("""
                 select count(distinct rr.user_id) as completer_count,
-                       count(*) filter (where rr.is_public and sc.cnt > 0) as public_collection_count,
-                       count(br.id) as public_book_report_count
-                from reading_records rr
+                       count(*) filter (where rr.is_public and rr.sentence_cnt > 0 and %s) as public_collection_count,
+                       count(br.id) filter (where %s) as public_book_report_count
+                from %s
                 join books b on b.id = rr.book_id
-                left join lateral (
-                    select count(*) as cnt from sentences s where s.reading_record_id = rr.id
-                ) sc on true
-                left join book_reports br on br.reading_record_id = rr.id and br.is_public
+                left join users u on u.id = rr.user_id
+                left join book_reports br on br.reading_record_id = rr.id and br.is_public and not br.is_blinded
                 where b.isbn = :isbn and rr.status = 'COMPLETED'
-                """, Map.of("isbn", isbn), (rs, rowNum) -> new Counts(
+                """.formatted(AUTHOR_ACTIVE, AUTHOR_ACTIVE, RECORDS),
+                new MapSqlParameterSource("isbn", isbn).addValue("now", LocalDateTime.now()), (rs, rowNum) -> new Counts(
                 rs.getLong("completer_count"),
                 rs.getLong("public_collection_count"),
                 rs.getLong("public_book_report_count")));
@@ -122,16 +127,47 @@ public class CommunityQueryRepository {
                                order by s.page_number asc nulls last, s.created_at, s.id
                            ) as rn
                     from sentences s
-                    where s.reading_record_id in (:ids)
+                    where s.reading_record_id in (:ids) and not s.is_blinded
                 ) ranked
                 where rn <= :perRecord
                 order by reading_record_id, rn
                 """, params, CommunityQueryRepository::toPreviewSentence);
     }
 
+    /** 이 회원이 신고할 수 있는 공개 독후감이면 작성자를 돌려준다. */
+    public Optional<Long> findVisibleBookReportAuthor(Long bookReportId, Long viewerId) {
+        return findVisibleAuthor("book_reports", "x.is_public", bookReportId, viewerId);
+    }
+
+    /** 이 회원이 신고할 수 있는 공개 문장이면 작성자를 돌려준다. */
+    public Optional<Long> findVisibleSentenceAuthor(Long sentenceId, Long viewerId) {
+        return findVisibleAuthor("sentences", "rr.is_public", sentenceId, viewerId);
+    }
+
+    private Optional<Long> findVisibleAuthor(String table, String publicCondition, Long id, Long viewerId) {
+        return jdbc.query("""
+                select x.user_id
+                from %s x
+                join reading_records rr on rr.id = x.reading_record_id
+                join books b on b.id = rr.book_id
+                join users u on u.id = x.user_id
+                where x.id = :id and not x.is_blinded and %s
+                  and rr.status = 'COMPLETED'
+                  and %s
+                  and exists (
+                      select 1 from reading_records mine
+                      join books my_book on my_book.id = mine.book_id
+                      where mine.user_id = :viewerId and mine.status = 'COMPLETED' and my_book.isbn = b.isbn)
+                """.formatted(table, publicCondition, AUTHOR_ACTIVE),
+                new MapSqlParameterSource("id", id).addValue("viewerId", viewerId)
+                        .addValue("now", LocalDateTime.now()),
+                (rs, rowNum) -> rs.getLong("user_id")).stream().findFirst();
+    }
+
     private static MapSqlParameterSource entryParams(String isbn) {
         return new MapSqlParameterSource()
                 .addValue("isbn", isbn)
+                .addValue("now", LocalDateTime.now())
                 .addValue("previewLength", BOOK_REPORT_PREVIEW_LENGTH);
     }
 

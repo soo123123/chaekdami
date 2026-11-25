@@ -1,4 +1,4 @@
-> 기준: fix/be3-review-isbn · 최종 확인: 2026-11-24 · 담당: BE3
+> 기준: feature/be3-community-report (스펙 012) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # review 데이터
 
@@ -14,6 +14,8 @@ erDiagram
   reading_records ||--o| book_reports : "회차당 1개"
   reviews ||--o{ review_likes : "좋아요"
   reviews ||--o{ review_reports : "신고"
+  book_reports ||--o{ book_report_reports : "신고"
+  sentences ||--o{ sentence_reports : "신고"
 ```
 
 ## sentences
@@ -29,6 +31,9 @@ erDiagram
 | read_date | date | not null, 수정 불가 | 저장한 날 (오늘 문장 수 집계) |
 | page_number | int | | 선택 |
 | content | varchar(500) | not null | |
+| report_count | int | not null, 기본값 0 | 원자적 UPDATE로만 변경 |
+| is_blinded | boolean | not null, 기본값 false | 원자적 UPDATE로만 변경 |
+| blinded_at | timestamp | | |
 | created_at, updated_at | timestamp | not null | |
 
 INDEX `idx_sentences_reading_record_id_read_date`, `idx_sentences_user_id`, `idx_sentences_book_id`
@@ -68,6 +73,9 @@ INDEX `idx_reviews_user_id`, `idx_reviews_isbn_created_at`, `idx_reviews_isbn_li
 | content | varchar(2000) | not null | |
 | is_public | boolean | not null | 커뮤니티 노출 (기본 비공개) |
 | revision | int | not null | 본문이 바뀔 때마다 +1. AI 피드백 기준 본문 판별용 |
+| report_count | int | not null, 기본값 0 | 원자적 UPDATE로만 변경 |
+| is_blinded | boolean | not null, 기본값 false | 원자적 UPDATE로만 변경 |
+| blinded_at | timestamp | | |
 | created_at, updated_at | timestamp | not null | |
 
 ## review_likes
@@ -98,11 +106,18 @@ UNIQUE `uk_review_likes_review_id_user_id`
 
 UNIQUE `uk_review_reports_review_id_user_id`
 
+## book_report_reports · sentence_reports
+
+엔티티: `BookReportReport`, `SentenceReport`. `review_reports`와 같은 모양이고, `review_id` 대신 `book_report_id`(FK → book_reports) · `sentence_id`(FK → sentences)를 쓴다. 글이 지워지면 FK(on delete cascade)로 신고도 지워진다.
+
+UNIQUE `uk_book_report_reports_book_report_id_user_id`, `uk_sentence_reports_sentence_id_user_id`
+
 ## 삭제
 
 | 상황 | 처리 | 상태 |
 |---|---|---|
-| 회원 탈퇴 | `ReviewCleanupListener`가 이 사용자의 독후활동 삭제 | ✅ |
+| 회원 탈퇴 | `ReviewCleanupListener`가 이 사용자의 독후활동과 이 사용자가 한 신고 삭제 (신고받은 글의 신고 수는 그대로) | ✅ |
+| 독후감·문장 삭제 | 그 글의 신고도 FK로 함께 삭제 | ✅ |
 | 책 삭제 | reading 책 삭제가 `ReviewCleanupService.deleteAllOfBook`을 같은 트랜잭션에서 불러 그 책(`book_id`)의 좋아요·신고 → 리뷰 → 독후감 → 문장 삭제 | ✅ |
 
 ## 변경 이력
