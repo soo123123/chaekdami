@@ -49,11 +49,11 @@
 
 | ID | 담당 | 심각도 | 상태 | 지금 구현 | 문제 | 위치 | 문서 | 스펙 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|
-| <a id="issue-sec-3"></a>ISSUE-SEC-3 | BE1 (+BE2) | 높음 | 열림 | 책 쪽수에 상한이 없고 세션끼리의 시간·구간 겹침을 확인하지 않는다 | 비정상적인 경험치 획득과 서버 부하가 가능하다. 주간 랭킹에도 영향 (자세한 내용은 담당자에게 따로 전달) | `BookService`, `ReadingSession`, `RewardAccount.addExperience` | — | — |
+| <a id="issue-sec-3"></a>ISSUE-SEC-3 | BE1 (+BE2) | 높음 | 열림 | 책 쪽수에 상한이 없고 세션끼리의 시간·구간 겹침을 확인하지 않는다 | 비정상적인 경험치 획득과 서버 부하가 가능하다. 주간 랭킹에도 영향 (자세한 내용은 담당자에게 따로 전달) | `BookService`, `ReadingSession`, `RewardAccount.addExperience` | — | — | 랭킹 공개 전(PR 35)에 먼저 고칠지 BE1·BE2·기획이 정해야 함 (ASK-15에서 합침) |
 | <a id="issue-bug-3"></a>ISSUE-BUG-3 | BE1 (+FE1) | 낮음 | 열림 | 독서 종료 저장(`POST /api/reading-sessions`)은 한 트랜잭션이지만, 같은 요청을 한 번만 처리하는 장치가 없다 | 서버는 저장했는데 응답만 끊겨(네트워크·시간 초과) 앱이 "다시 시도하기"를 누르면 같은 독서가 세션 2건이 된다 | `ReadingSessionService.create`, 앱 `useReadingEnd` | [reading/api](./domains/reading/api.md#post-apireading-sessions) | 003 범위 밖 |
 | <a id="issue-bug-6"></a>ISSUE-BUG-6 | BE2 (+FE1) | 중간 | 진행 중 (스펙 009) | 서버는 독서 구간 `[종료-독서시간, 종료)` 중 부스터와 겹친 시간 비율만큼만 2배로 계산한다 (`0979aa9`, 미팅에서 정한 수정 방향과 같음) | 테스트 환경에서 독서 시간이 부스터 시간(30분)보다 길면 부스터가 적용되지 않았다. 의심 원인: ① 테스트 빌드가 `0979aa9` 이전 ② 일시정지가 있으면 계산한 구간이 실제 독서 시각과 어긋남 ③ 완료 화면 표시 문제 | `RewardService.grantReadingExperience`, 앱 `useReadingTimer` | [reward/rules](./domains/reward/rules.md#3-경험치-부스터) | 009 (부스터는 책 읽는 동안에만 시간이 흐르도록 규칙 변경) | 서버 구현 완료, 병합 대기 (feature/009-booster-reading-time). 앱 수정과 같은 때 병합, 먼저 들어가야 하는 ISSUE-BUG-9는 병합됨 (PR 33). FE2 응답 필드 확인·실제 DB 확인·재테스트 남음 |
 | <a id="issue-bug-11"></a>ISSUE-BUG-11 | FE2 | 높음 | 진행 중 | 앱 시작 때 로그인 확인이 토큰 재발급 없이 `/api/me`를 부른다. 개발 빌드는 이 확인을 건너뛴다 | 출시용 앱은 Access Token(15분)이 만료된 뒤 다시 켜면 로그아웃된다 | 앱 `home.tsx`, `authApi.ts` | — | — |
-| <a id="issue-bug-12"></a>ISSUE-BUG-12 | 프론트 공통 (FE2 주) | 높음 | 진행 중 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 28 병합 전 확인 (2026-11-25 검토, 가짜 서버로 재현): ① 재발급 응답만 끊기면 다음 요청이 교체된 토큰을 다시 보내 모든 기기가 로그아웃됨 (ASK-13) ② 세션이 끝나면 독서 중에도 로그인 화면으로 이동해 타이머와 입력한 문장이 사라짐 (유실은 코드로 확인) |
+| <a id="issue-bug-12"></a>ISSUE-BUG-12 | 프론트 공통 (FE2 주) | 높음 | 진행 중 | 재발급 실패 때 토큰만 지우고 로그인 화면으로 보내지 않는다. 네트워크 오류에도 토큰을 지운다. `/api/auth/` 요청은 재발급하지 않는다 | 일시 장애가 로그아웃이 되고, 세션이 끊긴 채 화면이 남는다. 비밀번호 변경 뒤도 같다 | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 28 병합 전 확인 (2026-11-25 검토, 가짜 서버로 재현): ① 재발급 응답만 끊기면 다음 요청이 교체된 토큰을 다시 보내 모든 기기가 로그아웃됨 (ASK-13) ② 세션이 끝나면 독서 중에도 로그인 화면으로 이동해 타이머와 입력한 문장이 사라짐 (유실은 코드로 확인, ASK-17) |
 | <a id="issue-bug-13"></a>ISSUE-BUG-13 | FE2 | 중간 | 진행 중 | 조회 실패를 예시 값이나 기본값으로 보여준다 (마이페이지 닉네임, 홈 재화·레벨. 레벨·퀘스트·통계도 예시 값을 쓴다는 보고) | 내 기록이 아닌 값이 실제처럼 보인다 | 앱 `MyPageScreen`, `HomeScreen`, `RewardScreen`, `QuestScreen`, `ReadingStatsScreen` | — | — |
 | <a id="issue-bug-14"></a>ISSUE-BUG-14 | FE2 (+FE1) | 중간 | 진행 중 | 독서 완료 화면의 목표 1시간 30분·60쪽이 고정 예시 값이다 | 모든 사용자에게 같은 목표가 보인다 | 앱 `useReadingComplete` | — | — |
 | <a id="issue-bug-15"></a>ISSUE-BUG-15 | FE2 | 중간 | 진행 중 | 상점 구매 버튼에 요청 중 막는 처리가 없다 | 연타하면 중복 구매될 수 있다 | 앱 `ShopScreen` | — | — |
@@ -90,7 +90,7 @@
 | <a id="todo-2"></a>TODO-2 | BE1 | 세션 요청의 사진 저장 | 열림 | `photos` 받기만 하고 저장 안 함 (사진 저장소 없음). `photoVerificationId`는 스펙 004에서 연결됨 | `CreateReadingSessionRequest` | [reading/api](./domains/reading/api.md#post-apireading-sessions) |
 | <a id="todo-4"></a>TODO-4 | BE1 | AI 기능 (독후감 피드백, 문장 인증) | 열림 | 없음. `book_reports.revision`만 준비. 책 추천은 TODO-27로 분리 | — | [review/rules](./domains/review/rules.md#3-독후감) |
 | <a id="todo-5"></a>TODO-5 | BE2 (+FE2) | 주간 퀘스트 | 진행 중 (스펙 013) | `QuestType.WEEKLY` 값만 있음 | `QuestType` | [reward/rules](./domains/reward/rules.md#4-일일-퀘스트) |
-| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 공개 전 결정: ASK-14, ASK-15. 보강: TODO-43 |
+| <a id="todo-6"></a>TODO-6 | BE2 (+FE1, BE1) | (확정) 주간 독서 랭킹, 레벨 해금 | 진행 중 (스펙 005) | 없음 (main 기준. 서버 랭킹 API는 feature/be2-ranking에서 경험치·독서 시간 2개로 구현, 병합 전). 기획(2026-11-23): 전체 사용자 주간 독서 순위 화면을 새로 만들고 하단 탭에 랭킹 버튼 추가. 집계는 reading 세션을 port로 받음. 화면은 TODO-30으로 분리. 레벨 화면의 해금 혜택 표시는 ISSUE-BUG-16 | — | [reward/rules](./domains/reward/rules.md#2-경험치) | 랭킹 API 구현 완료, 병합 대기 (feature/be2-ranking). FE1 승인·실제 DB 확인 남음. 레벨 해금 미착수 공개 전 결정: ASK-14, ASK-18, ISSUE-SEC-3. 보강: TODO-43 |
 | <a id="todo-7"></a>TODO-7 | FE1 (+BE2) | 서재 꾸미기 저장·구매 | 열림 | 테마 3종이 기기에만 저장됨 (사용자 구분도 없음, ISSUE-DATA-4) | 앱 `themeStore` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-8"></a>TODO-8 | BE3 | (확정) 독서 독려 알림 (기기 로컬, Android·iOS) | 열림 | 없음. 기획(2026-11-24, 2026-11-23의 자정까지 반복 알림을 대체): 시간대·요일, 금일 독서 여부, 금일·금주 독서량, 연속 독서, 미접속을 활용해 독서를 유도하는 알림 (듀오링고 방식). 앱이 7일치를 예약하고 독서 저장·접속 때 다시 예약, 마이페이지에서 설정. 서버는 알림용 상태 조회와 `reminder_settings`(주간 목표·마지막 접속·푸시 수신) 테이블. 독서 여부·독서량은 저장하지 않고 세션에서 계산. 세부 값은 ASK-7, 날짜 기준은 ASK-9. 서버 푸시는 TODO-42 | 앱 `MyPageScreen`, `useReadingEnd`, `app/_layout.tsx` | [overview](./overview.md#3-주요-기능과-현재-상태) | 담당은 BE3 단독이지만 FE1·FE2 화면 파일을 고침 |
 | <a id="todo-11"></a>TODO-11 | FE1 | 바코드 스캔 검색 | 열림 | 앱에 "준비 중" 안내 | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
@@ -100,7 +100,7 @@
 | <a id="todo-27"></a>TODO-27 | BE1 (+FE1) | (확정) LLM 책 추천 | 열림 | 없음. 기획: 내 서재 책 목록으로 LLM에 요청해 최대 3권 추천, 도서 검색 화면 최근 검색어 바로 아래 컴포넌트로 표시. 기존 Gemini 연동 재사용 검토 (TODO-23) | 앱 `BookSearchScreen` | [reading/overview](./domains/reading/overview.md#현재-상태) |
 | <a id="todo-28"></a>TODO-28 | BE2 (+FE2 상점, FE1 서재) | (아이디어) 랜덤박스 | 열림 | 없음. 상점에서 구매하면 확률로 피규어·트로피를 얻고 서재 상단에 배치. 확률은 ASK-8. TODO-7과 연결 | — | [reward/rules](./domains/reward/rules.md#5-상점) |
 | <a id="todo-29"></a>TODO-29 | BE2 (+FE2) | (아이디어) 칭호 | 열림 | 없음. 칭호 획득·착용, 숨은 조건을 달성하면 히든 칭호. 조건은 ASK-8. BE2 부담이 크면 BE3 담당 검토 | — | — |
-| <a id="todo-30"></a>TODO-30 | FE1 (+BE2) | (확정) 주간 랭킹 화면과 하단 탭 | 진행 중 (스펙 008) | 없음 (main 기준. feature/008-ranking-screen에서 개발용 예시 데이터로 구현, 병합 전). TODO-6에서 화면을 분리. 서버 API(스펙 005) 병합 후 예시 데이터를 끄고 연결, 실기기 확인 필요 | 앱 `RankingScreen`, `BottomTabBar` | [architecture](./architecture.md) | 표시 결정: ASK-16. 주가 바뀔 때 갱신: TODO-44 |
+| <a id="todo-30"></a>TODO-30 | FE1 (+BE2) | (확정) 주간 랭킹 화면과 하단 탭 | 진행 중 (스펙 008) | 없음 (main 기준. feature/008-ranking-screen에서 개발용 예시 데이터로 구현, 병합 전). TODO-6에서 화면을 분리. 서버 API(스펙 005) 병합 후 예시 데이터를 끄고 연결, 실기기 확인 필요 | 앱 `RankingScreen`, `BottomTabBar` | [architecture](./architecture.md) | 표시 결정: ASK-16, ASK-19. 주가 바뀔 때 갱신: TODO-44 |
 | <a id="todo-31"></a>TODO-31 | FE2 | 완독 후 독후감 UI 개선 | 열림 | 노션 Notice에만 적혀 있던 항목. 개선할 내용은 정해지지 않음 | 앱 독후감 화면 | — |
 | <a id="todo-32"></a>TODO-32 | FE1 (+BE1) | 독서 목표·공개 설정을 등록 뒤에도 보기·수정 | 열림 | 등록 화면에서만 입력. 새 회차에는 설정할 방법이 없다는 보고 | 앱 책 상세 | — |
 | <a id="todo-33"></a>TODO-33 | FE1 | 도서 검색 결과 21번째 이후 보기 | 열림 | 1페이지 20권만 조회 | 앱 `readingApi.ts` | — |
@@ -142,10 +142,12 @@
 | <a id="ask-8"></a>ASK-8 | BE2 · 기획 | 랜덤박스 확률표와 칭호·히든 칭호 획득 조건 | TODO-28, TODO-29 |
 | <a id="ask-9"></a>ASK-9 | BE1·BE2·BE3 | 서버 날짜 기준을 한국 시간으로 통일하나? 자정을 넘긴 세션은 시작일·종료일 중 어느 날로 보나? (지금은 화면마다 다르고 서버 시간대 설정이 없다는 보고) 응답 시각에 시간대를 표기하나? (부스터 만료 시각 `expBuffExpiredAt`에 시간대가 없어 앱이 기기 시간대로 해석한다. 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다) | 스펙 005의 한국 시간 주 경계, 부스터 남은 시간 표시 |
 | <a id="ask-12"></a>ASK-12 | FE1 · 기획 | 책 정보의 찜하기를 유지하나? (지금은 화면을 나가면 사라짐) | 앱 `BookInfoScreen` |
-| <a id="ask-13"></a>ASK-13 | BE3 · FE2 | 토큰 재발급 응답이 끊겨 앱이 교체된 토큰을 다시 보내면 어떻게 하나? (지금 서버는 도난으로 보고 모든 세션을 끊음. 제안: 직전 토큰을 짧은 시간만 허용) 독서 중에 세션이 끝나면 화면 이동을 미루거나 입력을 저장하나? | ISSUE-BUG-12, PR 28 |
-| <a id="ask-14"></a>ASK-14 | BE2 · FE1 · BE3 · 기획 | 주간 랭킹에 이용 정지된 회원과 관리자 계정을 보여주나? (PR 35에는 제외 조건이 없음. 커뮤니티는 정지 중 글을 숨김, ASK-11) | TODO-6 |
-| <a id="ask-15"></a>ASK-15 | BE1 · BE2 · 기획 | 랭킹 공개 전에 ISSUE-SEC-3을 먼저 고치나? (전체 공개 순위라 영향이 커짐) | ISSUE-SEC-3, TODO-6 |
-| <a id="ask-16"></a>ASK-16 | FE1 · BE2 · 기획 | 랭킹 표시: ① 30위 동점이면 내 순위가 30위 안인데 목록에 없을 수 있다. 동점자를 모두 보여주거나 안내하나? ② 독서 시간은 분까지만 보여 같은 시간인데 순위가 다를 수 있다. 초까지 보여주나? | TODO-6, TODO-30 |
+| <a id="ask-13"></a>ASK-13 | BE3 · FE2 | 토큰 재발급 응답이 끊겨 앱이 교체된 토큰을 다시 보내면 어떻게 하나? (지금 서버는 도난으로 보고 모든 세션을 끊음. 제안: 직전 토큰을 짧은 시간만 허용) | ISSUE-BUG-12, PR 28 |
+| <a id="ask-14"></a>ASK-14 | BE2 · FE1 · BE3 · 기획 | 주간 랭킹에 이용 정지된 회원을 보여주나? (PR 35에는 제외 조건이 없음. 커뮤니티는 정지 중 글을 숨김, ASK-11) | TODO-6, PR 35 |
+| <a id="ask-16"></a>ASK-16 | FE1 · BE2 · 기획 | 랭킹에서 30위 동점이면 내 순위가 30위 안인데 목록에 없을 수 있다. 동점자를 모두 보여주거나 안내하나? | TODO-6, TODO-30, PR 21·35 |
+| <a id="ask-17"></a>ASK-17 | FE1 · FE2 | 독서 중에 로그인 세션이 끝나면 화면 이동을 미루거나 입력을 저장하나? (PR 28은 바로 로그인 화면으로 이동해 타이머와 문장이 사라짐. ASK-13에서 나눔) | ISSUE-BUG-12, PR 28 |
+| <a id="ask-18"></a>ASK-18 | BE2 · FE1 · 기획 | 주간 랭킹에 관리자 계정을 보여주나? (PR 35에는 제외 조건이 없음. ASK-14에서 나눔) | TODO-6, PR 35 |
+| <a id="ask-19"></a>ASK-19 | FE1 · 기획 | 랭킹의 독서 시간을 초까지 보여주나? (지금은 분까지라 같은 시간인데 순위가 다를 수 있음. ASK-16에서 나눔) | TODO-30, PR 21 |
 
 ## 4. 해결됨
 
@@ -180,3 +182,4 @@
 | ISSUE-BUG-9 보상 조회가 재화·경험치를 옛값으로 되돌림 | 조회에서 저장하지 않고 달력으로 계산한 연속 일수를 바로 응답 (PR 33). H2에서 재현·수정 확인, 실제 DB 동시 요청 미확인 | 2026-11-25 | — |
 | ISSUE-BUG-26 사진 인증 조회 실패 시 기본 보상 취소 | 사진 인증 조회를 보상 트랜잭션 시작 전으로 이동 (PR 34). 실제 DB 조회 오류 미확인 | 2026-11-25 | — |
 | ISSUE-BUG-10 D-day 조회 실패 뒤 추가하면 목표가 지워짐 | 조회에 성공하기 전에는 추가·저장 차단, "다시 불러오기" 추가 (PR 27). 실제 서버·기기 미확인, 여러 기기의 덮어쓰기는 ISSUE-LIMIT-8 | 2026-11-25 | — |
+| ASK-15 랭킹 공개 전에 ISSUE-SEC-3을 먼저 고치나 | 정해진 것이 아니라 중복 질문이라 ISSUE-SEC-3 비고로 합침 (FE1 결정). 고칠 시점은 아직 안 정함 | 2026-11-25 | — |
