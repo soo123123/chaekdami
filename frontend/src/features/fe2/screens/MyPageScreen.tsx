@@ -44,26 +44,26 @@ const COLORS = {
   line: '#EBE5DB',
 };
 
+// 조회하지 못한 값은 null
 type PageStats = {
-  level: number;
-  xp: number;
-  maxXp: number;
-  currency: number;
-  dday: number;
-  questMinutes: number;
-  questTarget: number;
-  questTitle: string;
+  reward: {
+    level: number;
+    xp: number;
+    maxXp: number;
+    currency: number;
+  } | null;
+  dday: number | null;
+  quest: {
+    minutes: number;
+    target: number;
+    title: string;
+  } | null;
 };
 
 const EMPTY_STATS: PageStats = {
-  level: 1,
-  xp: 0,
-  maxXp: 1,
-  currency: 0,
-  dday: 0,
-  questMinutes: 0,
-  questTarget: 1,
-  questTitle: '오늘의 독서',
+  reward: null,
+  dday: null,
+  quest: null,
 };
 
 function errorMessage(error: unknown, fallback: string) {
@@ -147,15 +147,19 @@ export default function MyPageScreen() {
   const questHeight =
     contentWidth / questAspectRatio;
 
-  const xpPercent = Math.min(
-    100,
-    (stats.xp / stats.maxXp) * 100
-  );
+  const xpPercent = stats.reward
+    ? Math.min(
+        100,
+        (stats.reward.xp / stats.reward.maxXp) * 100
+      )
+    : 0;
 
-  const questPercent = Math.min(
-    100,
-    (stats.questMinutes / stats.questTarget) * 100
-  );
+  const questPercent = stats.quest
+    ? Math.min(
+        100,
+        (stats.quest.minutes / stats.quest.target) * 100
+      )
+    : 0;
 
   const loadProfile = useCallback(() => {
     let active = true;
@@ -174,45 +178,53 @@ export default function MyPageScreen() {
         );
 
         if (active) {
-          setProfile({
-            id: 1,
-            nickname: '책읽는고양이',
-          });
+          setProfile(null);
         }
       }
 
-      try {
-        const [reward, quests, dday] = await Promise.all([
+      const [rewardResult, questResult, ddayResult] =
+        await Promise.allSettled([
           getRewardStatus(),
           getQuests(),
-          getDday().catch(() => null),
+          getDday(),
         ]);
 
-        if (!active) {
-          return;
-        }
+      if (!active) {
+        return;
+      }
 
-        const minuteQuest =
-          quests.find((quest) => quest.title.includes('30분')) ??
-          quests.find((quest) => quest.type === 'DDAY');
+      const reward =
+        rewardResult.status === 'fulfilled'
+          ? rewardResult.value
+          : null;
 
-        setStats({
+      const quests =
+        questResult.status === 'fulfilled'
+          ? questResult.value
+          : null;
+
+      const minuteQuest =
+        quests?.find((quest) => quest.title.includes('30분')) ??
+        quests?.find((quest) => quest.type === 'DDAY');
+
+      setStats({
+        reward: reward && {
           level: reward.level,
           xp: reward.xp,
           maxXp: Math.max(1, reward.requiredXp),
           currency: reward.currency,
-          dday: dday?.currentStreak ?? reward.dday,
-          questMinutes: minuteQuest?.progress ?? 0,
-          questTarget: Math.max(1, minuteQuest?.target ?? 1),
-          questTitle: minuteQuest?.title ?? '오늘의 독서',
-        });
-      } catch (error) {
-        console.log('보상 정보 조회 실패:', error);
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+        },
+        dday:
+          ddayResult.status === 'fulfilled'
+            ? ddayResult.value.currentStreak ?? 0
+            : reward?.dday ?? null,
+        quest: quests && {
+          minutes: minuteQuest?.progress ?? 0,
+          target: Math.max(1, minuteQuest?.target ?? 1),
+          title: minuteQuest?.title ?? '오늘의 독서',
+        },
+      });
+      setLoading(false);
     };
 
     void load();
@@ -402,7 +414,7 @@ export default function MyPageScreen() {
                 ]}
                 numberOfLines={1}
               >
-                {profile?.nickname || '책읽는고양이'}
+                {profile?.nickname || '닉네임을 불러오지 못했어요'}
               </Text>
 
               <Text
@@ -450,7 +462,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              {stats.dday}일
+              {stats.dday === null ? '-' : `${stats.dday}일`}
             </Text>
 
             <Text
@@ -476,7 +488,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              Lv. {stats.level}
+              {stats.reward ? `Lv. ${stats.reward.level}` : '-'}
             </Text>
 
             <View style={styles.miniTrack}>
@@ -492,7 +504,9 @@ export default function MyPageScreen() {
               style={styles.summaryHint}
               numberOfLines={2}
             >
-              다음 레벨까지 {Math.max(0, stats.maxXp - stats.xp)} XP
+              {stats.reward
+                ? `다음 레벨까지 ${Math.max(0, stats.reward.maxXp - stats.reward.xp)} XP`
+                : '불러오지 못했어요'}
             </Text>
           </TouchableOpacity>
 
@@ -511,7 +525,7 @@ export default function MyPageScreen() {
             </Text>
 
             <Text style={styles.summaryValue}>
-              {stats.currency.toLocaleString()}
+              {stats.reward ? stats.reward.currency.toLocaleString() : '-'}
             </Text>
 
             <Text
@@ -551,7 +565,7 @@ export default function MyPageScreen() {
               </Text>
 
               <Text style={styles.questDescription}>
-                {stats.questTitle}
+                {stats.quest ? stats.quest.title : '퀘스트를 불러오지 못했어요'}
               </Text>
 
               <View style={styles.questProgressRow}>
@@ -565,7 +579,7 @@ export default function MyPageScreen() {
                 </View>
 
                 <Text style={styles.questCount}>
-                  {stats.questMinutes}/{stats.questTarget}분
+                  {stats.quest ? `${stats.quest.minutes}/${stats.quest.target}분` : '-'}
                 </Text>
               </View>
             </View>

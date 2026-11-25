@@ -24,23 +24,21 @@ export function ReadingResultCard({ record }: Props) {
           icon="clock"
           label="독서 시간"
           value={formatMinutes(record.durationMinutes)}
-          sub={`목표 ${formatMinutes(record.goalMinutes)}`}
         />
         <View style={styles.divider} />
         <StatItem
           icon="bookOpenOutline"
           label="읽은 페이지"
           value={`${Math.floor(record.pagesRead)} 페이지`}
-          sub={`목표 ${record.goalPages} 페이지`}
         />
       </View>
     </View>
   );
 }
 
-type StatItemProps = { icon: IconName; label: string; value: string; sub: string };
+type StatItemProps = { icon: IconName; label: string; value: string };
 
-function StatItem({ icon, label, value, sub }: StatItemProps) {
+function StatItem({ icon, label, value }: StatItemProps) {
   return (
     <View style={styles.item}>
       <View style={styles.labelRow}>
@@ -49,9 +47,6 @@ function StatItem({ icon, label, value, sub }: StatItemProps) {
       </View>
       <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
         {value}
-      </Text>
-      <Text style={styles.sub} numberOfLines={1}>
-        {sub}
       </Text>
     </View>
   );
@@ -66,5 +61,4 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   label: { fontSize: 12, color: COMPLETE_COLORS.text },
   value: { fontSize: 19, fontWeight: '800', color: COMPLETE_COLORS.text },
-  sub: { fontSize: 11, color: COMPLETE_COLORS.secondary },
 });
