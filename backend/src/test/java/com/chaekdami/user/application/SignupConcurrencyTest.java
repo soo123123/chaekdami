@@ -1,18 +1,27 @@
 package com.chaekdami.user.application;
 
 import com.chaekdami.user.application.command.SignupCommand;
+import com.chaekdami.user.presentation.GlobalExceptionHandler;
+import com.chaekdami.user.presentation.dto.ApiErrorResponse;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.sql.DataSource;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +29,9 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,6 +58,10 @@ class SignupConcurrencyTest {
     private JdbcTemplate jdbc;
     @Autowired
     private TransactionTemplate transaction;
+    @Autowired
+    private DataSource dataSource;
+    @MockitoSpyBean
+    private PasswordEncoder encoder;
     @MockitoBean
     private PasswordResetNotifier notifier;
 
@@ -56,9 +72,34 @@ class SignupConcurrencyTest {
 
     @Test
     void sameEmailIs409() throws Exception {
-        // 서버가 DB 오류 문구에서 칸 이름을 찾는데, H2 문구에는 INSERT 문 전체가 들어 있어 code는 비교하지 않는다.
         signupWhileAnotherIsUncommitted("first@test.local", "first", "FIRST@test.local", "second")
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void sameEmailContainingTheWordNicknameIsStillAnEmailConflict() throws Exception {
+        signupWhileAnotherIsUncommitted("nickname@test.local", "first", "nickname@test.local", "second")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void otherIntegrityErrorsAreNotReportedAsDuplicates() {
+        ResponseEntity<ApiErrorResponse> response = new GlobalExceptionHandler().handleDataIntegrity(
+                new DataIntegrityViolationException("value too long: nickname email"));
+
+        assertEquals(500, response.getStatusCode().value());
+    }
+
+    @Test
+    void signupHashesThePasswordWithoutHoldingAConnection() throws Exception {
+        doAnswer(invocation -> {
+            assertEquals(0, ((HikariDataSource) dataSource).getHikariPoolMXBean().getActiveConnections());
+            return invocation.callRealMethod();
+        }).when(encoder).encode(any());
+
+        signup("first@test.local", "first").andExpect(status().isCreated());
+
+        verify(encoder).encode(PASSWORD);
     }
 
     @Test
@@ -81,7 +122,9 @@ class SignupConcurrencyTest {
         ResultActions result;
         try (var pool = Executors.newSingleThreadExecutor()) {
             Future<ResultActions> late = transaction.execute(status -> {
-                userService.signup(new SignupCommand(email, PASSWORD, nickname));
+                jdbc.update("insert into users (email, password_hash, nickname, nickname_lower, role, created_at, "
+                        + "token_version) values (?, 'hash', ?, ?, 'USER', localtimestamp, 0)",
+                        email, nickname, nickname.toLowerCase(Locale.ROOT));
                 Future<ResultActions> future = pool.submit(() -> signup(lateEmail, lateNickname));
                 assertThrows(TimeoutException.class, () -> future.get(1, TimeUnit.SECONDS));
                 return future;
