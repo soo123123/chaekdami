@@ -20,7 +20,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { Icon, type IconName } from '@/components/common/Icon';
@@ -35,6 +35,7 @@ import {
   getQuests,
   getRewardStatus,
   getShopItems,
+  notifyBoosterUsed,
   type ShopItemResult,
 } from '../api/rewardApi';
 
@@ -83,8 +84,28 @@ function ownedCount(
     );
 }
 
+// 응답이 끊겼거나 서버 오류면 부스터가 쓰였는지 알 수 없다
+function isUnknownResult(error: unknown) {
+  if (!isAxiosError(error)) return false;
+
+  const status = error.response?.status;
+
+  return status === undefined || status >= 500;
+}
+
+// 다시 조회한 개수로 실제 결과를 안내한다 (ISSUE-BUG-33)
+function unknownResultMessage(before: number, after: number) {
+  if (after === before) return '부스터를 사용하지 못했어요.';
+
+  const remaining = `남은 부스터 ${after.toLocaleString()}개`;
+
+  return after === before - 1
+    ? `이미 사용됐어요. ${remaining}`
+    : `보유 개수가 바뀌었어요. ${remaining}`;
+}
+
 function boosterErrorMessage(error: unknown) {
-  const message = axios.isAxiosError(error)
+  const message = isAxiosError(error)
     ? error.response?.data?.message
     : undefined;
 
@@ -388,18 +409,37 @@ export default function HomeScreen() {
       setBoosterCount(result.remainingBoosters);
       showToast('EXP 부스터를 사용했어요.');
     } catch (error) {
-      showToast(boosterErrorMessage(error), 'error');
+      const before = inventoryStatus.boosterCount;
+      const unknown = isUnknownResult(error);
 
-      // 응답만 끊겼을 수 있어 실제 보유 수량을 다시 확인한다
+      // 응답만 끊겼을 수 있어 실제 보유 수량을 다시 확인한 뒤 안내한다
       try {
-        setBoosterCount(
-          ownedCount(
-            await getShopItems(),
-            'EXPERIENCE_BOOSTER'
-          )
+        const after = ownedCount(
+          await getShopItems(),
+          'EXPERIENCE_BOOSTER'
+        );
+
+        setBoosterCount(after);
+
+        if (unknown && after !== before) notifyBoosterUsed();
+
+        showToast(
+          unknown
+            ? unknownResultMessage(before, after)
+            : boosterErrorMessage(error),
+          'error'
         );
       } catch {
         setInventoryError(true);
+
+        if (unknown) notifyBoosterUsed();
+
+        showToast(
+          unknown
+            ? '사용 결과를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'
+            : boosterErrorMessage(error),
+          'error'
+        );
       }
     } finally {
       boosterBusyRef.current = false;

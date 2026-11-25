@@ -144,6 +144,11 @@ export function subscribeBoosterUsed(
   };
 }
 
+// 부스터가 쓰였을 수 있을 때 위젯에 알려 다시 조회하게 한다
+export function notifyBoosterUsed(): void {
+  boosterUsedListeners.forEach((listener) => listener());
+}
+
 export const activateExpBooster =
   async (): Promise<BoosterUseResult> => {
     const response =
@@ -151,7 +156,7 @@ export const activateExpBooster =
         '/api/rewards/boosters/use'
       );
 
-    boosterUsedListeners.forEach((listener) => listener());
+    notifyBoosterUsed();
 
     return response.data;
   };
