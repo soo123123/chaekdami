@@ -18,6 +18,11 @@ public class LoginAttemptLimiter {
     static final int MAX_ATTEMPTS = 5;
     static final Duration WINDOW = Duration.ofMinutes(15);
     static final Duration LOCK = Duration.ofMinutes(15);
+    static final int MAX_RESETS_PER_EMAIL = 10;
+    static final Duration EMAIL_RESET_WINDOW = Duration.ofHours(1);
+    static final Duration EMAIL_RESET_LOCK = Duration.ofHours(1);
+    /** IP 자리에 넣어 이메일 전체의 기록을 뜻한다. */
+    private static final String ANY_IP = "*";
 
     private final AuthAttemptRepository authAttemptRepository;
 
@@ -28,7 +33,8 @@ public class LoginAttemptLimiter {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordLoginFailure(String email, String clientIp) {
-        increase(loginKey(email, clientIp));
+        LocalDateTime now = LocalDateTime.now();
+        lock(loginKey(email, clientIp), now).increase(now, MAX_ATTEMPTS, WINDOW, LOCK);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -39,24 +45,37 @@ public class LoginAttemptLimiter {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void consumePasswordResetRequest(String email, String clientIp) {
-        String key = resetKey(email, clientIp);
-        ensureAllowed(key);
-        increase(key);
+        LocalDateTime now = LocalDateTime.now();
+        AuthAttempt byIp = lock(resetKey(email, clientIp), now);
+        ensureNotLocked(byIp, now);
+        AuthAttempt byEmail = lock(resetKey(email, ANY_IP), now);
+        ensureNotLocked(byEmail, now);
+        byIp.increase(now, MAX_ATTEMPTS, WINDOW, LOCK);
+        byEmail.increase(now, MAX_RESETS_PER_EMAIL, EMAIL_RESET_WINDOW, EMAIL_RESET_LOCK);
+    }
+
+    /** 회원 탈퇴와 같은 트랜잭션에서 그 이메일의 기록을 모든 IP에 대해 지운다. */
+    @Transactional
+    public void deleteAllOf(String email) {
+        authAttemptRepository.deleteByKeyPrefix(loginKey(email, ""));
+        authAttemptRepository.deleteByKeyPrefix(resetKey(email, ""));
     }
 
     private void ensureAllowed(String key) {
         authAttemptRepository.findByAttemptKey(key)
-                .filter(attempt -> attempt.isLocked(LocalDateTime.now()))
-                .ifPresent(attempt -> {
-                    throw new TooManyAttemptsException();
-                });
+                .ifPresent(attempt -> ensureNotLocked(attempt, LocalDateTime.now()));
     }
 
-    private void increase(String key) {
-        LocalDateTime now = LocalDateTime.now();
-        AuthAttempt attempt = authAttemptRepository.findByAttemptKey(key)
-                .orElseGet(() -> authAttemptRepository.save(new AuthAttempt(key, now)));
-        attempt.increase(now, MAX_ATTEMPTS, WINDOW, LOCK);
+    private static void ensureNotLocked(AuthAttempt attempt, LocalDateTime now) {
+        if (attempt.isLocked(now)) {
+            throw new TooManyAttemptsException();
+        }
+    }
+
+    private AuthAttempt lock(String key, LocalDateTime now) {
+        authAttemptRepository.insertIfAbsent(key, now);
+        return authAttemptRepository.findByAttemptKeyForUpdate(key)
+                .orElseThrow(() -> new IllegalStateException("요청 제한 기록을 찾을 수 없습니다."));
     }
 
     private static String loginKey(String email, String clientIp) {

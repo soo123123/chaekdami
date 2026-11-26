@@ -71,6 +71,6 @@ public final class SentenceCollectionAssembler {
 
     private static SentenceCollectionBody.Item toItem(Sentence sentence) {
         return new SentenceCollectionBody.Item(sentence.getId(), sentence.getContent(), sentence.getPageNumber(),
-                sentence.getCreatedAt(), sentence.getUpdatedAt());
+                sentence.isBlinded(), sentence.getCreatedAt(), sentence.getUpdatedAt());
     }
 }

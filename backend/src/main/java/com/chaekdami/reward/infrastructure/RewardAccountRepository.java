@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface RewardAccountRepository extends JpaRepository<RewardAccount, Long> {
@@ -18,6 +21,8 @@ public interface RewardAccountRepository extends JpaRepository<RewardAccount, Lo
     String LOCK_TIMEOUT_MILLIS = "3000";
 
     Optional<RewardAccount> findByUserId(Long userId);
+
+    List<RewardAccount> findAllByUserIdIn(Collection<Long> userIds);
 
     /**
      * 재화/경험치를 변경하기 전에 사용자 보상 계정 행을 잠근다. (SELECT ... FOR UPDATE)
@@ -32,4 +37,19 @@ public interface RewardAccountRepository extends JpaRepository<RewardAccount, Lo
     @Modifying(flushAutomatically = true)
     @Query("delete from RewardAccount ra where ra.userId = :userId")
     int deleteAllByUserId(@Param("userId") Long userId);
+
+    /**
+     * 계정이 없을 때만 저장한다. 같은 사용자의 동시 요청이 먼저 만들었으면 오류 없이 아무것도 하지 않는다.
+     * 중복 오류가 나지 않아 호출한 트랜잭션을 그대로 이어 쓸 수 있으므로 별도 트랜잭션(DB 연결)이 필요 없다. (ISSUE-BUG-29)
+     * 직접 쓴 SQL 이라 JPA Auditing 이 적용되지 않으므로 now 를 생성·수정 시각으로 저장한다.
+     *
+     * @return 저장했으면 1, 이미 있으면 0
+     */
+    @Modifying
+    @Query(value = "insert into reward_accounts"
+            + " (user_id, currency, experience, level, dday, max_dday, created_at, updated_at)"
+            + " values (:#{#account.userId}, :#{#account.currency}, :#{#account.experience}, :#{#account.level},"
+            + " :#{#account.dday}, :#{#account.maxDday}, :now, :now)"
+            + " on conflict do nothing", nativeQuery = true)
+    int insertIfAbsent(@Param("account") RewardAccount account, @Param("now") LocalDateTime now);
 }

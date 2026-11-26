@@ -1,4 +1,4 @@
-> 기준: feature/003-session-sentence (스펙 003) · 최종 확인: 2026-11-22 · 담당: BE1
+> 기준: feature/003-session-sentence (스펙 003) + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE1
 
 # 아키텍처
 
@@ -26,7 +26,7 @@ flowchart TB
 | 계층 | 책임 |
 |---|---|
 | presentation | HTTP 요청·응답, 입력값 검증, DTO 변환. Entity를 그대로 응답하지 않는다 |
-| application | 유스케이스 실행, 트랜잭션, 다른 도메인과의 연결 |
+| application | 유스케이스 실행, 트랜잭션, 다른 도메인과의 연결. 지연 로딩은 이 계층의 트랜잭션 안에서 끝낸다 (`open-in-view=false`) |
 | domain | 핵심 규칙(페이지 범위, 경험치 계산 등)과 상태 변경 |
 | infrastructure | DB, 외부 API(YES24·메일), port 구현, 이벤트 리스너, 초기 데이터 |
 
@@ -50,7 +50,8 @@ flowchart LR
   user -- "UserWithdrawnEvent" --> review & reward & dday & reading
   review -- "port: BookReader, ReadingRecordReader (JDBC)" --> reading
   review -- "UserNicknameReader" --> user
-  reward -- "port: ReadingSessionReader" --> reading
+  reward -- "port: ReadingSessionReader, WeeklyReadingTimeReader" --> reading
+  reward -- "port: UserNicknameReader, RankingTargetChecker (랭킹)" --> user
   reward -- "직접: DdayService, DdayRecordRepository" --> dday
   dday -- "직접: StreakService, StreakCalculator" --> reward
   reading -. "직접: SentenceRepository (오늘 메모 수)" .-> review
@@ -64,6 +65,9 @@ flowchart LR
 | 책 삭제 → 독후활동 삭제 | port (`BookActivityCleaner`), 같은 트랜잭션 | `review/infrastructure/ReviewBookActivityCleaner` |
 | 독후활동 → 책·독서 기록 조회 | port (`BookReader`, `ReadingRecordReader`) + JDBC 구현 | `review/application/port`, `review/infrastructure/Jdbc*` |
 | 보상 → 독서 세션 조회 | port (`ReadingSessionReader`) | `reward/infrastructure/ReadingSessionRepositoryReader` |
+| 보상 랭킹 → 정지·관리자 제외 | port (`RankingTargetChecker`)와 집계 쿼리의 `RankingTargets` (읽기만) | `reward/infrastructure/RewardRankingTargetChecker` |
+| 보상 랭킹 → 닉네임 조회 | port (`UserNicknameReader`) | `reward/infrastructure/RewardUserNicknameReader` |
+| 보상 랭킹 → 독서 시간 집계 | port (`WeeklyReadingTimeReader`) | `reward/infrastructure/ReadingSessionTimeReader` |
 | 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 세션에 연결된 독서 인증 조회 | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` |
 | 보상 ↔ D-day | 서로 직접 참조 (연속일 계산을 함께 씀) | `ReadingSessionRewardService`, `StreakService`, `DdayService` |
 | 독서 → 문장 수 | 직접 참조 | `TodayReadingService` |

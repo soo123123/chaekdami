@@ -1,4 +1,4 @@
-> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: fix/fe1@ef397a6 · 최종 확인: 2026-11-24 · 담당: BE2
 
 # dday 규칙
 
@@ -32,7 +32,7 @@
 | 방어권 부족 | 떨어지면 거기서 멈추고, 남은 빈 날 때문에 연속이 끊긴다 | `StreakService.settleBefore` | ✅ |
 | 연속 0일 때 | 지킬 기록이 없으므로 방어권을 쓰지 않음 | `StreakService.settleBefore` | ✅ |
 | 환불 | 읽음으로 기록하려는 날이 이미 "방어"면 그 방어권 1개를 돌려줌 (보상이 늦게 처리된 경우) | `StreakService.refundShieldIfProtected` | ✅ |
-| 계정 반영 | 계산한 값을 `reward_accounts.dday`·`max_dday`에 반영 (캐시) | `RewardAccount.syncStreak` | ✅ |
+| 계정 반영 | 독서 완료 보상 때만 계산한 값을 `reward_accounts.dday`·`max_dday`에 반영 (캐시). 조회는 저장하지 않음 | `RewardAccount.syncStreak` | ✅ |
 
 ### 예시
 

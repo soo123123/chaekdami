@@ -42,7 +42,8 @@ public class RewardService {
 
     /**
      * 보상 상태 통합 조회. 놓친 날이 있으면 방어권 자동 차감을 먼저 정산하므로 쓰기 트랜잭션이다.
-     * 연속 일수는 D-day 달력으로 계산해 계정에 반영한 뒤 돌려준다. 계정이 없으면 새로 만든다.
+     * 연속 일수는 D-day 달력으로 계산한 값을 그대로 돌려준다. 계정이 없으면 새로 만든다.
+     * 계정을 잠그지 않고 읽으므로 계정 값은 바꾸지 않는다. (바꾸면 동시에 처리된 구매/보상 결과를 옛값으로 덮어쓴다)
      */
     @Transactional
     public RewardStatusResult getRewardStatus(Long userId) {
@@ -52,7 +53,6 @@ public class RewardService {
         RewardAccount account = rewardAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new RewardException(RewardErrorCode.REWARD_ACCOUNT_NOT_FOUND));
         StreakCalculator.Summary streak = streakService.summarize(userId, today);
-        account.syncStreak(streak.currentStreak(), streak.longestStreak());
 
         ExperienceProgress progress = ExperienceProgress.of(account);
         int ownedShieldCount = userItemRepository.sumQuantityByUserIdAndItemType(userId, ShopItemType.SHIELD);
@@ -64,7 +64,7 @@ public class RewardService {
                 progress.nextLevelExperience(),
                 progress.percentage(),
                 account.getCurrency(),
-                account.getDday(),
+                streak.currentStreak(),
                 ownedShieldCount,
                 boosterRemainingSeconds > 0,
                 boosterRemainingSeconds

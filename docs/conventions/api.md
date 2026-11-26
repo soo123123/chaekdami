@@ -71,6 +71,7 @@ API 요청 → 401
 - `user/presentation/GlobalExceptionHandler.java` — 전체 공통
 - `reading/presentation/ReadingExceptionHandler.java` — reading 패키지의 `IllegalArgumentException` → 400 `VALIDATION_ERROR` (`fields` 없음)
 - `SecurityConfig` — 인증 실패 401, 권한 없음 403
+- `JwtAuthenticationFilter` — 토큰 버전 확인 중 오류 500 `INTERNAL_ERROR`
 - 도메인 에러는 `global/error/ErrorCode`를 구현한 enum + `BusinessException` (보상은 `RewardException`)
 
 ## 5. 에러 코드 표
@@ -84,7 +85,7 @@ API 요청 → 401
 | 403 | `FORBIDDEN` | 권한 없음 | 메시지 표시 |
 | 404 | `NOT_FOUND` | reading 도메인의 대상 없음 (`ResponseStatusException`) | 메시지 표시 |
 | 409 | `CONFLICT` | reading 도메인의 충돌 (`ResponseStatusException`) | 메시지 표시 |
-| 500 | `INTERNAL_ERROR` | 처리하지 못한 오류 | 잠시 후 다시 시도 |
+| 500 | `INTERNAL_ERROR` | 처리하지 못한 오류, 토큰 확인 중 서버 오류(DB 장애 등) | 잠시 후 다시 시도 |
 
 ### 도메인별
 

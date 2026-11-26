@@ -5,7 +5,7 @@ import com.chaekdami.review.application.result.BookReportResult;
 import java.time.LocalDateTime;
 
 public record BookReportResponse(Long bookReportId, Long readingRecordId, Long bookId, String content,
-                                 boolean isPublic, int revision,
+                                 boolean isPublic, boolean isBlinded, int revision,
                                  LocalDateTime createdAt, LocalDateTime updatedAt) {
 
     public static BookReportResponse from(BookReportResult result) {
@@ -13,6 +13,7 @@ public record BookReportResponse(Long bookReportId, Long readingRecordId, Long b
             return null;
         }
         return new BookReportResponse(result.bookReportId(), result.readingRecordId(), result.bookId(),
-                result.content(), result.isPublic(), result.revision(), result.createdAt(), result.updatedAt());
+                result.content(), result.isPublic(), result.isBlinded(), result.revision(),
+                result.createdAt(), result.updatedAt());
     }
 }

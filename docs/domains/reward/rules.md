@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-25 · 담당: BE2
 
 # reward 규칙
 
@@ -11,6 +11,7 @@
 ### 처리 순서
 
 ```
+0. 사진 인증 여부 조회 (트랜잭션 시작 전. 실패하면 인증 안 됨으로 봄)
 1. 보상 계정 잠금 (비관적 쓰기, 대기 3초 → 초과 시 409 CONCURRENCY_001)
 2. 내 세션인지 확인 (아니면 404 REWARD_005)
 3. 세션이 3분 미만이면 거절 (400 REWARD_007)
@@ -32,7 +33,7 @@
 | 재호출 응답 | 처음 받은 내역 그대로, `baseGranted=false` | `ReadingSessionReward` | ✅ |
 | 보상 거절 최소 시간 | 3분 미만 | `ReadingSession.MIN_SECONDS` | ✅ |
 | 퀘스트·D-day 기준 날짜 | 세션 종료 날짜 (`endedAt`) | `grantBase` | ✅ |
-| 사진 인증 조회 실패 시 | 기본 보상만 지급, 추가 보상 건너뜀 | `isPhotoCertified` | ✅ |
+| 사진 인증 조회 실패 시 | 기본 보상만 지급, 추가 보상 건너뜀. 조회는 보상 트랜잭션을 시작하기 전에 끝내서, 실패해도 기본 보상이 취소되지 않음 | `isPhotoCertified` | ✅ |
 
 ## 2. 경험치
 
@@ -131,7 +132,7 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 | 규칙 | 값 | 코드 위치 |
 |---|---|---|
 | 정산 시점 | `GET /api/rewards`, `GET /api/dday`, 독서 완료 보상 때 | `StreakService.settleBefore` |
-| 계정의 dday·max_dday | 달력으로 계산한 값을 위 시점에 반영 (저장값은 캐시) | `RewardAccount.syncStreak` |
+| 계정의 dday·max_dday | 독서 완료 보상 때만, 계정을 잠근 상태로 달력 계산값을 반영 (저장값은 캐시). 조회는 저장하지 않고 달력으로 계산한 값을 바로 응답 | `RewardAccount.syncStreak` |
 
 ## 7. 동시성
 
@@ -139,4 +140,25 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 |---|---|---|
 | 재화·경험치·아이템을 바꾸는 요청 | 보상 계정 행을 비관적 쓰기 잠금 | `RewardLedger.lockAccount` |
 | 잠금 대기 | 3초, 넘으면 409 `CONCURRENCY_001` | `RewardAccountRepository.LOCK_TIMEOUT_MILLIS` |
-| 계정 동시 생성 | 별도 트랜잭션으로 생성, UNIQUE 위반은 무시하고 기존 계정 사용 | `RewardAccountInitializer` |
+| 계정 동시 생성 | 같은 트랜잭션에서 없을 때만 저장(`ON CONFLICT DO NOTHING`), 이미 있으면 그 계정 사용. DB 연결을 더 쓰지 않음 | `RewardAccountRepository.insertIfAbsent` |
+
+## 8. 주간 랭킹
+
+`GET /api/rewards/rankings/weekly/experience` · `/weekly/reading-time` — `RankingService` · 결정 배경: [specs/005](../../specs/005-weekly-ranking/)
+
+경험치 랭킹과 독서 시간 랭킹은 따로 매긴다. 점수 출처만 다르고 순위 규칙은 같다.
+
+| 규칙 | 경험치 랭킹 | 독서 시간 랭킹 | 코드 위치 |
+|---|---|---|---|
+| 점수 | 그 주 `reward_transactions` 중 `INCOME_EXPERIENCE` 금액 합 (독서·부스터·퀘스트·사진 인증). 재화(승급 보상 등)는 빠짐 | 그 주 `reading_sessions.duration_seconds` 합 (초). 보상·부스터와 무관 | `RewardTransactionRepository.findTopAmounts`, `ReadingSessionTimeQueryRepository.findTopSeconds` |
+| 어느 주인가 | 지급 시각 `created_at`. 일요일 밤 세션도 월요일에 보상받으면 새 주 | 세션 종료 시각 `ended_at` (서버가 저장 요청을 받은 시각) | `RankingWeek.startAt`·`endAt` |
+| 한 주 | 한국 시간 월요일 0시 ≤ 시각 < 다음 월요일 0시. 서버 시간대와 무관 | 같음 | `RankingWeek` |
+| 상위 인원 | 30명 | 같음 | `RankingService.TOP_SIZE` |
+| 동점 | 같은 순위, 다음 순위는 건너뜀 (1, 2, 2, 4). 같은 순위 안에서는 사용자 번호 작은 순 | 같음 | `RankingService.toEntries` |
+| 제외 | 조회하는 순간 정지 중인 회원, 관리자. 다른 사람의 순위에도 세지 않음 | 같음 | `RankingTargets` (정지 기준은 `User.isSuspendedAt`과 같음) |
+| 0점 | 합계가 0보다 큰 사용자만 나옴 | 같음 | 쿼리 `having` |
+| 내 순위 | 나보다 점수가 큰 사용자 수 + 1. 0점이거나 본인이 제외 대상이면 `null` (점수는 그대로) | 같음 | `countUsers…GreaterThan` |
+| 탈퇴한 사용자 | 탈퇴 때 이력이 지워져 나오지 않음 | 탈퇴 때 세션이 지워져 나오지 않음 | `RewardCleanupService`, `ReadingCleanupListener` |
+| 책 삭제 | 경험치 이력이 남아 점수 유지 ([ISSUE-DATA-3](../../known-issues.md#issue-data-3)) | 세션이 지워져 점수에서 빠짐 | — |
+| 닉네임 | user 도메인을 읽기만 함. 못 찾으면 목록에서 뺌 | 같음 | port `UserNicknameReader` → `RewardUserNicknameReader` |
+| 독서 시간 읽기 | — | reading 도메인을 읽기만 함 | port `WeeklyReadingTimeReader` → `ReadingSessionTimeReader` |

@@ -1,4 +1,4 @@
-> 상태: approved · 작성: 2026-11-23 · 기준: feature/be3-review-delete@79205bb · 담당: BE3 · 승인: BE3, FE1
+> 상태: done · 작성: 2026-11-23 · 기준: feature/be3-review-delete@79205bb · 담당: BE3 · 승인: BE3, FE1
 
 # 006 · 리뷰(별점) 삭제 — Requirements
 

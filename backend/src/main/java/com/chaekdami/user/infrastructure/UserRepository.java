@@ -2,9 +2,11 @@ package com.chaekdami.user.infrastructure;
 
 import com.chaekdami.user.domain.Role;
 import com.chaekdami.user.domain.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +16,23 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
+
+    @Query("""
+            select new com.chaekdami.user.infrastructure.LoginCredential(u.id, u.passwordHash)
+            from User u where u.email = :email
+            """)
+    Optional<LoginCredential> findLoginCredential(@Param("email") String email);
+
+    @Query("""
+            select new com.chaekdami.user.infrastructure.LoginCredential(u.id, u.passwordHash)
+            from User u where u.id = :id
+            """)
+    Optional<LoginCredential> findCredentialById(@Param("id") Long id);
+
+    /** 토큰 발급과 폐기(정지·비밀번호 변경·로그아웃)가 엇갈리지 않도록 회원 행을 잠근다. 트랜잭션 안에서만 부른다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id")
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
 
     boolean existsByNicknameIgnoreCase(String nickname);
 

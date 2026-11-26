@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -20,7 +20,6 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import {
-  activateExpBooster,
   formatBuffEndTime,
   getRewardStatus,
   getShopItems,
@@ -210,9 +209,11 @@ export default function ShopScreen() {
   // 경험치 부스터가 끝나는 시각 (적용 중이 아니면 null)
   const [buffEndAt, setBuffEndAt] =
     useState<string | null>(null);
-  const [usingBooster, setUsingBooster] = useState(false);
+  // 요청 중에는 다시 구매하거나 구매 창을 닫을 수 없다
+  const [purchasing, setPurchasing] = useState(false);
+  const purchasingRef = useRef(false);
 
-  // 재화·상품·보유 수량·부스터 상태를 다시 불러온다 (진입 시, 부스터 사용 후)
+  // 재화·상품·보유 수량·부스터 상태를 불러온다
   const loadShop = useCallback(async (isActive: () => boolean = () => true) => {
     try {
       const [reward, items] = await Promise.all([
@@ -243,9 +244,14 @@ export default function ShopScreen() {
 
   useEffect(() => {
     let active = true;
-    void loadShop(() => active);
+
+    const timer = setTimeout(() => {
+      void loadShop(() => active);
+    }, 0);
+
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [loadShop]);
 
@@ -265,28 +271,8 @@ export default function ShopScreen() {
     .reduce((sum, product) => sum + (inventory[product.id] ?? 0), 0);
   const buffEndTime = formatBuffEndTime(buffEndAt);
 
-  const handleUseBooster = async () => {
-    if (usingBooster || boosterCount <= 0) return;
-    setUsingBooster(true);
-    try {
-      const result = await activateExpBooster();
-      setBuffEndAt(result.buffEndAt);
-      await loadShop();
-      const endTime = formatBuffEndTime(result.buffEndAt);
-      showMessage(
-        endTime
-          ? `EXP 부스터를 사용했어요. ${endTime}까지 독서 경험치가 2배예요.`
-          : 'EXP 부스터를 사용했어요.'
-      );
-    } catch (error) {
-      showMessage(errorMessage(error, '부스터를 사용하지 못했어요.'));
-    } finally {
-      setUsingBooster(false);
-    }
-  };
-
   const purchaseProduct = async () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || purchasingRef.current) return;
 
     const product = selectedProduct;
 
@@ -295,6 +281,9 @@ export default function ShopScreen() {
       showMessage('보유 재화가 부족해요.');
       return;
     }
+
+    purchasingRef.current = true;
+    setPurchasing(true);
 
     try {
       const result = await purchaseItem(Number(product.id), 1);
@@ -308,7 +297,17 @@ export default function ShopScreen() {
     } catch (error) {
       setSelectedProduct(null);
       showMessage(errorMessage(error));
+      // 응답만 끊겼을 수 있어 실제 재화와 보유 수량을 다시 확인한다
+      await loadShop();
+    } finally {
+      purchasingRef.current = false;
+      setPurchasing(false);
     }
+  };
+
+  const closePurchase = () => {
+    if (purchasingRef.current) return;
+    setSelectedProduct(null);
   };
 
   return (
@@ -475,7 +474,7 @@ export default function ShopScreen() {
               onProductPress={setSelectedProduct}
             />
 
-            {/* EXP 부스터 사용 */}
+            {/* EXP 부스터 상태 (사용은 홈의 나의 보유 아이템에서) */}
             <View style={styles.boosterCard}>
               <View style={styles.boosterText}>
                 <Text style={styles.boosterTitle}>
@@ -486,21 +485,10 @@ export default function ShopScreen() {
                     ? `부스터 적용 중 (~${buffEndTime}) · 지금 쓰면 30분 연장돼요.`
                     : '사용하면 30분 동안 독서 경험치가 2배가 돼요.'}
                 </Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.boosterButton,
-                  (boosterCount <= 0 || usingBooster) && styles.boosterButtonDisabled,
-                ]}
-                onPress={handleUseBooster}
-                disabled={boosterCount <= 0 || usingBooster}
-                accessibilityRole="button"
-                accessibilityLabel="EXP 부스터 사용하기"
-              >
-                <Text style={styles.boosterButtonText}>
-                  {usingBooster ? '사용 중…' : '사용하기'}
+                <Text style={styles.boosterDescription}>
+                  홈의 나의 보유 아이템에서 사용할 수 있어요.
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.decorateCard}>
@@ -583,17 +571,6 @@ export default function ShopScreen() {
           )}
         </View>
 
-        <View style={styles.notice}>
-          <Ionicons
-            name="information-circle-outline"
-            size={17}
-            color={COLORS.muted}
-          />
-          <Text style={styles.noticeText}>
-            실제 구매 기능은 서버 연동 후 제공됩니다.
-            현재는 구매 화면 테스트용입니다.
-          </Text>
-        </View>
       </ScrollView>
 
       {/* 구매 확인창 */}
@@ -601,7 +578,7 @@ export default function ShopScreen() {
         transparent
         visible={selectedProduct !== null}
         animationType="fade"
-        onRequestClose={() => setSelectedProduct(null)}
+        onRequestClose={closePurchase}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -634,8 +611,9 @@ export default function ShopScreen() {
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setSelectedProduct(null)}
+                    style={[styles.cancelButton, purchasing && styles.modalButtonDisabled]}
+                    onPress={closePurchase}
+                    disabled={purchasing}
                   >
                     <Text style={styles.cancelText}>
                       취소
@@ -643,11 +621,12 @@ export default function ShopScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.confirmButton}
+                    style={[styles.confirmButton, purchasing && styles.modalButtonDisabled]}
                     onPress={purchaseProduct}
+                    disabled={purchasing}
                   >
                     <Text style={styles.confirmText}>
-                      구매하기
+                      {purchasing ? '구매 중…' : '구매하기'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1021,20 +1000,6 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     lineHeight: 17,
   },
-  boosterButton: {
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: COLORS.green,
-  },
-  boosterButtonDisabled: {
-    opacity: 0.4,
-  },
-  boosterButtonText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
   inventoryCard: {
     borderRadius: 18,
     backgroundColor: COLORS.white,
@@ -1053,20 +1018,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.muted,
     lineHeight: 22,
-  },
-  notice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 7,
-    marginTop: 20,
-    paddingHorizontal: 12,
-  },
-  noticeText: {
-    fontSize: 11,
-    color: COLORS.muted,
-    lineHeight: 17,
-    flexShrink: 1,
   },
   modalOverlay: {
     flex: 1,
@@ -1131,6 +1082,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: COLORS.text,
+  },
+  modalButtonDisabled: {
+    opacity: 0.4,
   },
   confirmButton: {
     flex: 1,

@@ -1,4 +1,4 @@
-> 기준: feature/be3-admin-users (스펙 007) · 최종 확인: 2026-11-23 · 담당: BE3
+> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user API
 
@@ -17,6 +17,7 @@
 | POST | `/api/auth/password/reset-request` | 재설정 메일 요청 | 불필요 | 204 | ✅ |
 | POST | `/api/auth/password/reset` | 메일 토큰으로 새 비밀번호 | 불필요 | 204 | ✅ |
 | GET | `/api/me` | 내 정보 | 필요 | 200 | ✅ |
+| PATCH | `/api/me` | 닉네임 변경 | 필요 | 200 | ✅ |
 | DELETE | `/api/me` | 회원 탈퇴 | 필요 | 204 | ✅ |
 | GET | `/email/reset` | 재설정 메일 링크가 여는 HTML 화면 | 불필요 | 200 | ✅ |
 | POST | `/email/reset` | 위 화면의 폼 제출 (form-urlencoded) | 불필요 | 200 | ✅ |
@@ -77,7 +78,7 @@
 { "refreshToken": "…" }
 ```
 
-응답은 로그인과 같다 (새 토큰 쌍). 이전 Refresh Token은 즉시 폐기된다. **폐기된 토큰을 다시 쓰면** 그 사용자의 모든 토큰이 폐기된다 (강제 로그아웃).
+응답은 로그인과 같다 (새 토큰 쌍). 이전 Refresh Token은 즉시 폐기된다. **재발급으로 교체된 토큰을 다시 쓰면** 그 사용자의 모든 토큰이 무효가 된다 (강제 로그아웃). 로그아웃하거나 일괄 무효화된 토큰은 401만 낸다.
 
 ## POST /api/auth/logout
 
@@ -85,11 +86,11 @@
 { "refreshToken": "…" }
 ```
 
-이 Refresh Token만 폐기한다. Access Token은 만료(최대 15분)까지 유효하다.
+이 Refresh Token만 삭제한다. Access Token은 만료(최대 15분)까지 유효하다.
 
 ## POST /api/auth/logout-all
 
-본문 없음. 모든 Refresh Token 폐기 + `token_version` 증가 → 모든 Access Token도 즉시 무효.
+본문 없음. 모든 Refresh Token 삭제 + `token_version` 증가 → 모든 Access Token도 즉시 무효.
 
 ## POST /api/auth/password
 
@@ -116,6 +117,15 @@
 ## GET /api/me
 
 응답: `UserResponse` (`id`, `email`, `nickname`, `role`)
+
+## PATCH /api/me
+
+```json
+{ "nickname": "새닉네임" }
+```
+
+성공 `200` 바뀐 내 정보 (`UserResponse`). 토큰은 그대로 쓸 수 있다. 지금과 같은 닉네임도 200이다. 규칙: [rules.md §1](./rules.md#1-가입-정보)
+형식 위반·비밀번호와 같음은 `400 VALIDATION_ERROR`(`fields[].field = "nickname"`), 다른 사용자가 쓰면 `409 NICKNAME_ALREADY_EXISTS`.
 
 ## DELETE /api/me
 
@@ -206,4 +216,5 @@
 | 404 | `USER_NOT_FOUND` | 관리자 API에서 없는 회원 번호 |
 | 409 | `EMAIL_ALREADY_EXISTS` | 이미 가입된 이메일 |
 | 409 | `NICKNAME_ALREADY_EXISTS` | 이미 쓰는 닉네임 (대소문자 무시) |
-| 429 | `TOO_MANY_ATTEMPTS` | 로그인 5회 실패 후 15분 잠금, 재설정 요청 초과 |
+| 429 | `TOO_MANY_ATTEMPTS` | 로그인 5회 실패 후 15분 잠금, 재설정 요청 초과 (이메일+IP 15분 5번, 이메일별 1시간 10번) |
+| 500 | `INTERNAL_ERROR` | 토큰 확인 중 서버 오류(DB 장애 등). 토큰이 거절된 것이 아님 |

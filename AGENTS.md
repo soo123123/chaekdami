@@ -51,7 +51,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 - 분류 기준: 지금 쓰면 잘못된 결과·위험 → 문제 / 아직 없을 뿐 → 할 일 / 사람이 정해야 함 → 질문. 애매하면 질문으로 올린다.
 - 도메인 문서에는 현재 동작을 그대로 쓰고, 바로 아래에 `> ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1)` 같은 한 줄만 단다.
 - 심각도 "높음"을 새로 기록하면 바로 사람에게 알린다.
-- "todo 보여줘"·"남은 일"·"내 파트" → 문제 → 할 일 → 질문을 모두 보여준다. "문제점 알려줘" → `docs/known-issues.md`를 읽고 `grep -rn "ISSUE-" docs/`로 문서 안 위치를 함께 보여준다. "할 일만" → `TODO-`, "결정할 것" → `ASK-`.
+- "todo 보여줘"·"남은 일"·"내 파트" → 문제 → 할 일 → 질문을 모두 보여준다. 모두 `known-issues.py show`(최신 main)로 읽는다. "문제점 알려줘" → `show` 뒤에 `git grep -n "ISSUE-" origin/main -- docs/`로 main 문서 안 위치를 함께 보여준다. "할 일만" → `TODO-`, "결정할 것" → `ASK-`.
 
 ## 5. 검증 명령
 
@@ -61,7 +61,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 |---|---|
 | 백엔드 테스트 | `cd backend && ./gradlew test` |
 | 프론트 타입 검사 | `cd frontend && npx tsc --noEmit` |
-| 프론트 린트 | `cd frontend && npx expo lint` (ESLint 설정 전) |
+| 프론트 린트 | `cd frontend && npm run lint` (기존 오류가 남아 있어 새 오류가 늘지 않았는지 본다) |
 | 프론트↔백엔드 API 경로 | `python3 scripts/harness/contract-check.py` |
 | 문서 상태 | `python3 scripts/harness/docs-check.py` |
 

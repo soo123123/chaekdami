@@ -208,6 +208,50 @@ Content-Type: application/json
   "detail": "책과 관계없는 내용"
 }
 
+### 26-1. 공개 독후감 신고 (그 책을 완독한 사용자)
+POST {{baseUrl}}/api/book-reports/{{bookReportId}}/reports
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "SPAM"
+}
+
+### 26-2. 공개 문장 신고
+POST {{baseUrl}}/api/sentences/{{sentenceId}}/reports
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "SPAM"
+}
+
+### 26-3. [관리자] 신고된 독후감 목록
+GET {{baseUrl}}/api/admin/book-reports/reported?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 26-4. [관리자] 신고된 문장 목록
+GET {{baseUrl}}/api/admin/sentences/reported?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### 26-5. [관리자] 독후감 블라인드 해제
+PATCH {{baseUrl}}/api/admin/book-reports/{{bookReportId}}/blind
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "blinded": false
+}
+
+### 26-6. [관리자] 문장 블라인드
+PATCH {{baseUrl}}/api/admin/sentences/{{sentenceId}}/blind
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "blinded": true
+}
+
 ### 27. [관리자] 신고된 리뷰 목록 (blinded는 선택)
 GET {{baseUrl}}/api/admin/reviews/reported?blinded=true&page=0&size=20
 Authorization: Bearer {{accessToken}}

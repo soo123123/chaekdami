@@ -97,6 +97,9 @@ public class ReviewService {
         try {
             review = reviewRepository.saveAndFlush(review);
         } catch (DataIntegrityViolationException exception) {
+            if (!violatesBookUnique(exception)) {
+                throw exception;
+            }
             throw new BusinessException(ReviewErrorCode.REVIEW_ALREADY_EXISTS);
         }
         eventPublisher.publishEvent(new ReviewCreatedEvent(userId, book.bookId(), review.getId()));
@@ -118,6 +121,11 @@ public class ReviewService {
         }
         review.syncIsbn(book.isbn());
         reviewRepository.flush();
+    }
+
+    private static boolean violatesBookUnique(DataIntegrityViolationException exception) {
+        return String.valueOf(exception.getMostSpecificCause().getMessage())
+                .contains(Review.BOOK_UNIQUE_CONSTRAINT);
     }
 
     private static int validRating(int rating) {

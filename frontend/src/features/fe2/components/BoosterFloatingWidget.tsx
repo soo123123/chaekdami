@@ -8,15 +8,17 @@ import React, {
 import {
   AppState,
   Image,
-  PanResponder,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
+  type GestureResponderEvent,
 } from 'react-native';
 import { usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BOTTOM_TAB_BAR_HEIGHT } from '@/components/BottomTabBar';
+import { ROUTES } from '@/constants/routes';
 import {
   getRewardStatus,
   subscribeBoosterUsed,
@@ -42,8 +44,23 @@ const EDGE_MARGIN = 12;
 const INITIAL_TOP = 120;
 const REFRESH_INTERVAL = 30000;
 
+// 하단 탭바가 있는 화면 (탭을 추가하면 BottomTabBar의 TABS와 함께 추가한다)
+const TAB_BAR_PATHS: string[] = [
+  ROUTES.home,
+  '/home',
+  ROUTES.fe1.library,
+  ROUTES.fe1.community,
+  ROUTES.fe2.mypage,
+];
+
 type Position = {
   x: number;
+  y: number;
+};
+
+// 손을 뗀 위젯이 붙어 있는 가장자리와 높이
+type Anchor = {
+  side: 'left' | 'right';
   y: number;
 };
 
@@ -110,6 +127,11 @@ export default function BoosterFloatingWidget() {
   const isTestMode = __DEV__ && TEST_MODE;
 
   // 노치·제스처 바를 뺀 안전 영역 안에서만 움직인다
+  // 하단 탭바가 있는 화면에서는 탭바 위까지만 움직인다
+  const bottomInset = TAB_BAR_PATHS.includes(pathname)
+    ? BOTTOM_TAB_BAR_HEIGHT + Math.max(insets.bottom, 8)
+    : insets.bottom;
+
   const minX = insets.left + EDGE_MARGIN;
   const minY = insets.top + EDGE_MARGIN;
 
@@ -120,76 +142,57 @@ export default function BoosterFloatingWidget() {
 
   const maxY = Math.max(
     minY,
-    height - insets.bottom - WIDGET_SIZE - EDGE_MARGIN
+    height - bottomInset - WIDGET_SIZE - EDGE_MARGIN
   );
 
-  const [position, setPosition] = useState<Position>(
-    () => ({
-      x: maxX,
-      y: clamp(
-        INITIAL_TOP,
-        minY,
-        maxY
-      ),
-    })
+  const clampPosition = (next: Position): Position => ({
+    x: clamp(next.x, minX, maxX),
+    y: clamp(next.y, minY, maxY),
+  });
+
+  const [anchor, setAnchor] = useState<Anchor>({
+    side: 'right',
+    y: INITIAL_TOP,
+  });
+
+  // 끄는 동안의 위치 (끌지 않으면 null)
+  const [drag, setDrag] = useState<Position | null>(null);
+
+  // 화면이나 이동 범위가 바뀌어도 항상 범위 안에 그린다
+  const position = clampPosition(
+    drag ?? {
+      x: anchor.side === 'left' ? minX : maxX,
+      y: anchor.y,
+    }
   );
 
-  const positionRef = useRef(position);
-  const boundsRef = useRef({ minX, minY, maxX, maxY });
-  const dragStartRef = useRef(position);
+  const dragStartRef = useRef<{
+    touch: Position;
+    position: Position;
+    moved: boolean;
+  } | null>(null);
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
 
-  const testExpirationRef = useRef<number>(
-    Date.now() +
-      TEST_DURATION_MINUTES * 60 * 1000
-  );
-
   const [expiration, setExpiration] = useState<
     number | null
-  >(
+  >(() =>
     isTestMode
-      ? testExpirationRef.current
+      ? Date.now() + TEST_DURATION_MINUTES * 60 * 1000
       : null
   );
 
-  const [remaining, setRemaining] = useState(
-    isTestMode
-      ? Math.max(
-          0,
-          testExpirationRef.current - Date.now()
-        )
-      : 0
-  );
+  const [now, setNow] = useState(() => Date.now());
 
-  const updatePosition = useCallback(
-    (next: Position) => {
-      const bounds = boundsRef.current;
+  const remaining =
+    expiration === null
+      ? 0
+      : Math.max(0, expiration - now);
 
-      const adjusted: Position = {
-        x: clamp(
-          next.x,
-          bounds.minX,
-          bounds.maxX
-        ),
-        y: clamp(
-          next.y,
-          bounds.minY,
-          bounds.maxY
-        ),
-      };
-
-      positionRef.current = adjusted;
-      setPosition(adjusted);
-    },
-    []
-  );
-
-  useEffect(() => {
-    boundsRef.current = { minX, minY, maxX, maxY };
-
-    updatePosition(positionRef.current);
-  }, [minX, minY, maxX, maxY, updatePosition]);
+  const hideWidget = useCallback(() => {
+    setExpiration(null);
+    setDrag(null);
+  }, []);
 
   /**
    * 실제 서버에서 부스터 상태 조회
@@ -213,8 +216,7 @@ export default function BoosterFloatingWidget() {
 
       // 로그인 전이나 로그아웃 후에는 조회하지 않고 위젯을 숨긴다
       if (!accessToken) {
-        setExpiration(null);
-        setRemaining(0);
+        hideWidget();
         return;
       }
 
@@ -237,15 +239,9 @@ export default function BoosterFloatingWidget() {
         nextExpiration > Date.now()
       ) {
         setExpiration(nextExpiration);
-        setRemaining(
-          Math.max(
-            0,
-            nextExpiration - Date.now()
-          )
-        );
+        setNow(Date.now());
       } else {
-        setExpiration(null);
-        setRemaining(0);
+        hideWidget();
       }
     } catch (error) {
       console.warn(
@@ -253,7 +249,7 @@ export default function BoosterFloatingWidget() {
         error
       );
     }
-  }, [isTestMode]);
+  }, [isTestMode, hideWidget]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -268,7 +264,13 @@ export default function BoosterFloatingWidget() {
    * 화면 전환 시 상태 동기화
    */
   useEffect(() => {
-    void refreshReward();
+    const timer = setTimeout(() => {
+      void refreshReward();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [pathname, refreshReward]);
 
   /**
@@ -326,65 +328,80 @@ export default function BoosterFloatingWidget() {
    */
   useEffect(() => {
     if (expiration === null) {
-      setRemaining(0);
       return;
     }
 
-    const updateRemaining = () => {
-      const nextRemaining = Math.max(
-        0,
-        expiration - Date.now()
-      );
+    const interval = setInterval(() => {
+      const current = Date.now();
 
-      setRemaining(nextRemaining);
+      setNow(current);
 
-      if (nextRemaining <= 0) {
-        setExpiration(null);
+      if (current >= expiration) {
+        hideWidget();
       }
-    };
-
-    updateRemaining();
-
-    const interval = setInterval(
-      updateRemaining,
-      1000
-    );
+    }, 1000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [expiration]);
+  }, [expiration, hideWidget]);
 
   /**
    * 터치 및 마우스 드래그
    */
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+  const draggedPosition = (
+    event: GestureResponderEvent
+  ): Position | null => {
+    const start = dragStartRef.current;
 
-      onMoveShouldSetPanResponder: () => true,
+    if (!start) {
+      return null;
+    }
 
-      onPanResponderGrant: () => {
-        dragStartRef.current = {
-          ...positionRef.current,
-        };
-      },
+    const { pageX, pageY } = event.nativeEvent;
 
-      onPanResponderMove: (_, gesture) => {
-        updatePosition({
-          x: dragStartRef.current.x + gesture.dx,
-          y: dragStartRef.current.y + gesture.dy,
-        });
-      },
+    return clampPosition({
+      x: start.position.x + pageX - start.touch.x,
+      y: start.position.y + pageY - start.touch.y,
+    });
+  };
 
-      onPanResponderRelease: () => {
-        // 현재 위치 유지
-      },
+  const handleDragStart = (event: GestureResponderEvent) => {
+    const { pageX, pageY } = event.nativeEvent;
 
-      onPanResponderTerminationRequest: () =>
-        false,
-    })
-  ).current;
+    dragStartRef.current = {
+      touch: { x: pageX, y: pageY },
+      position,
+      moved: false,
+    };
+  };
+
+  const handleDragMove = (event: GestureResponderEvent) => {
+    const next = draggedPosition(event);
+
+    if (!next || !dragStartRef.current) {
+      return;
+    }
+
+    dragStartRef.current.moved = true;
+    setDrag(next);
+  };
+
+  // 손을 떼면 가까운 좌우 가장자리로 붙인다 (세로 위치는 유지)
+  const handleDragEnd = () => {
+    if (dragStartRef.current?.moved) {
+      setAnchor({
+        side:
+          position.x + WIDGET_SIZE / 2 < width / 2
+            ? 'left'
+            : 'right',
+        y: position.y,
+      });
+    }
+
+    dragStartRef.current = null;
+    setDrag(null);
+  };
 
   const isActive =
     expiration !== null &&
@@ -400,7 +417,13 @@ export default function BoosterFloatingWidget() {
       style={StyleSheet.absoluteFill}
     >
       <View
-        {...panResponder.panHandlers}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={handleDragStart}
+        onResponderMove={handleDragMove}
+        onResponderRelease={handleDragEnd}
+        onResponderTerminate={handleDragEnd}
+        onResponderTerminationRequest={() => false}
         style={[
           styles.widget,
           {
