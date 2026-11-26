@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +50,7 @@ class RewardServiceTest {
         when(rewardAccountRepository.findByUserId(USER_ID)).thenReturn(Optional.of(account));
         when(streakService.summarize(eq(USER_ID), any())).thenReturn(new StreakCalculator.Summary(8, 9));
         when(userItemRepository.sumQuantityByUserIdAndItemType(USER_ID, ShopItemType.SHIELD)).thenReturn(2);
-        when(userBuffRepository.findActiveBuffs(eq(USER_ID), any())).thenReturn(List.of());
+        when(userBuffRepository.sumRemainingSeconds(USER_ID)).thenReturn(0L);
     }
 
     @Test

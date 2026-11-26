@@ -47,7 +47,7 @@
   "currentStreak": 13,
   "ownedShieldCount": 3,
   "expBuffActive": true,
-  "expBuffExpiredAt": "2026-11-20T21:30:00"
+  "boosterRemainingSeconds": 1200
 }
 ```
 
@@ -57,7 +57,8 @@
 | `nextLevelExperience` | 다음 레벨까지 필요한 구간 경험치 |
 | `experiencePercentage` | 구간 진행률 0~100 (버림) |
 | `currentStreak` | 연속 독서 일수 (D-day 달력 기준) |
-| `expBuffExpiredAt` | 부스터가 없으면 `null`. 시간대 표기 없음 |
+| `expBuffActive` | 남은 부스터 시간이 있으면 `true` |
+| `boosterRemainingSeconds` | 남은 부스터 시간(초). 책을 읽는 동안에만 줄고, 독서 완료 보상을 받을 때 값이 바뀐다. 없으면 0 |
 
 > ❓ [ASK-9](../../known-issues.md#ask-9) — 서버 날짜 기준과 응답 시각의 시간대 표기
 
@@ -103,12 +104,12 @@
 
 ## POST /api/rewards/boosters/use
 
-보유한 부스터 1개를 쓴다. 적용 중이면 남은 시간에 30분이 더해진다.
+보유한 부스터 1개를 쓴다. 남은 부스터 시간에 책 읽는 시간 30분이 더해진다.
 
 코드: `BoosterController` → `BoosterService.use`
 
 ```json
-{ "buffEndAt": "2026-11-20T21:30:00", "remainingBoosters": 2 }
+{ "boosterRemainingSeconds": 1800, "remainingBoosters": 2 }
 ```
 
 ## GET /api/quests

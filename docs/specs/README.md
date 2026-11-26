@@ -55,6 +55,7 @@
 | 005 | [weekly-ranking](./005-weekly-ranking/) — 주간 랭킹 API (경험치·독서 시간) | in-progress (구현·docs 완료, DB 확인·FE1 확인 남음) | BE2 (+FE1) |
 | 006 | [review-delete](./006-review-delete/) — 리뷰(별점) 삭제 API | done | BE3 |
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
+| 009 | [booster-reading-time](./009-booster-reading-time/) — 부스터는 책 읽는 동안에만 시간이 흐름 | in-progress (서버 구현 완료, 앱 수정·확인 남음) | BE2 (+FE2, FE1) |
 | 010 | [nickname-change](./010-nickname-change/) — 닉네임 변경 API | done | BE3 |
 | 011 | [request-limits](./011-request-limits/) — 신고·비밀번호 재설정 요청 제한 | done | BE3 |
 | 012 | [community-report](./012-community-report/) — 공개 독후감·문장의 신고와 블라인드, 정지 회원 글 숨김 | done | BE3 |

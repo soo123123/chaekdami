@@ -17,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 보상 계정 생성, 보상 상태 조회, 독서 완료 경험치 지급
@@ -58,7 +56,7 @@ public class RewardService {
 
         ExperienceProgress progress = ExperienceProgress.of(account);
         int ownedShieldCount = userItemRepository.sumQuantityByUserIdAndItemType(userId, ShopItemType.SHIELD);
-        List<UserBuff> activeBuffs = userBuffRepository.findActiveBuffs(userId, LocalDateTime.now());
+        int boosterRemainingSeconds = Math.toIntExact(userBuffRepository.sumRemainingSeconds(userId));
 
         return new RewardStatusResult(
                 account.getLevel(),
@@ -68,13 +66,14 @@ public class RewardService {
                 account.getCurrency(),
                 streak.currentStreak(),
                 ownedShieldCount,
-                !activeBuffs.isEmpty(),
-                activeBuffs.isEmpty() ? null : activeBuffs.get(0).getBuffEndAt()
+                boosterRemainingSeconds > 0,
+                boosterRemainingSeconds
         );
     }
 
     /**
-     * 독서 세션 1회의 독서 경험치를 지급한다. 독서 시간 중 경험치 부스터가 적용된 시간 비율만큼 배율을 준다.
+     * 독서 세션 1회의 독서 경험치를 지급한다. 독서 시간 중 경험치 부스터가 적용된 시간 비율만큼 배율을 주고,
+     * 적용한 만큼 남은 부스터 시간을 줄인다. (스펙 009)
      * 이력에 세션 id 를 남기므로, 독서 완료 보상(ReadingSessionRewardService)이 이미 지급 여부를 확인한 뒤 호출한다.
      */
     @Transactional
@@ -83,21 +82,10 @@ public class RewardService {
 
         int experience = ExperiencePolicy.readingExperience(
                 session.durationSeconds(), session.startPage(), session.endPage());
-        boolean boosted;
-        if (session.durationSeconds() > 0) {
-            // 독서 구간 [종료 - 독서 시간, 종료) 중 부스터가 적용된 시간 비율만큼만 2배
-            LocalDateTime startedAt = session.endedAt().minusSeconds(session.durationSeconds());
-            List<UserBuff> buffs = userBuffRepository.findOverlappingBuffs(userId, startedAt, session.endedAt());
-            long boostedSeconds = UserBuff.overlapSeconds(buffs, startedAt, session.endedAt());
-            boosted = boostedSeconds > 0;
-            experience = ExperiencePolicy.boostedExperience(experience, boostedSeconds, session.durationSeconds());
-        } else {
-            // 독서 시간이 없으면(쪽수 경험치만) 종료 시각에 적용 중인지로 판단
-            boosted = !userBuffRepository.findActiveBuffs(userId, session.endedAt()).isEmpty();
-            if (boosted) {
-                experience = ExperiencePolicy.boostedExperience(experience);
-            }
-        }
+        int boostedSeconds = UserBuff.consume(
+                userBuffRepository.findRemainingBuffs(userId), session.endedAt(), session.durationSeconds());
+        boolean boosted = boostedSeconds > 0;
+        experience = ExperiencePolicy.boostedExperience(experience, boostedSeconds, session.durationSeconds());
 
         int promotionReward = rewardLedger.addExperienceFor(
                 account, experience, TransactionReason.READING_COMPLETE, session.id());

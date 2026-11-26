@@ -13,11 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * 경험치 부스터 사용. 보유한 부스터 1개를 써서 30분 동안 독서 경험치를 2배로 만든다.
- * - 적용 중에 또 쓰면 남은 시간에 30분이 더해진다. (배율은 그대로)
+ * 경험치 부스터 사용. 보유한 부스터 1개를 써서 책 읽는 30분 동안 독서 경험치를 2배로 만든다.
+ * - 부스터 시간은 책을 읽는 동안에만 줄어든다. 남으면 다음 독서에 이어서 쓴다. (스펙 009)
+ * - 남아 있을 때 또 쓰면 30분이 더해진다. (배율은 그대로)
  * - 배율은 독서 경험치에만 적용되고, 퀘스트 보상 경험치와 사진 인증 추가 경험치에는 적용되지 않는다.
  * - 독서 경험치는 독서 시간 중 부스터가 적용된 시간 비율만큼만 2배가 된다. (예: 60분 중 20분 적용 -> 1/3만큼 추가)
  */
@@ -38,22 +38,14 @@ public class BoosterService {
                 .orElseThrow(() -> new RewardException(RewardErrorCode.NO_BOOSTER));
         booster.deductQuantity(1);
 
-        LocalDateTime now = LocalDateTime.now();
-        List<UserBuff> activeBuffs = userBuffRepository.findActiveBuffs(userId, now);
-        UserBuff buff;
-        if (activeBuffs.isEmpty()) {
-            buff = userBuffRepository.save(UserBuff.builder()
-                    .userId(userId)
-                    .buffActivated(true)
-                    .buffStartAt(now)
-                    .buffEndAt(now.plus(ExperiencePolicy.BOOSTER_DURATION))
-                    .build());
-        } else {
-            buff = activeBuffs.get(0);
-            buff.extend(ExperiencePolicy.BOOSTER_DURATION);
-        }
+        userBuffRepository.save(UserBuff.builder()
+                .userId(userId)
+                .buffActivated(true)
+                .buffStartAt(LocalDateTime.now())
+                .remainingSeconds((int) ExperiencePolicy.BOOSTER_DURATION.getSeconds())
+                .build());
 
         int remaining = userItemRepository.sumQuantityByUserIdAndItemType(userId, ShopItemType.EXPERIENCE_BOOSTER);
-        return new BoosterUseResult(buff.getBuffEndAt(), remaining);
+        return new BoosterUseResult(Math.toIntExact(userBuffRepository.sumRemainingSeconds(userId)), remaining);
     }
 }

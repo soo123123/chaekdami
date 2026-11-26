@@ -13,7 +13,7 @@
 | 경험치·레벨 | 독서 시간·쪽수로 경험치, 구간마다 필요 경험치가 차면 레벨업, 승급 보상 재화 지급 | [rules.md](./rules.md#2-경험치) |
 | 일일 퀘스트 | 날마다 사용자별로 출제. 달성하면 자동 지급(수령 API 없음) | [rules.md](./rules.md#4-일일-퀘스트) |
 | 상점 | 방어권·경험치 부스터를 재화로 구매 | [rules.md](./rules.md#5-상점) |
-| 부스터 | 30분 동안 독서 경험치 2배. 겹친 시간 비율만큼 적용 | [rules.md](./rules.md#3-경험치-부스터) |
+| 부스터 | 책 읽는 30분 동안 독서 경험치 2배. 읽지 않으면 시간이 멈추고, 적용된 시간 비율만큼 추가 | [rules.md](./rules.md#3-경험치-부스터) |
 | 방어권 | 놓친 날을 자동으로 막아 연속 기록 유지 | [dday/rules.md](../dday/rules.md) |
 | 변동 이력 | 재화·경험치가 바뀔 때마다 기록. 중복 지급 방지에도 사용 | [data.md](./data.md#reward_transactions) |
 | 주간 랭킹 | 이번 주(한국 시간 월~일) 경험치 랭킹과 독서 시간 랭킹. 각각 상위 30명과 내 순위. 정지 중인 회원과 관리자는 빠짐 | [rules.md](./rules.md#8-주간-랭킹) |
@@ -57,7 +57,7 @@ backend/src/main/java/com/chaekdami/reward/
 - ✅ 홈 보유 아이템 표시와 부스터 사용, 부스터 남은 시간 표시 (앱)
 - ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) 책 삭제 시 보상 내역이 지워진 세션을 가리킨 채 남음
 - ⏳ [TODO-5](../../known-issues.md#todo-5) 주간 퀘스트 — `QuestType.WEEKLY` 값만 있음
-- ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) 독서 시간이 부스터보다 길면 부스터 미적용 (원인 확인 필요)
+- ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) 부스터 미적용 문제는 [specs/009](../../specs/009-booster-reading-time/)로 서버 수정, 앱 수정과 재테스트 남음
 - ⏳ [TODO-6](../../known-issues.md#todo-6) 레벨 해금 · [TODO-30](../../known-issues.md#todo-30) 랭킹 화면(앱) — 미구현
 - ⏳ [TODO-28](../../known-issues.md#todo-28) 랜덤박스 · [TODO-29](../../known-issues.md#todo-29) 칭호
 - ⏳ [TODO-19](../../known-issues.md#todo-19) reward ↔ dday 직접 참조
