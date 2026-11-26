@@ -1,4 +1,4 @@
-> 기준: main (이 문서는 main에서만 고친다) · 최종 확인: 2026-11-25 · 담당: BE1
+> 기준: main (이 문서는 main에서만 고친다) · 최종 확인: 2026-11-26 · 담당: BE1
 
 # 문제 · 할 일 · 질문
 
@@ -62,7 +62,7 @@
 | <a id="issue-bug-20"></a>ISSUE-BUG-20 | FE1 (+BE1) | 중간 | 열림 | 책 등록이 등록과 설정 저장 2번의 요청이다 | 두 번째가 실패하면 책은 남는데 실패로 보여, 다시 하면 중복되거나 409가 난다 | 앱 `readingApi.ts` `registerBook` | — | — |
 | <a id="issue-bug-21"></a>ISSUE-BUG-21 | FE1 (+BE1) | 중간 | 열림 | 수동 등록에서 고른 표지 사진을 서버로 보내지 않는다 | 저장 뒤 표지가 없다 (세션 사진은 TODO-2) | 앱 `registerManualBook` | — | — |
 | <a id="issue-bug-22"></a>ISSUE-BUG-22 | FE1 | 중간 | 열림 | 커뮤니티 더 불러오기 중 정렬이나 책을 바꾸면 로딩 상태가 풀리지 않는다 | 이후 한줄평을 더 불러오지 못한다 | 앱 `useBookReviews` | — | — |
-| <a id="issue-bug-24"></a>ISSUE-BUG-24 | BE1 (+FE1) | 중간 | 열림 | 사진 중복 확인이 세션에 쓰지 않은 인증까지 비교한다 | 통과한 사진을 지웠다 다시 붙이면 재사용으로 거절될 수 있다 (규칙 변경 필요) | `CertificationService`, `CertificationVerifier` | — | — |
+| <a id="issue-bug-24"></a>ISSUE-BUG-24 | BE1 (+FE1) | 중간 | 진행 중 (스펙 017) | 사진 중복 확인이 세션에 쓰지 않은 인증까지 비교한다. `FAILED`·`UNVERIFIED` 인증도 비교한다 | 통과한 사진을 지웠다 다시 붙이면 재사용으로 거절될 수 있다. 재사용으로 거절된 페이지는 다시 찍어도 계속 거절된다 | `CertificationService`, `CertificationVerifier` | — | — |
 | <a id="issue-bug-27"></a>ISSUE-BUG-27 | BE1 | 낮음 | 열림 | 일간 통계는 0~4시를 마지막 칸(21시)에 더하고, 월간은 세션마다 분을 버린다 | 새벽 기록이 21시에 보이고 월간 합이 작게 나온다 | `ReadingStatsService` | — | — |
 | <a id="issue-bug-28"></a>ISSUE-BUG-28 | BE1·BE3 | 낮음 | 진행 중 | 책 저장의 모든 무결성 오류를 "이미 서재에 있는 책입니다" 409로 바꾼다 | 너무 긴 입력도 중복으로 안내될 수 있다 (리뷰 ISBN 길이도 확인 필요) | `BookService` | — | — | BE3 리뷰 쪽 완료 (PR #29). BE1 `BookService`는 시작 전 |
 | <a id="issue-bug-29"></a>ISSUE-BUG-29 | BE2 | 낮음 | 진행 중 | 보상 계정을 처음 만들 때 별도 트랜잭션(`REQUIRES_NEW`)을 열어 한 요청이 DB 연결을 2개 쓴다 | 처음 보상을 받는 요청이 동시에 몰리면 연결을 기다리다 500이 날 수 있다 (ISSUE-BUG-8에서 발견, 재현하지 않음) | `RewardAccountInitializer`, `RewardLedger` | — | — | 구현 완료, 병합 대기 (fix/be2-account-create, PR 42). H2에서 재현·수정 확인, 실제 PostgreSQL 미확인. PR 35를 합쳐 충돌 해결 (PR 42를 병합하면 PR 35도 함께 들어감) |
