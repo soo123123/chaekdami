@@ -52,6 +52,7 @@
 | 002 | [reading-reward](./002-reading-reward/) — 독서 보상 연결 (초기안) | superseded → 001 | FE1 |
 | 003 | [session-sentence-and-cleanup](./003-session-sentence-and-cleanup/) — 세션 문장 저장과 삭제 데이터 정리 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·BE3·FE1 |
 | 004 | [reading-certification-app](./004-reading-certification-app/) — 독서 인증 앱 연결과 사진 인증 보상 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·FE1·BE2 |
+| 005 | [weekly-ranking](./005-weekly-ranking/) — 주간 랭킹 API (경험치·독서 시간) | in-progress (구현·docs 완료, DB 확인·FE1 확인 남음) | BE2 (+FE1) |
 | 006 | [review-delete](./006-review-delete/) — 리뷰(별점) 삭제 API | done | BE3 |
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
 | 008 | [ranking-screen](./008-ranking-screen/) — 주간 랭킹 화면과 하단 탭 (앱) | in-progress | FE1 |
