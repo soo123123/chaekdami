@@ -348,6 +348,11 @@ export default function RewardScreen() {
                 {'\n'}
                 오늘도 꾸준한 독서로 더 성장해보세요!
               </Text>
+
+              {/* 금액은 서버가 승급 보상 값을 주면 표시한다 (TODO-49) */}
+              <Text style={styles.cheerReward}>
+                레벨이 오르면 재화를 받아요.
+              </Text>
             </View>
           </View>
         </View>
@@ -631,6 +636,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 19,
     color: COLORS.muted,
+  },
+
+  cheerReward: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.green,
   },
 
   shopButton: {
