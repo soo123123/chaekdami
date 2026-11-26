@@ -31,9 +31,9 @@
 
 ## 9. 마무리
 
-- [x] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test` (Java 21·H2로 직접 실행 390/390. `ChaekdamiApplicationTests`는 제외)
+- [x] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test` (Java 21·H2로 직접 실행 409/409, main 반영 뒤. `ChaekdamiApplicationTests`는 제외)
 - [x] 9.2 계약 검사 — 검증: `python3 scripts/harness/contract-check.py`
-- [ ] 9.3 PR 34·35·42 병합 뒤 main을 받아 맞추기. PR은 35 다음에 올린다
+- [x] 9.3 PR 34·35·42 병합 뒤 main을 받아 맞추기. PR은 35 다음에 올린다 (2026-11-26 main@6bd51e8 반영, 409/409 통과)
 - [ ] 9.4 실제 PostgreSQL에서 `quests`에 `WEEKLY` 저장, 주간 생성·지급 확인 (사람)
 - [ ] 9.5 앱 퀘스트 화면 주간 탭, 홈·마이페이지·독서 완료 화면 확인 (사람)
 - [x] 9.6 **docs 반영**: design ④의 문서 전부 수정 — 검증: `python3 scripts/harness/docs-check.py`
