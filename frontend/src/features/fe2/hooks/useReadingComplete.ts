@@ -243,7 +243,8 @@ export function useReadingComplete() {
   const [reward, setReward] = useState<RewardStatusResponse | null>(null);
   const [questList, setQuestList] = useState<QuestResponse[] | null>(null);
   const [claim, setClaim] = useState<ReadingSessionRewardResult | null>(null);
-  const [rewardState, setRewardState] = useState<CompleteRewardState>(sessionId !== null ? 'loading' : 'none');
+  const [claimState, setClaimState] = useState<CompleteRewardState>('loading');
+  const rewardState: CompleteRewardState = sessionId !== null ? claimState : 'none';
   const [readingReview, setReadingReview] = useState<ReadingReviewResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
@@ -259,15 +260,15 @@ export function useReadingComplete() {
 
   // 보상을 받은 뒤 퀘스트 목록을 조회한다 (보상 처리로 바뀐 진행도를 보여주기 위해 순서대로)
   const requestReward = useCallback(async (id: number) => {
-    setRewardState('loading');
+    setClaimState('loading');
     try {
       const result = await claimReadingSessionReward(id);
       if (!mountedRef.current) return;
       setClaim(result);
-      setRewardState(result.baseGranted ? 'granted' : 'alreadyGranted');
+      setClaimState(result.baseGranted ? 'granted' : 'alreadyGranted');
     } catch (error) {
       console.warn('[ReadingComplete] 독서 완료 보상 요청 실패:', error);
-      if (mountedRef.current) setRewardState('error');
+      if (mountedRef.current) setClaimState('error');
     }
     try {
       const list = await getQuests();
@@ -281,13 +282,14 @@ export function useReadingComplete() {
 
   useEffect(() => {
     let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (sessionId !== null) {
-      if (requestedSessionRef.current !== sessionId) {
+      timer = setTimeout(() => {
+        if (requestedSessionRef.current === sessionId) return;
         requestedSessionRef.current = sessionId;
         void requestReward(sessionId);
-      }
+      }, 0);
     } else {
-      setRewardState('none');
       (async () => {
         const [rewardResult, questResult] = await Promise.allSettled([getRewardStatus(), getQuests()]);
         if (!active) return;
@@ -302,6 +304,7 @@ export function useReadingComplete() {
     }
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [sessionId, requestReward]);
 

@@ -128,6 +128,7 @@
 | 차감 재화 | 가격 × 구매 수량 | `ShopService.purchase` | ✅ |
 | 지급 수량 | 묶음 수량 × 구매 수량 | `ShopService.purchase` | ✅ |
 | 잔액 확인 | 보상 계정을 잠근 뒤 서버 잔액 기준 | `RewardLedger.lockAccount` | ✅ |
+| 중복 구매 방지 | 요청의 `ownedQuantity`가 그 상품의 서버 보유 개수와 다르면 구매하지 않음. 보상 계정을 잠근 뒤, 잔액보다 먼저 비교. 보내지 않으면 비교하지 않음 | `ShopService.purchase` | ✅ 서버 (앱 반영 전) |
 | 가격 0인 상품 | 차감·이력 없이 지급 | `ShopService.purchase` | ✅ |
 
 ### 상품 (`ShopItemSeeder`)
