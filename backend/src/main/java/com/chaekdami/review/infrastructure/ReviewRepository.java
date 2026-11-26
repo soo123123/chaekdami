@@ -19,8 +19,13 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("""
             select r from Review r
             where r.isbn = :isbn and r.isPublic = true and r.isBlinded = false and r.oneLine is not null
+              and not exists (
+                  select u.id from User u
+                  where u.id = r.userId
+                    and u.status = com.chaekdami.user.domain.UserStatus.SUSPENDED
+                    and (u.suspendedUntil is null or u.suspendedUntil > :now))
             """)
-    Page<Review> findPublicByIsbn(@Param("isbn") String isbn, Pageable pageable);
+    Page<Review> findPublicByIsbn(@Param("isbn") String isbn, @Param("now") LocalDateTime now, Pageable pageable);
 
     @Query("""
             select r.rating as rating, count(r) as count

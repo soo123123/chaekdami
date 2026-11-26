@@ -10,9 +10,10 @@ import java.util.List;
 public interface WeeklyReadingTimeReader {
 
     /**
-     * 기간 안 독서 시간(초) 합이 큰 사용자 순서. 같으면 사용자 번호 작은 순. 기간 안 세션이 없는 사용자는 나오지 않는다.
+     * 기간 안 독서 시간(초) 합이 큰 사용자 순서. 같으면 사용자 번호 작은 순.
+     * 합이 0인 사용자, now 에 정지 중인 회원, 관리자는 나오지 않는다.
      */
-    List<UserSeconds> findTop(LocalDateTime start, LocalDateTime end, int limit);
+    List<UserSeconds> findTop(LocalDateTime start, LocalDateTime end, LocalDateTime now, int limit);
 
     /**
      * 한 사용자의 기간 안 독서 시간(초) 합. 없으면 0.
@@ -20,9 +21,9 @@ public interface WeeklyReadingTimeReader {
     long sumOf(Long userId, LocalDateTime start, LocalDateTime end);
 
     /**
-     * 기간 안 독서 시간(초) 합이 seconds 보다 큰 사용자 수.
+     * 기간 안 독서 시간(초) 합이 seconds 보다 큰 사용자 수. now 에 정지 중인 회원과 관리자는 세지 않는다.
      */
-    long countUsersGreaterThan(LocalDateTime start, LocalDateTime end, long seconds);
+    long countUsersGreaterThan(LocalDateTime start, LocalDateTime end, LocalDateTime now, long seconds);
 
     record UserSeconds(Long userId, long seconds) {
     }

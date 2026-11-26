@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-24 · 담당: BE1
+> 기준: fix/be3-signup-duplicate · 최종 확인: 2026-11-25 · 담당: BE1
 
 # 실행과 테스트
 
@@ -16,8 +16,6 @@
 ## 2. 환경변수
 
 값은 문서에 적지 않는다. 팀 공유 위치에서 받는다.
-
-> ⚠️ [ISSUE-SEC-2](../known-issues.md#issue-sec-2) 팀 노션에 비밀값이 평문으로 있다.
 
 | 이름 | 쓰는 곳 | 필수 |
 |---|---|---|
@@ -68,9 +66,9 @@ npx expo start --tunnel      # 같은 와이파이가 아닐 때 실기기
 
 | 대상 | 명령 | 비고 |
 |---|---|---|
-| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | `ChaekdamiApplicationTests.contextLoads`는 DB 비밀번호가 없으면 실패. `connection/` 테스트는 H2로 앱을 띄워 DB 없이 실행됨 (PostgreSQL 전용 동작은 확인하지 않음) |
+| 백엔드 단위 테스트 | `cd backend && ./gradlew test` | 환경변수와 DB 없이 모두 실행됨. 앱을 띄우는 테스트(`@SpringBootTest`)는 H2를 쓰므로 PostgreSQL 연결과 전용 동작은 확인하지 않음 → 서버를 실행해 확인 |
 | 백엔드 일부만 | `./gradlew test --tests '*ReadingSessionServiceTest'` | |
-| 프론트 린트 | `cd frontend && npm run lint` | ⏳ [TODO-20](../known-issues.md#todo-20) ESLint 설정 없음 |
+| 프론트 린트 | `cd frontend && npm run lint` | Expo 기본 규칙 (`eslint.config.js`). 도입 때(2026-11-25) 기존 오류 36·경고 9가 남아 있어 명령이 실패로 끝남 → 새 오류가 늘지 않았는지 확인. ESLint는 Expo SDK 57 CLI에 맞춰 9 사용 |
 | 프론트 타입 검사 | `cd frontend && npx tsc --noEmit` | |
 | 계약 검사 | `python3 scripts/harness/contract-check.py` | 프론트 `/api` 호출 ↔ 백엔드 경로 |
 | 문서 검사 | `python3 scripts/harness/docs-check.py` | 상태 줄·링크·API 누락·비밀값 |

@@ -1,4 +1,4 @@
-> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
+> 기준: fix/be3-signup-duplicate · 최종 확인: 2026-11-25 · 담당: BE3
 
 # user 규칙
 
@@ -14,6 +14,7 @@
 | 비밀번호 ≠ 아이디 | 이메일·닉네임과 같은 비밀번호 불가 | `PasswordNotIdentityValidator` |
 | 닉네임 | 앞뒤 공백 제거 후 2~16자, 영문·숫자·한글만 | `NicknameRules` |
 | 닉네임 중복 | 대소문자 무시 (`nickname_lower` UNIQUE) | `User` |
+| 동시 가입 | 저장에 실패하면 이메일 → 닉네임 순서로 다시 조회해 409를 구분. 비밀번호 해시는 트랜잭션 밖에서 만듦. 다른 무결성 오류는 500 | `UserService.signup`, `GlobalExceptionHandler` |
 | 닉네임 변경 | 가입과 같은 규칙. 자기 비밀번호와 같은 닉네임 불가. 지금과 같은 닉네임·대소문자만 변경은 허용. 횟수·기간 제한 없음, 토큰 유지 | `UserService.changeNickname` |
 | 닉네임 변경의 동시 처리 | 비밀번호 비교는 트랜잭션 밖. 저장할 때 회원 행을 잠그고 다시 확인해 그 사이 비밀번호 변경·탈퇴·정지가 있었으면 401 | `UserService.changeNickname` |
 
@@ -73,6 +74,7 @@
 | 정지 시 세션 | `token_version` +1, Refresh Token 전부 삭제 (전체 로그아웃과 같음) | `UserService.invalidateSessions` | ✅ |
 | 정지된 회원 로그인 | 비밀번호가 맞을 때만 403 `ACCOUNT_SUSPENDED` + 끝 시각. 틀리면 401 (정지 사실을 드러내지 않음) | `UserService.login` | ✅ |
 | 정지된 회원 재설정 | 비밀번호 재설정 요청·재설정 가능. 정지는 그대로 | `UserService` | ✅ |
+| 정지된 회원의 글 | 정지 중에만 공개 한줄평·커뮤니티에서 숨김 ([review/rules](../review/rules.md#5-완독자-커뮤니티)) | `CommunityQueryRepository`·`ReviewRepository` | ✅ |
 | 정지 사유 | 선택, 200자까지. 관리자 상세에서만 보임 | `User.MAX_SUSPENSION_REASON_LENGTH` | ✅ |
 | 다시 정지 | 사유·끝 시각·정지 시각·관리자를 새 값으로 | `User.suspend` | ✅ |
 | 역할 변경 | 바뀌면 세션 무효화 (다시 로그인해야 새 역할). 같은 역할이면 아무것도 안 함 | `UserAdminService.changeRole` | ✅ |

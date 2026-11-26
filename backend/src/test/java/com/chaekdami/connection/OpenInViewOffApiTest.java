@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * open-in-view를 끈 실제 설정에서 데이터를 만든 뒤 조회 API가 지연 로딩 오류 없이 응답하는지 확인한다 (ISSUE-BUG-8).
- * 커뮤니티 API는 PostgreSQL 전용 SQL(LATERAL)이라 H2에서 실행할 수 없어 뺐다.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:api;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
@@ -82,7 +81,9 @@ class OpenInViewOffApiTest {
                 "/api/reviews?isbn=9791162540640", "/api/reviews/rating-summary?isbn=9791162540640",
                 "/api/quests", "/api/rewards", "/api/shop/items", "/api/dday",
                 "/api/admin/users", "/api/admin/users?query=api&role=ADMIN&status=ACTIVE",
-                "/api/admin/users/" + userId, "/api/admin/reviews/reported")) {
+                "/api/admin/users/" + userId, "/api/admin/reviews/reported",
+                "/api/books/" + bookId + "/community", "/api/books/" + bookId + "/community/entries",
+                "/api/admin/book-reports/reported", "/api/admin/sentences/reported")) {
             assertFalse(body(get(path)).isBlank(), path);
         }
     }

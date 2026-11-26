@@ -18,8 +18,8 @@ public class ReadingSessionTimeReader implements WeeklyReadingTimeReader {
     private final ReadingSessionTimeQueryRepository readingSessionTimeQueryRepository;
 
     @Override
-    public List<UserSeconds> findTop(LocalDateTime start, LocalDateTime end, int limit) {
-        return readingSessionTimeQueryRepository.findTopSeconds(start, end, PageRequest.of(0, limit)).stream()
+    public List<UserSeconds> findTop(LocalDateTime start, LocalDateTime end, LocalDateTime now, int limit) {
+        return readingSessionTimeQueryRepository.findTopSeconds(start, end, now, PageRequest.of(0, limit)).stream()
                 .map(row -> new UserSeconds(row.getUserId(), row.getSeconds()))
                 .toList();
     }
@@ -30,7 +30,7 @@ public class ReadingSessionTimeReader implements WeeklyReadingTimeReader {
     }
 
     @Override
-    public long countUsersGreaterThan(LocalDateTime start, LocalDateTime end, long seconds) {
-        return readingSessionTimeQueryRepository.countUsersWithSecondsGreaterThan(start, end, seconds);
+    public long countUsersGreaterThan(LocalDateTime start, LocalDateTime end, LocalDateTime now, long seconds) {
+        return readingSessionTimeQueryRepository.countUsersWithSecondsGreaterThan(start, end, now, seconds);
     }
 }

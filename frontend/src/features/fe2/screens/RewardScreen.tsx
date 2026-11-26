@@ -20,6 +20,7 @@ import { getDday } from '../api/ddayApi';
 import { getReadingStats } from '../api/readingStatsApi';
 import { formatBuffEndTime, getRewardStatus } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
+import { LoadFailedView } from '../components/LoadFailedView';
 
 type RewardStatus = {
   level?: number;
@@ -72,13 +73,6 @@ const ART = {
   book: require('../../../../assets/images/level/level-open-book.png'),
   clock: require('../../../../assets/images/level/level-clock.png'),
   calendar: require('../../../../assets/images/level/level-calendar.png'),
-};
-
-const TEST_REWARD: RewardStatus = {
-  level: 5,
-  xp: 320,
-  requiredXp: 640,
-  currency: 1250,
 };
 
 const LEVELS: LevelInfo[] = [
@@ -252,14 +246,18 @@ export default function RewardScreen() {
   const { width } = useWindowDimensions();
 
   const [reward, setReward] =
-    useState<RewardStatus>(TEST_REWARD);
-  const [activity, setActivity] = useState({
-    completedBooks: 0,
-    totalMinutes: 0,
-    streak: 0,
+    useState<RewardStatus | null>(null);
+  // 조회하지 못한 값은 null
+  const [activity, setActivity] = useState<{
+    completedBooks: number | null;
+    totalMinutes: number | null;
+    streak: number | null;
+  }>({
+    completedBooks: null,
+    totalMinutes: null,
+    streak: null,
   });
   const [loading, setLoading] = useState(true);
-  const [demo, setDemo] = useState(false);
 
   const loadReward = useCallback(() => {
     let active = true;
@@ -275,11 +273,9 @@ export default function RewardScreen() {
 
       if (rewardResult.status === 'fulfilled') {
         setReward(rewardResult.value);
-        setDemo(false);
       } else {
         console.warn('레벨 정보 조회 실패:', rewardResult.reason);
-        setReward(TEST_REWARD);
-        setDemo(true);
+        // 이미 받은 값이 있으면 그대로 둔다
       }
 
       setActivity((previous) => ({
@@ -326,11 +322,25 @@ export default function RewardScreen() {
     );
   }
 
-  const level = Math.max(1, reward.level ?? 5);
+  if (!reward) {
+    return (
+      <LoadFailedView
+        title="레벨"
+        message="레벨 정보를 불러오지 못했어요."
+        onRetry={() => {
+          setLoading(true);
+          loadReward();
+        }}
+        onBack={goBack}
+      />
+    );
+  }
+
+  const level = Math.max(1, reward.level ?? 1);
   const xp = Math.max(0, reward.xp ?? 0);
   const requiredXp = Math.max(
     1,
-    reward.requiredXp ?? 640
+    reward.requiredXp ?? 1
   );
 
   const remainingXp = Math.max(0, requiredXp - xp);
@@ -456,18 +466,12 @@ export default function RewardScreen() {
           </View>
         </View>
 
-        {demo && (
-          <Text style={styles.demoText}>
-            서버 연결 전 예시 데이터를 표시하고 있어요.
-          </Text>
-        )}
-
         {/* 독서 활동 요약 */}
         <View style={styles.statsCard}>
           <StatItem
             image={ART.book}
             label="읽은 책"
-            value={`${activity.completedBooks}권`}
+            value={activity.completedBooks === null ? '-' : `${activity.completedBooks}권`}
           />
 
           <View style={styles.statDivider} />
@@ -475,7 +479,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.clock}
             label="독서 시간"
-            value={formatReadingTime(activity.totalMinutes)}
+            value={activity.totalMinutes === null ? '-' : formatReadingTime(activity.totalMinutes)}
           />
 
           <View style={styles.statDivider} />
@@ -483,7 +487,7 @@ export default function RewardScreen() {
           <StatItem
             image={ART.calendar}
             label="연속 독서"
-            value={`${activity.streak}일`}
+            value={activity.streak === null ? '-' : `${activity.streak}일`}
           />
         </View>
 
@@ -749,13 +753,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.green,
-  },
-
-  demoText: {
-    fontSize: 10,
-    color: COLORS.muted,
-    marginBottom: 11,
-    marginLeft: 4,
   },
 
   statsCard: {

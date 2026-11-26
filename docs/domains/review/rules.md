@@ -1,4 +1,4 @@
-> 기준: feature/be3-request-limits (스펙 011) · 최종 확인: 2026-11-25 · 담당: BE3
+> 기준: feature/be3-community-report (스펙 012) · 최종 확인: 2026-11-25 · 담당: BE3
 
 # review 규칙
 
@@ -57,16 +57,17 @@
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
 | 목록·통계 조회 조건 | 완독 여부 무관, ISBN만 있으면 됨 (검색한 사용자도 사용) | `ReviewSocialService` | ✅ |
-| 목록에 보이는 것 | 공개 + 한줄평 있음 + 블라인드 아님 | `ReviewSocialService` | ✅ |
+| 목록에 보이는 것 | 공개 + 한줄평 있음 + 블라인드 아님 + 작성자가 정지 중이 아님 | `ReviewSocialService` | ✅ |
 | 별점 통계 | 비공개 리뷰 별점도 익명 포함, 블라인드만 제외 | `ReviewSocialService.ratingSummary` | ✅ |
 | 정렬 | `latest` · `likes` | `ReviewSocialService` | ✅ |
 | 내 리뷰 좋아요·신고 | 400 `CANNOT_LIKE_OWN_REVIEW` · `CANNOT_REPORT_OWN_REVIEW` | `ReviewErrorCode` | ✅ |
 | 좋아요 | PUT 추가 / DELETE 취소. 중복은 무시 | `ReviewLike` (on conflict do nothing) | ✅ |
 | 신고 | 같은 사람 같은 리뷰 1번 (409 `ALREADY_REPORTED`). `OTHER`면 상세 필수(300자) | `ReviewReport` | ✅ |
-| 하루 신고 제한 | 회원별 한국 날짜로 하루 20번 (429 `TOO_MANY_ATTEMPTS`). 거절된 신고는 세지 않음. 지워진 리뷰의 신고는 횟수에서 빠짐. 회원 행을 잠가 동시 신고도 넘지 않음 | `ReviewSocialService.MAX_REPORTS_PER_DAY` | ✅ |
+| 하루 신고 제한 | 회원별 한국 날짜로 한줄평·독후감·문장을 합쳐 하루 20번 (429 `TOO_MANY_ATTEMPTS`). 거절된 신고는 세지 않음. 지워진 글의 신고는 횟수에서 빠짐. 회원 행을 잠가 동시 신고도 넘지 않음 | `ReportQuota.MAX_REPORTS_PER_DAY` | ✅ |
 | 자동 블라인드 | 신고 수가 기준 이상이면 블라인드 | `review.blind-threshold` (기본 3) | ✅ |
 | 블라인드 해제 | 관리자만. 해제하면 신고 수 0으로, 신고 기록은 남김 | `ReviewAdminService` | ✅ |
 | 동시성 | 좋아요 수·신고 수·블라인드는 원자적 UPDATE로만 변경 | `ReviewRepository` | ✅ |
+| 정지된 회원의 한줄평 | 정지 중에만 목록에서 빠지고 좋아요·신고는 404. 좋아요 취소는 가능. 별점 통계에는 그대로 포함 | `ReviewSocialService` | ✅ |
 
 ## 5. 완독자 커뮤니티
 
@@ -76,6 +77,12 @@
 | 볼 수 있는 사람 | 그 ISBN을 완독한 사용자만. 아니면 항목 조회 403 `COMMUNITY_LOCKED` | `CommunityService` | ✅ |
 | 요약 | 잠겨 있어도 200 (완독자 수를 보여 완독 동기 부여) | `CommunityService.summary` | ✅ |
 | 항목 | 다른 사용자의 회차 중 공개 모음집 또는 공개 독후감 | `CommunityQueryRepository` | ✅ |
+| 보이지 않는 것 | 가려진 독후감·문장, 정지 중인 회원의 글. 보여 줄 것이 없는 회차는 항목에서 빠짐. 완독자 수는 그대로 | `CommunityQueryRepository` | ✅ |
+| 신고 | 커뮤니티에서 볼 수 있는 독후감 한 편·문장 하나 단위. 같은 글 1번 (409 `ALREADY_REPORTED`). 내 글 400 `CANNOT_REPORT_OWN_CONTENT`. 볼 수 없는 글은 404. 사유·상세 규칙은 한줄평과 같음 | `CommunityReportService` | ✅ |
+| 자동 블라인드 | 한줄평과 같은 기준 (`review.blind-threshold`). 작성자가 고쳐도 유지 | `BookReportRepository`·`SentenceRepository` | ✅ |
+| 작성자 | 가려진 자기 글도 내 화면에서 보이고 `isBlinded`로 알 수 있음 | `BookReportResult`·`SentenceResult` | ✅ |
+| 블라인드 해제 | 관리자만. 해제하면 신고 수 0으로, 신고 기록은 남김 | `CommunityAdminService` | ✅ |
+| 정지 판단 | 회원 도메인과 같은 기준. 끝 시각이 지나면 따로 바꾸지 않아도 다시 보임 | `User.isSuspendedAt` | ✅ |
 | 미리보기 문장 수 | 3개 | `CommunityService.PREVIEW_SENTENCE_COUNT` | ✅ |
 | ISBN 없는 책 | 직접 입력해 ISBN이 없는 책은 커뮤니티·한줄평 대상 아님 | 프론트 `CommunityScreen` | ✅ |
 
