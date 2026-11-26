@@ -31,9 +31,9 @@
 
 ## 9. 마무리
 
-- [ ] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test`
-- [ ] 9.2 계약 검사 — 검증: `python3 scripts/harness/contract-check.py`
-- [ ] 9.3 ISSUE-BUG-9(`fix/be2-reward-status`) 병합 뒤 main을 받아 맞추기 — 그 브랜치의 `RewardServiceTest`가 이 스펙에서 지운 조회 메서드를 쓰므로 함께 고친다
+- [x] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test` (2026-11-26 main 반영 뒤 Java 21·H2로 직접 실행 405/405. `ChaekdamiApplicationTests` 제외)
+- [x] 9.2 계약 검사 — 검증: `python3 scripts/harness/contract-check.py`
+- [x] 9.3 ISSUE-BUG-9(`fix/be2-reward-status`) 병합 뒤 main을 받아 맞추기 — 그 브랜치의 `RewardServiceTest`가 이 스펙에서 지운 조회 메서드를 쓰므로 함께 고친다
 - [ ] 9.4 FE2에게 응답 필드 변경과 병합 시기 확인 (design ⑤)
 - [ ] 9.5 최신 빌드로 30분보다 긴 독서 재테스트 (사람) — R4.2
 - [ ] 9.6 **docs 반영**: design ④의 문서 전부 수정 — 검증: `python3 scripts/harness/docs-check.py` (서버 내용은 2026-11-24 반영, 앱 반영 남음)
