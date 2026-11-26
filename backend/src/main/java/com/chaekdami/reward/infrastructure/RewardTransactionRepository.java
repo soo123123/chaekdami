@@ -58,9 +58,9 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
      * 기간 [start, end) 안에 받은 type 금액 합이 amount 보다 큰 사용자 수. 정지 중인 회원과 관리자는 세지 않는다. (동점 순위 = 이 값 + 1)
      */
     @Query("""
-            select count(distinct rt.userId)
-            from RewardTransaction rt
-            where rt.userId in (
+            select count(u)
+            from User u
+            where u.id in (
                 select r.userId
                 from RewardTransaction r
                 where r.type = :type and r.createdAt >= :start and r.createdAt < :end
