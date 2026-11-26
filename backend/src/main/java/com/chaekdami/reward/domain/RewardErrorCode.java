@@ -19,6 +19,7 @@ public enum RewardErrorCode implements ErrorCode {
     QUEST_NOT_COMPLETED("QUEST_001", 400, "아직 달성하지 못한 퀘스트입니다."),
     QUEST_ALREADY_REWARDED("QUEST_002", 400, "이미 보상을 수령한 퀘스트입니다."),
     SHOP_ITEM_NOT_FOUND("SHOP_001", 404, "판매 중인 상품을 찾을 수 없습니다."),
+    ITEM_COUNT_CHANGED("SHOP_002", 409, "상품 보유 개수가 달라졌습니다. 개수를 확인해 주세요."),
     CONCURRENT_REQUEST("CONCURRENCY_001", 409, "현재 요청이 동시에 여러 번 인입되었습니다. 잠시 후 다시 시도해 주세요.");
 
     private final String code;

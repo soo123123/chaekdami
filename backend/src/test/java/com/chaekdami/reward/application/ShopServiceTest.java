@@ -49,7 +49,7 @@ class ShopServiceTest {
         when(rewardLedger.deductCurrency(account, 400, TransactionReason.SHOP_PURCHASE)).thenReturn(45L);
         noInventoryYet();
 
-        PurchaseResult result = shopService.purchase(USER_ID, ITEM_ID, 2);
+        PurchaseResult result = shopService.purchase(USER_ID, ITEM_ID, 2, null);
 
         assertThat(result.purchaseId()).isEqualTo(45L);
         assertThat(result.updatedInventoryQuantity()).isEqualTo(10);
@@ -60,7 +60,7 @@ class ShopServiceTest {
         accountWith(399);
         item(200, 1, true);
 
-        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 2))
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 2, null))
                 .isInstanceOf(RewardException.class)
                 .extracting("errorCode").isEqualTo(RewardErrorCode.INSUFFICIENT_CURRENCY);
         verify(rewardLedger, never()).deductCurrency(any(), anyInt(), any());
@@ -72,7 +72,7 @@ class ShopServiceTest {
         accountWith(1_000);
         item(Integer.MAX_VALUE, 1, true);
 
-        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 2))
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 2, null))
                 .isInstanceOf(RewardException.class)
                 .extracting("errorCode").isEqualTo(RewardErrorCode.INSUFFICIENT_CURRENCY);
     }
@@ -83,7 +83,7 @@ class ShopServiceTest {
         item(0, 1, true);
         noInventoryYet();
 
-        PurchaseResult result = shopService.purchase(USER_ID, ITEM_ID, 1);
+        PurchaseResult result = shopService.purchase(USER_ID, ITEM_ID, 1, null);
 
         assertThat(result.purchaseId()).isNull();
         assertThat(result.updatedInventoryQuantity()).isEqualTo(1);
@@ -94,7 +94,7 @@ class ShopServiceTest {
     void 판매_중지_상품은_SHOP_001() {
         item(200, 1, false);
 
-        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 1))
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 1, null))
                 .isInstanceOf(RewardException.class)
                 .extracting("errorCode").isEqualTo(RewardErrorCode.SHOP_ITEM_NOT_FOUND);
     }
@@ -102,9 +102,90 @@ class ShopServiceTest {
     @ParameterizedTest
     @ValueSource(ints = {0, -1, ShopService.MAX_PURCHASE_QUANTITY + 1})
     void 구매_수량은_1_이상_최대치_이하(int quantity) {
-        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, quantity))
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, quantity, null))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(rewardLedger, never()).lockAccount(any());
+    }
+
+    @Test
+    void 보낸_보유_개수가_서버와_같으면_구매한다() {
+        RewardAccount account = accountWith(1_000);
+        item(200, 1, true);
+        owned(2);
+
+        PurchaseResult result = shopService.purchase(USER_ID, ITEM_ID, 1, 2);
+
+        assertThat(result.updatedInventoryQuantity()).isEqualTo(3);
+        verify(rewardLedger).deductCurrency(account, 200, TransactionReason.SHOP_PURCHASE);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    void 보낸_보유_개수가_서버와_다르면_SHOP_002_이고_재화와_인벤토리는_그대로(int ownedQuantity) {
+        RewardAccount account = accountWith(1_000);
+        item(200, 1, true);
+        UserItem stock = owned(2);
+
+        assertItemCountChanged(ownedQuantity);
+
+        assertThat(account.getCurrency()).isEqualTo(1_000);
+        assertThat(stock.getQuantity()).isEqualTo(2);
+        verify(rewardLedger, never()).deductCurrency(any(), anyInt(), any());
+    }
+
+    @Test
+    void 재화가_모자라도_보유_개수가_다르면_SHOP_002() {
+        accountWith(0);
+        item(200, 1, true);
+        owned(3);
+
+        assertItemCountChanged(2);
+    }
+
+    @Test
+    void 산_적_없는_상품은_0개로_비교한다() {
+        accountWith(1_000);
+        item(200, 1, true);
+        noInventoryYet();
+
+        assertThat(shopService.purchase(USER_ID, ITEM_ID, 1, 0).updatedInventoryQuantity()).isEqualTo(1);
+    }
+
+    @Test
+    void 산_적_없는_상품의_보유_개수를_1로_보내면_SHOP_002() {
+        accountWith(1_000);
+        item(200, 1, true);
+
+        assertItemCountChanged(1);
+    }
+
+    @Test
+    void 보유_개수가_128_이상이어도_값으로_비교한다() {
+        accountWith(1_000);
+        item(200, 1, true);
+        owned(1_000);
+
+        assertThat(shopService.purchase(USER_ID, ITEM_ID, 1, 1_000).updatedInventoryQuantity()).isEqualTo(1_001);
+    }
+
+    @Test
+    void 보유_개수가_음수면_잠그지_않고_거절한다() {
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 1, -1))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(rewardLedger, never()).lockAccount(any());
+    }
+
+    private void assertItemCountChanged(int ownedQuantity) {
+        assertThatThrownBy(() -> shopService.purchase(USER_ID, ITEM_ID, 1, ownedQuantity))
+                .isInstanceOf(RewardException.class)
+                .extracting("errorCode").isEqualTo(RewardErrorCode.ITEM_COUNT_CHANGED);
+        verify(userItemRepository, never()).save(any());
+    }
+
+    private UserItem owned(int quantity) {
+        UserItem stock = UserItem.builder().userId(USER_ID).shopItemId(ITEM_ID).quantity(quantity).build();
+        when(userItemRepository.findByUserIdAndShopItemId(USER_ID, ITEM_ID)).thenReturn(Optional.of(stock));
+        return stock;
     }
 
     private RewardAccount accountWith(int currency) {
