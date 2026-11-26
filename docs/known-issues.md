@@ -65,7 +65,6 @@
 | <a id="issue-bug-24"></a>ISSUE-BUG-24 | BE1 (+FE1) | 중간 | 진행 중 (스펙 017) | 사진 중복 확인이 세션에 쓰지 않은 인증까지 비교한다. `FAILED`·`UNVERIFIED` 인증도 비교한다 | 통과한 사진을 지웠다 다시 붙이면 재사용으로 거절될 수 있다. 재사용으로 거절된 페이지는 다시 찍어도 계속 거절된다 | `CertificationService`, `CertificationVerifier` | — | — |
 | <a id="issue-bug-27"></a>ISSUE-BUG-27 | BE1 | 낮음 | 열림 | 일간 통계는 0~4시를 마지막 칸(21시)에 더하고, 월간은 세션마다 분을 버린다 | 새벽 기록이 21시에 보이고 월간 합이 작게 나온다 | `ReadingStatsService` | — | — |
 | <a id="issue-bug-28"></a>ISSUE-BUG-28 | BE1·BE3 | 낮음 | 진행 중 | 책 저장의 모든 무결성 오류를 "이미 서재에 있는 책입니다" 409로 바꾼다 | 너무 긴 입력도 중복으로 안내될 수 있다 (리뷰 ISBN 길이도 확인 필요) | `BookService` | — | — | BE3 리뷰 쪽 완료 (PR #29). BE1 `BookService`는 시작 전 |
-| <a id="issue-bug-29"></a>ISSUE-BUG-29 | BE2 | 낮음 | 진행 중 | 보상 계정을 처음 만들 때 별도 트랜잭션(`REQUIRES_NEW`)을 열어 한 요청이 DB 연결을 2개 쓴다 | 처음 보상을 받는 요청이 동시에 몰리면 연결을 기다리다 500이 날 수 있다 (ISSUE-BUG-8에서 발견, 재현하지 않음) | `RewardAccountInitializer`, `RewardLedger` | — | — | 구현 완료, 병합 대기 (fix/be2-account-create, PR 42). H2에서 재현·수정 확인, 실제 PostgreSQL 미확인. PR 35를 합쳐 충돌 해결 (PR 35는 2026-11-26 main에 병합됨) |
 | <a id="issue-bug-31"></a>ISSUE-BUG-31 | 프론트 공통 (FE2 주) | 중간 | 진행 중 | 토큰 재발급을 기다리는 동안 로그아웃하거나 새로 로그인해도 재발급 결과를 그대로 반영한다 | 로그아웃 뒤 토큰이 다시 저장될 수 있다. 재발급이 거절되면 새 로그인의 토큰까지 지워진다 (가짜 서버로 둘 다 재현, PR 28에도 남음) | 앱 `apiClient.ts`, `MyPageScreen` | — | — | PR 21~42 검토에서 발견 (2026-11-25) |
 | <a id="issue-bug-32"></a>ISSUE-BUG-32 | FE2 | 낮음 | 진행 중 | D-day 목표 저장 중에도 입력 창을 닫고 다른 목표를 열 수 있다 | 먼저 한 저장이 끝나면 새로 연 창이 닫혀 입력이 사라진다 (코드로 확인, PR 27에도 남음) | 앱 `DdayScreen` | — | — | — |
 | <a id="issue-bug-33"></a>ISSUE-BUG-33 | BE2 (+FE2) | 중간 | 진행 중 (스펙 015) | 부스터 사용(`POST /api/rewards/boosters/use`)에 같은 요청을 한 번만 처리하는 장치가 없다. 앱은 실패하면 보유 수량을 다시 조회한다 (PR 46) | 서버는 처리했는데 응답만 끊기면 실패로 보여, 다시 누르면 부스터가 하나 더 쓰일 수 있다 (코드로 확인, 재현하지 않음). 비슷한 문제: ISSUE-BUG-3 | `BoosterService`, 앱 `HomeScreen` | — | — |
@@ -153,6 +152,7 @@
 
 | ID | 해결 | 날짜 | 스펙 |
 |---|---|---|---|
+| ISSUE-BUG-29 보상 계정 생성이 DB 연결 2개 사용 | 별도 트랜잭션(`RewardAccountInitializer`) 대신 같은 트랜잭션에서 없을 때만 저장(`ON CONFLICT DO NOTHING`, `RewardAccountRepository.insertIfAbsent`). 동시 첫 요청 테스트 추가 (PR 42). H2(PostgreSQL 모드)에서만 확인, 실제 PostgreSQL 미확인 | 2026-11-26 | — |
 | TODO-9 리뷰(별점) 삭제 | `DELETE /api/reviews/{reviewId}` 추가 (PR 20). 앱 연결은 TODO-13 | 2026-11-24 | [006](./specs/006-review-delete/) |
 | TODO-25 홈 보유 아이템 표시 | `HomeScreen`의 "최근 읽은 책"을 "나의 보유 아이템"으로 교체 (`44ff21d`). 완료는 FE2 확인 | 2026-11-24 | — |
 | TODO-26 부스터 남은 시간 표시 | `BoosterFloatingWidget`을 최상위 레이아웃에 추가 — 드래그 이동, 남은 시간 (`44ff21d`). 사용 직후 갱신·안전 영역 제한 보완 (PR #23). 완료는 FE2 확인 | 2026-11-24 | — |
