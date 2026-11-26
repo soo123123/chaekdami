@@ -36,6 +36,15 @@
 - [x] 4.3 API를 `/weekly/experience`·`/weekly/reading-time` 두 개로 — R1.1, R4.1
       검증: 컴파일, 전체 테스트
 
+## 5. 정지 회원·관리자 제외 (2026-11-25 추가, design 변경 기록)
+
+- [x] 5.1 집계 쿼리에서 제외, 0점 제외 — R1.4, R1.6, R1.7, R1.8
+      검증: `RankingQueryTest` (H2)
+- [x] 5.2 port `RankingTargetChecker`, 제외 대상 본인은 순위 없음 — R2.3
+      검증: `RankingServiceTest`, `RankingQueryTest`
+- [x] 5.3 docs 반영 (`reward/rules.md`·`api.md`·`overview.md`, `architecture.md`)
+      검증: `python3 scripts/harness/docs-check.py`
+
 ## 9. 마무리
 
 - [x] 9.1 전체 테스트 — 검증: `cd backend && ./gradlew test` (javac로 컴파일 후 JUnit 248개 통과. DB 없이 앱 설정을 띄워 JPQL 파싱·빈 충돌 없음 확인)
@@ -46,4 +55,4 @@
 ## 10. 사람이 확인
 
 - [ ] 10.1 실제 DB에서 랭킹 API 2개 호출 — 이번 주 경험치·독서 시간 합, 동점 순위, 내 순위가 맞는지 (집계 쿼리는 DB로 실행해 보지 않음)
-- [ ] 10.2 FE1 확인 — 주소와 응답 형태 (design ⑤)
+- [ ] 10.2 FE1 확인 — 주소와 응답 형태 (design ⑤), 점수가 있어도 `myRanking.rank`가 `null`일 수 있음 (R2.3)

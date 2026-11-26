@@ -9,10 +9,10 @@ import com.chaekdami.reward.domain.TransactionType;
 import com.chaekdami.reward.infrastructure.RewardAccountRepository;
 import com.chaekdami.reward.infrastructure.RewardTransactionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -25,7 +25,6 @@ class RewardLedger {
 
     private final RewardAccountRepository rewardAccountRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
-    private final RewardAccountInitializer rewardAccountInitializer;
 
     /**
      * 보상 계정 행을 비관적 쓰기 잠금으로 조회한다. 같은 사용자의 다른 변경 요청은 트랜잭션이 끝날 때까지 대기한다.
@@ -52,11 +51,7 @@ class RewardLedger {
         if (rewardAccountRepository.findByUserId(userId).isPresent()) {
             return;
         }
-        try {
-            rewardAccountInitializer.insert(userId);
-        } catch (DataIntegrityViolationException alreadyCreated) {
-            // 동시 요청이 먼저 계정을 만들었다.
-        }
+        rewardAccountRepository.insertIfAbsent(RewardAccount.builder().userId(userId).build(), LocalDateTime.now());
     }
 
     void addCurrency(RewardAccount account, int amount, TransactionReason reason) {

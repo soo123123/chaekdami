@@ -34,8 +34,8 @@ FK 제약은 `user_quests.quest_id`, `reading_session_reward_quests.reading_sess
 | currency | int | not null, 초기 0 | 보유 재화 |
 | experience | int | not null, 초기 0 | **누적** 경험치 |
 | level | int | not null, 초기 1 | |
-| dday | int | not null, 초기 0 | 현재 연속 독서 일수 (D-day 달력 계산값을 조회 때 반영) |
-| max_dday | int | not null, 초기 0 | 최고 연속 일수 |
+| dday | int | not null, 초기 0 | 연속 독서 일수 사본 (독서 완료 보상 때 D-day 달력 계산값을 반영. 조회 응답은 이 값을 쓰지 않음) |
+| max_dday | int | not null, 초기 0 | 최고 연속 일수 사본 (반영 시점은 `dday`와 같음) |
 | created_at, updated_at | timestamp | not null | 시각 |
 
 조회 시 비관적 쓰기 잠금을 건다 (`RewardAccountRepository.findByUserIdWithLock`, 대기 3초).

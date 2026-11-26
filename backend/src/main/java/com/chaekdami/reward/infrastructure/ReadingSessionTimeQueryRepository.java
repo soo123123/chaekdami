@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * 주간 독서 시간 랭킹용 읽기 전용 집계 쿼리. reading(BE1)의 ReadingSessionRepository 는 고치지 않고 reward 쪽에 둔다.
- * 기간은 세션 종료 시각(ended_at) 기준 [start, end) 이다.
+ * 기간은 세션 종료 시각(ended_at) 기준 [start, end) 이다. 순위에는 정지 중인 회원과 관리자를 넣지 않는다. (RankingTargets)
  */
 public interface ReadingSessionTimeQueryRepository extends Repository<ReadingSession, Long> {
 
@@ -19,11 +19,15 @@ public interface ReadingSessionTimeQueryRepository extends Repository<ReadingSes
             select s.userId as userId, sum(s.durationSeconds) as seconds
             from ReadingSession s
             where s.endedAt >= :start and s.endedAt < :end
+              and s.userId in
+            """ + RankingTargets.USER_IDS + """
             group by s.userId
+            having sum(s.durationSeconds) > 0
             order by sum(s.durationSeconds) desc, s.userId asc
             """)
     List<UserSeconds> findTopSeconds(@Param("start") LocalDateTime start,
                                      @Param("end") LocalDateTime end,
+                                     @Param("now") LocalDateTime now,
                                      Pageable pageable);
 
     @Query("""
@@ -42,12 +46,15 @@ public interface ReadingSessionTimeQueryRepository extends Repository<ReadingSes
                 select r.userId
                 from ReadingSession r
                 where r.endedAt >= :start and r.endedAt < :end
+                  and r.userId in
+            """ + RankingTargets.USER_IDS + """
                 group by r.userId
                 having sum(r.durationSeconds) > :seconds
             )
             """)
     long countUsersWithSecondsGreaterThan(@Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end,
+                                          @Param("now") LocalDateTime now,
                                           @Param("seconds") long seconds);
 
     interface UserSeconds {

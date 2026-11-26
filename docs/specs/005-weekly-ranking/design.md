@@ -22,6 +22,8 @@
 ```
 
 - 두 랭킹은 점수 출처만 다르고 순위 매기기·응답 모양은 같다.
+- 정지 중인 회원과 관리자는 **집계 쿼리에서** 뺀다 (R1.6~R1.8). 목록을 받은 뒤 빼면 30명이 안 되거나 순위가 비기 때문이다. 상위 목록과 "나보다 높은 사람 수" 쿼리에 같은 조건(`RankingTargets.USER_IDS`)을 쓴다. 정지 기준은 `User.isSuspendedAt`과 같다. user 코드는 고치지 않고 읽기만 한다.
+- 요청한 사용자가 대상인지는 port `RankingTargetChecker`로 확인한다. 대상이 아니면 내 순위는 `null`이고 점수는 그대로 준다 (R2.3).
 - 읽기 전용이다. 보상 계정을 만들거나 방어권을 정산하지 않는다. 계정이 없는 사용자의 레벨은 1로 보여준다.
 - 탈퇴하면 `RewardCleanupService`가 `reward_transactions`를, `ReadingCleanupListener`가 `reading_sessions`를 지우므로 집계에 나오지 않는다 (R1.5). 닉네임을 찾을 수 없는 사용자는 목록에서 뺀다 (방어용).
 - 독서 시간 집계는 reward 쪽 구현(`ReadingSessionTimeReader`)이 `ReadingSession` 엔티티를 JPQL로 읽기만 한다. reading(BE1) 코드는 고치지 않는다.
@@ -48,7 +50,7 @@
 | `rankings` | 최대 30개. 점수 높은 순, 같으면 사용자 번호 작은 순 | R1.1, R4.1, R3.4 |
 | `score` | 경험치 랭킹: 이번 주 경험치 / 독서 시간 랭킹: 이번 주 독서 시간(**초**) | R1.2 |
 | `rankings[].me` | 요청한 사용자 본인 항목이면 `true` (앱에서 강조용). 사용자 번호는 내보내지 않는다 | R1.2 |
-| `myRanking.rank` | 이번 주 점수가 0이면 `null` (순위 없음) | R2.1, R2.2 |
+| `myRanking.rank` | 이번 주 점수가 0이거나 정지 중인 회원·관리자면 `null` (순위 없음). 제외 대상이면 점수가 있어도 `null` | R2.1, R2.2, R2.3 |
 
 ## ② 바뀌는 것
 
@@ -66,7 +68,8 @@
 | 어느 주인가 | 지급 시각 `created_at` | 세션 종료 시각 `ended_at` (서버가 저장 요청을 받은 시각) | R3.5, R4.3 |
 | 주 경계 | 한국 시간(`Asia/Seoul`) 월요일 0시 ≤ 시각 < 다음 월요일 0시 | 같음 | R3.1, R3.7 |
 | 상위 인원 | 30명 | 같음 | R1.1, R4.1 |
-| 0점 | 집계 행이 없으므로 순위에 안 나옴. 내 순위는 `null` | 같음 | R1.4, R2.2 |
+| 제외 | 정지 중인 회원, 관리자 (조회하는 순간 기준) | 같음 | R1.6~R1.8 |
+| 0점 | 합계가 0보다 큰 사용자만 순위에 나옴. 내 순위는 `null` | 같음 | R1.4, R2.2 |
 | 동점 순위 | 나보다 점수가 큰 사람 수 + 1 (1, 2, 2, 4) | 같음 | R3.3 |
 | 같은 순위 안 순서 | `user_id` 오름차순 | 같음 | R3.4 |
 | 책 삭제 | 경험치 이력은 남아 점수 유지 (ISSUE-DATA-3) | 세션이 지워져 점수에서 빠짐 | R4.4 |
@@ -87,11 +90,15 @@
 | `backend/.../reward/infrastructure/RewardUserNicknameReader.java` | 새로 만듦. `UserRepository.findAllById`로 읽기만 함 (user 코드는 고치지 않음) |
 | `backend/.../reward/infrastructure/ReadingSessionTimeReader.java` | 새로 만듦. port 구현 |
 | `backend/.../reward/infrastructure/ReadingSessionTimeQueryRepository.java` | 새로 만듦. `ReadingSession` 읽기 전용 집계 쿼리 3개 (`@Query`라 앱 시작 때 문법 검사됨). reading의 `ReadingSessionRepository`는 고치지 않음 |
+| `backend/.../reward/infrastructure/RankingTargets.java` | 새로 만듦. 랭킹에 나올 수 있는 사용자 번호 조건 (쿼리 공용) |
+| `backend/.../reward/application/port/RankingTargetChecker.java` | 새로 만듦. 한 사용자가 랭킹 대상인지 |
+| `backend/.../reward/infrastructure/RewardRankingTargetChecker.java` | 새로 만듦. port 구현 (`UserRepository` 읽기만) |
 | `backend/.../reward/infrastructure/RewardTransactionRepository.java` | 쿼리 3개 추가: 기간 내 경험치 합 상위 N명, 한 사용자의 기간 내 합, 기간 내 합이 주어진 값보다 큰 사용자 수 |
 | `backend/.../reward/infrastructure/RewardAccountRepository.java` | `findAllByUserIdIn` 추가 |
 | `backend/.../reward/presentation/RankingController.java` | 새로 만듦. `GET /api/rewards/rankings/weekly/experience`, `/weekly/reading-time` |
 | `backend/src/test/.../reward/domain/RankingWeekTest.java` | 주 경계: 월요일 0시, 일요일 23:59, 서버 UTC일 때 |
 | `backend/src/test/.../reward/application/RankingServiceTest.java` | 동점 순위, 내 순위(30위 밖·0점), 닉네임 없는 사용자 제외, 계정 없을 때 레벨 1, 독서 시간 랭킹 |
+| `backend/src/test/.../reward/application/RankingQueryTest.java` | 새로 만듦. H2에서 두 랭킹의 집계 쿼리, 정지·관리자 제외, 0점 제외 |
 | (프론트) | 없음. 화면은 범위 밖 |
 
 ## ④ 고칠 docs 문서
@@ -115,3 +122,4 @@
 |---|---|---|---|
 | 2026-11-23 | 닉네임 port 구현 이름 `UserRepositoryNicknameReader` → `RewardUserNicknameReader` | review에 같은 이름의 클래스가 있어 Spring 빈 이름이 겹침 (이름만 바뀜, API·규칙 같음) | BE2 |
 | 2026-11-23 | 랭킹 2개로 확장: API를 `/weekly` 하나에서 `/weekly/experience`·`/weekly/reading-time` 두 개로, 응답의 `weeklyExperience`를 `score`로, 독서 시간 port 추가 | 팀 기획(TODO-6, PR #15)이 독서 랭킹을 포함. 경험치·독서 시간 랭킹을 따로 둔다 (requirements R4) | BE2 |
+| 2026-11-25 | 정지 중인 회원·관리자를 집계 쿼리에서 제외, 본인이 제외 대상이면 `rank: null`. 합계 0점은 쿼리에서 제외 (R1.4대로 맞춤, TODO-43 ①). 집계 쿼리를 H2에서 실행하는 테스트 추가 (TODO-43 ②). API 주소·필드와 DB는 그대로 | ASK-14·ASK-18 결정, TODO-43 | BE2 승인 2026-11-25 |

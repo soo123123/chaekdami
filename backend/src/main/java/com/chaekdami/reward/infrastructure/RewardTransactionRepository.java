@@ -23,18 +23,22 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 
     /**
      * 기간 [start, end) 안에 받은 type 금액 합이 큰 사용자 순서. 같으면 사용자 번호 작은 순. (주간 랭킹)
-     * 기간 안 이력이 없는 사용자는 나오지 않는다.
+     * 합이 0인 사용자, 정지 중인 회원, 관리자는 나오지 않는다.
      */
     @Query("""
             select rt.userId as userId, sum(rt.amount) as amount
             from RewardTransaction rt
             where rt.type = :type and rt.createdAt >= :start and rt.createdAt < :end
+              and rt.userId in
+            """ + RankingTargets.USER_IDS + """
             group by rt.userId
+            having sum(rt.amount) > 0
             order by sum(rt.amount) desc, rt.userId asc
             """)
     List<UserAmount> findTopAmounts(@Param("type") TransactionType type,
                                     @Param("start") LocalDateTime start,
                                     @Param("end") LocalDateTime end,
+                                    @Param("now") LocalDateTime now,
                                     Pageable pageable);
 
     /**
@@ -51,7 +55,7 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
                    @Param("end") LocalDateTime end);
 
     /**
-     * 기간 [start, end) 안에 받은 type 금액 합이 amount 보다 큰 사용자 수. (동점 순위 = 이 값 + 1)
+     * 기간 [start, end) 안에 받은 type 금액 합이 amount 보다 큰 사용자 수. 정지 중인 회원과 관리자는 세지 않는다. (동점 순위 = 이 값 + 1)
      */
     @Query("""
             select count(distinct rt.userId)
@@ -60,6 +64,8 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
                 select r.userId
                 from RewardTransaction r
                 where r.type = :type and r.createdAt >= :start and r.createdAt < :end
+                  and r.userId in
+            """ + RankingTargets.USER_IDS + """
                 group by r.userId
                 having sum(r.amount) > :amount
             )
@@ -67,6 +73,7 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
     long countUsersWithAmountGreaterThan(@Param("type") TransactionType type,
                                          @Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end,
+                                         @Param("now") LocalDateTime now,
                                          @Param("amount") long amount);
 
     interface UserAmount {

@@ -157,7 +157,14 @@ export default function DdayScreen() {
   // 연속 일수는 서버 계산 값을 쓴다 (방어한 날 +0). 응답 전에는 null
   const [serverStreak, setServerStreak] = useState<{ current: number; longest: number } | null>(null);
 
+  // 저장이 목표 전체를 교체하므로, 한 번이라도 조회에 성공한 뒤에만 추가·수정·삭제할 수 있다
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const loadedRef = useRef(false);
+  // 마지막 요청만 화면에 반영한다 (늦게 온 조회 응답이 저장 결과를 덮지 않게)
+  const loadIdRef = useRef(0);
+
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -174,41 +181,51 @@ export default function DdayScreen() {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
+  const loadData = useCallback(async () => {
+    const loadId = ++loadIdRef.current;
+    if (!loadedRef.current) setLoadState('loading');
+
+    try {
+      const data = await getDday();
+      if (loadId !== loadIdRef.current) return;
+
+      setGoals(data.goals ?? []);
+      setRecords(data.records ?? {});
+      setServerStreak({ current: data.currentStreak ?? 0, longest: data.longestStreak ?? 0 });
+      loadedRef.current = true;
+      setLoadState('ready');
+    } catch (e) {
+      if (loadId !== loadIdRef.current) return;
+
+      if (!loadedRef.current) setLoadState('error');
+      notify('불러오기 실패', failureMessage(e, 'D-day 기록을 불러오지 못했습니다.'));
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       if (modalOpenRef.current) return undefined;
 
-      let active = true;
-
-      async function loadData() {
-        try {
-          const data = await getDday();
-          if (!active) return;
-
-          setGoals(data.goals ?? []);
-          setRecords(data.records ?? {});
-          setServerStreak({ current: data.currentStreak ?? 0, longest: data.longestStreak ?? 0 });
-        } catch (e) {
-          notify('불러오기 실패', failureMessage(e, 'D-day 기록을 불러오지 못했습니다.'));
-        }
-      }
-
       void loadData();
 
       return () => {
-        active = false;
+        loadIdRef.current += 1;
       };
-    }, [])
+    }, [loadData])
   );
 
   // 목표만 저장한다. 달력 기록은 서버가 독서 완료 보상·방어권 자동 차감으로만 기록한다.
   const persist = async (nextGoals: Goal[]) => {
+    if (!loadedRef.current || savingRef.current) return false;
+
+    savingRef.current = true;
     setSaving(true);
 
     try {
       const data = await saveDday({
         goals: nextGoals.map(toGoalInput),
       });
+      loadIdRef.current += 1;
       setGoals(data.goals ?? []);
       setRecords(data.records ?? {});
       setServerStreak({ current: data.currentStreak ?? 0, longest: data.longestStreak ?? 0 });
@@ -217,6 +234,7 @@ export default function DdayScreen() {
       notify('저장 실패', failureMessage(e, 'D-day 기록을 저장하지 못했습니다.'));
       return false;
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -315,6 +333,8 @@ export default function DdayScreen() {
   const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
   const createGoal = () => {
+    if (loadState !== 'ready') return;
+
     setEditingId(null);
     setTitle('');
     setTargetDate(selectedDate >= today ? selectedDate : today);
@@ -508,8 +528,11 @@ export default function DdayScreen() {
           </Text>
 
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, loadState !== 'ready' && styles.disabledButton]}
             onPress={createGoal}
+            disabled={loadState !== 'ready'}
+            accessibilityRole="button"
+            accessibilityLabel="목표 추가"
           >
             <Ionicons
               name="add"
@@ -760,7 +783,11 @@ export default function DdayScreen() {
             나의 독서 목표
           </Text>
 
-          <TouchableOpacity onPress={createGoal}>
+          <TouchableOpacity
+            style={loadState !== 'ready' && styles.disabledButton}
+            onPress={createGoal}
+            disabled={loadState !== 'ready'}
+          >
             <Text style={styles.addGoalText}>
               + 목표 추가
             </Text>
@@ -812,7 +839,33 @@ export default function DdayScreen() {
           </TouchableOpacity>
         ))}
 
-        {goals.length === 0 && (
+        {loadState === 'loading' && (
+          <View style={styles.emptyGoals}>
+            <Text style={styles.emptyText}>
+              목표를 불러오는 중이에요.
+            </Text>
+          </View>
+        )}
+
+        {loadState === 'error' && (
+          <View style={styles.emptyGoals}>
+            <Text style={styles.emptyText}>
+              목표를 불러오지 못했어요.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => void loadData()}
+              accessibilityRole="button"
+            >
+              <Text style={styles.addGoalText}>
+                다시 불러오기
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {loadState === 'ready' && goals.length === 0 && (
           <View style={styles.emptyGoals}>
             <Text style={styles.emptyText}>
               등록된 독서 목표가 없어요.
@@ -821,8 +874,7 @@ export default function DdayScreen() {
         )}
 
         <Text style={styles.demoNotice}>
-          현재 독서 기록은 화면 테스트용 데이터이며,
-          백엔드 연동 전까지 이 화면에서 직접 변경할 수 있습니다.
+          독서를 완료하면 자동으로 기록돼요.
         </Text>
       </ScrollView>
 
@@ -944,6 +996,7 @@ export default function DdayScreen() {
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={deleteGoal}
+                  disabled={saving}
                 >
                   <Text style={styles.deleteText}>
                     목표 삭제
@@ -1298,6 +1351,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 13,
+  },
+
+  disabledButton: {
+    opacity: 0.4,
+  },
+
+  retryButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
 
   addGoalText: {
