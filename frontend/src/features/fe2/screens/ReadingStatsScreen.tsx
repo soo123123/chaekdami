@@ -61,23 +61,9 @@ function formatMinutes(value: number): string {
   return `${hours}시간 ${rest}분`;
 }
 
-function getPeriodDate(period: Period, offset: number): Date {
+// 서버는 오늘·이번 주·이번 달만 준다
+function getPeriodTitle(period: Period): string {
   const date = new Date();
-
-  if (period === 'month') {
-    date.setDate(1);
-    date.setMonth(date.getMonth() + offset);
-  } else if (period === 'week') {
-    date.setDate(date.getDate() + offset * 7);
-  } else {
-    date.setDate(date.getDate() + offset);
-  }
-
-  return date;
-}
-
-function getPeriodTitle(period: Period, offset: number): string {
-  const date = getPeriodDate(period, offset);
 
   if (period === 'month') {
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
@@ -210,7 +196,6 @@ function ReadingBarChart({
 
 export default function ReadingStatsScreen() {
   const [period, setPeriod] = useState<Period>('month');
-  const [offset, setOffset] = useState(0);
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
   // 조회하지 못했으면 null
@@ -241,15 +226,19 @@ export default function ReadingStatsScreen() {
 
   useEffect(() => {
     mountedRef.current = true;
-    void load();
+
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       mountedRef.current = false;
     };
   }, [load]);
 
   const chartData = useMemo<ChartItem[]>(() => {
-    if (!stats || offset !== 0) return [];
+    if (!stats) return [];
 
     if (period === 'day') {
       return stats.daily;
@@ -260,7 +249,7 @@ export default function ReadingStatsScreen() {
     }
 
     return stats.monthly;
-  }, [period, offset, stats]);
+  }, [period, stats]);
 
   const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
 
@@ -271,12 +260,6 @@ export default function ReadingStatsScreen() {
 
   const changePeriod = (next: Period) => {
     setPeriod(next);
-    setOffset(0);
-    setSelectedBar(null);
-  };
-
-  const changeDate = (direction: number) => {
-    setOffset((previous) => Math.min(0, previous + direction));
     setSelectedBar(null);
   };
 
@@ -378,34 +361,11 @@ export default function ReadingStatsScreen() {
           ))}
         </View>
 
-        {/* 날짜 이동 */}
+        {/* 기간 (지난 기간 조회는 서버에 없다, ISSUE-BUG-17) */}
         <View style={styles.dateNavigation}>
-          <TouchableOpacity
-            style={styles.dateArrow}
-            onPress={() => changeDate(-1)}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={23}
-              color={C.text}
-            />
-          </TouchableOpacity>
-
           <Text style={styles.dateTitle}>
-            {getPeriodTitle(period, offset)}
+            {getPeriodTitle(period)}
           </Text>
-
-          <TouchableOpacity
-            style={styles.dateArrow}
-            disabled={offset >= 0}
-            onPress={() => changeDate(1)}
-          >
-            <Ionicons
-              name="chevron-forward"
-              size={23}
-              color={offset >= 0 ? '#CCC5BE' : C.text}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* 독서량 차트 */}
@@ -639,9 +599,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 20,
     marginBottom: 12,
-  },
-  dateArrow: {
-    padding: 8,
   },
   dateTitle: {
     minWidth: 155,

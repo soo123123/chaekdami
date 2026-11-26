@@ -244,9 +244,14 @@ export default function ShopScreen() {
 
   useEffect(() => {
     let active = true;
-    void loadShop(() => active);
+
+    const timer = setTimeout(() => {
+      void loadShop(() => active);
+    }, 0);
+
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [loadShop]);
 
