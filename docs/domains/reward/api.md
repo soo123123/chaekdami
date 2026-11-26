@@ -164,7 +164,7 @@
 | 요청 필드 | 설명 |
 |---|---|
 | `purchaseQuantity` | 구매 수량 1~99. 생략하면 1 |
-| `ownedQuantity` | 앱이 알고 있는 **그 상품**의 보유 개수 (`GET /api/shop/items`의 `ownedQuantity`). 서버의 개수와 다르면 구매하지 않고 409 `SHOP_002`. 생략하거나 `null`이면 비교하지 않음. 음수면 400 |
+| `ownedQuantity` | 앱이 알고 있는 **그 상품**의 보유 개수 (`GET /api/shop/items`의 `ownedQuantity`). 서버의 개수와 다르면 구매하지 않고 409 `SHOP_002`. 생략하거나 `null`이면 비교하지 않음. 음수이거나 JSON 정수가 아니면(소수 `2.7`, 문자열 `"2"` 등) 400 |
 
 > ⚠️ [ISSUE-BUG-35](../../known-issues.md#issue-bug-35) — 앱이 아직 `ownedQuantity`를 보내지 않아 응답이 끊긴 뒤 다시 구매하면 두 번 처리될 수 있음
 
@@ -220,7 +220,7 @@
 
 | HTTP | code | 언제 | 앱 처리 |
 |---|---|---|---|
-| 400 | `VALIDATION_ERROR` | 구매 수량이 1~99가 아님, `ownedQuantity`가 음수거나 정수가 아님 | 메시지 표시 |
+| 400 | `VALIDATION_ERROR` | 구매 수량이 1~99가 아님, `ownedQuantity`가 음수거나 JSON 정수가 아님 | 메시지 표시 |
 | 400 | `REWARD_001` | 재화 부족 | 메시지 표시 |
 | 400 | `REWARD_006` | 사용할 부스터 없음 | 메시지 표시, 상점 안내 |
 | 400 | `REWARD_007` | 3분 미만 세션의 보상 요청 | 메시지 표시 |
