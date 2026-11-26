@@ -128,7 +128,7 @@
 | <a id="todo-37"></a>TODO-37 | 공통 | main 보호와 자동 검사(CI), 작업 도구 정리 | 열림 | main 보호와 CI 없음. PR 없는 직접 push가 있었음. known-issues 예외를 먼저 정해야 함. Cursor 규칙에 push 규칙, issue-log 스킬에 노션 `완료일` 칸도 추가 | GitHub 설정, `.cursor/rules`, `.claude/skills` |
 | <a id="todo-38"></a>TODO-38 | 백엔드 공통 | 핵심 로직 테스트 보강 | 열림 | BE3 몫(user·review)은 완료 (2026-11-25, `test/be3-core-tests`). BE1·BE2 몫이 남음: 인증·통계·독서 기록 등 테스트가 없는 서비스가 있다는 보고 (TODO-21과 별개) | `backend/src/test` |
 | <a id="todo-39"></a>TODO-39 | FE1·FE2·BE1·BE2·BE3 | 스펙 001·003·004 실기기 확인 | 열림 | 각 tasks에 4건·4건·6건 남음. 끝나면 스펙을 done으로 | [specs](./specs/README.md) |
-| <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름, H2로 재현. 지금은 3분 제한으로 생기기 어려움) ② 집계 쿼리를 실행하는 테스트가 없음 ③ `reading_sessions.ended_at` 인덱스가 없음 (제안) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
+| <a id="todo-43"></a>TODO-43 | BE2 | 주간 랭킹 서버 보강 (스펙 005, PR 35) | 열림 | 병합 전. ①② PR 35에 반영됨 (병합 후 해결 처리): ① 합계가 0인 기록만 있으면 목록에 나오는데 내 순위는 없음 (R1.4와 다름) ② 집계 쿼리를 실행하는 테스트가 없음. 남은 것: ③ 집계용 인덱스가 없음 — `reading_sessions.ended_at`, `reward_transactions`(`type`, `created_at`. 지금은 `user_id`만) (제안) ④ "나보다 점수가 높은 사람 수" 쿼리의 바깥 조건에 기간이 없어 이번 주가 아닌 기록까지 모두 훑는다. 결과는 맞지만 기록이 쌓일수록 느려짐 (코드로 확인) | `RankingService`, `ReadingSessionTimeQueryRepository`, `RewardTransactionRepository` | 실제 PostgreSQL 미확인 |
 | <a id="todo-44"></a>TODO-44 | FE1 | 주가 바뀌면 랭킹 화면 다시 불러오기 (스펙 008, PR 21) | 열림 | 병합 전. 월요일 0시가 지나도 다시 들어오기 전까지, 조회가 실패하면 그 뒤에도 지난주 순위가 "이번 주"로 남음 (제안: 종료 날짜가 지나면 다시 조회) | 앱 `useWeeklyRanking`, `RankingScreen` | 스펙 008 설계의 "실패하면 전에 보이던 순위 유지"와 함께 정함 |
 | <a id="todo-45"></a>TODO-45 | 프론트 공통 | 기존 ESLint 오류·경고 정리 | 진행 중 | 설정(TODO-20, PR 49) 병합 뒤 main에 오류 29·경고 10이 남아 `npm run lint`가 실패한다 (PR 49 병합 시점 37·10, PR 51로 위젯 오류 8개 해결). FE1 16·0, FE2 5·7, 공용 8·3 (오류·경고). 오류는 모두 React Hooks 규칙이고 실제 버그인지는 확인하지 않음 | 앱 `SaveReadingRecordButton`, `Toast` 등 | 제안: 공용 → FE1 → FE2 순. FE2 파일은 PR 46·스펙 009 병합 뒤 |
 
@@ -148,6 +148,7 @@
 | <a id="ask-16"></a>ASK-16 | FE1 · BE2 · 기획 | 랭킹에서 30위 동점이면 내 순위가 30위 안인데 목록에 없을 수 있다. 동점자를 모두 보여주거나 안내하나? | TODO-6, TODO-30, PR 21·35 |
 | <a id="ask-17"></a>ASK-17 | FE1 · FE2 | 독서 중에 로그인 세션이 끝나면 화면 이동을 미루거나 입력을 저장하나? (PR 28은 바로 로그인 화면으로 이동해 타이머와 문장이 사라짐. ASK-13에서 나눔) | ISSUE-BUG-12, PR 28 |
 | <a id="ask-19"></a>ASK-19 | FE1 · 기획 | 랭킹의 독서 시간을 초까지 보여주나? (지금은 분까지라 같은 시간인데 순위가 다를 수 있음. ASK-16에서 나눔) | TODO-30, PR 21 |
+| <a id="ask-20"></a>ASK-20 | FE1 · BE2 · 기획 | 랭킹의 "순위 없음"을 이유별로 다르게 안내하나? (지금은 이번 주 점수 0과 순위 제외 대상(관리자·정지 회원)이 똑같이 "– / 순위 없음"으로 보이고, 제외 대상은 점수가 있어도 점수가 가려진다. 정지 회원은 로그인이 막혀 사실상 관리자만 해당) | TODO-30, PR 21·35, 스펙 005 R2.3 |
 
 ## 4. 해결됨
 
