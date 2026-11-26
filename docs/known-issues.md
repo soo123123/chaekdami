@@ -111,6 +111,7 @@
 | <a id="todo-46"></a>TODO-46 | BE3 | (아이디어) 독서 알림의 여러 기기 동기화 | 열림 | 없음. TODO-8·42는 기기마다 로컬로 예약하므로, 다른 기기에서 읽거나 설정을 바꿔도 이 기기의 앱을 열기 전까지 옛 예약이 남아 이미 읽었는데 알림이 올 수 있다. 추후 개발 (BE3 결정, 2026-11-25) | 앱 | [overview](./overview.md#3-주요-기능과-현재-상태) | TODO-8·42 범위 밖. 단일 기기 로그인은 TODO-47 |
 | <a id="todo-47"></a>TODO-47 | BE3 | 단일 기기 로그인 (다른 기기에서 로그인하면 기존 기기 자동 로그아웃) | 열림 | 여러 기기에서 함께 로그인할 수 있다 (로그인이 기존 세션을 무효화하지 않음). 세션 무효화 기능(`invalidateSessions`)은 있다. 여러 기기를 함께 쓸 때 생기는 문제를 막으려는 것 (BE3, 2026-11-25). 앱이 꺼진 기존 기기는 다시 열어 서버에 요청할 때 로그아웃을 알 수 있어, 그 전까지 예약된 로컬 알림은 울릴 수 있다. 로그아웃될 때 알림 취소(TODO-8)와 안내가 필요하다 | `UserService.login`, 앱 `apiClient.ts` | [user/rules](./domains/user/rules.md) | 관련: TODO-8, TODO-46, ASK-13, ASK-17, ISSUE-BUG-12(PR 28) |
 | <a id="todo-48"></a>TODO-48 | FE2 | (아이디어) 부스터 위젯이 가장자리로 붙을 때 애니메이션 | 열림 | 손을 떼면 애니메이션 없이 바로 가장자리로 붙는다 (TODO-41, PR 51). 부드럽게 이동하면 좋겠다는 의견이며, 일정에 시간이 남으면 고려 (2026-11-25) | 앱 `BoosterFloatingWidget` | — | PR 51 검토 의견 |
+| <a id="todo-49"></a>TODO-49 | BE2 (+FE2) | 보상 조회에 다음 레벨 승급 보상 재화 추가 | 열림 | 서버는 레벨이 오르면 승급 보상 재화를 주지만(`LevelPolicy.promotionReward`) `GET /api/rewards`에 그 값이 없어, 앱 레벨 화면은 금액 없이 안내한다 (ASK-21, FE2 제안) | `RewardStatusResult`, `RewardService`, 앱 `RewardScreen` | [reward/rules](./domains/reward/rules.md#2-경험치) | API가 바뀌어 스펙 필요. 같은 응답을 고치는 스펙 009(PR 59) 병합 뒤 진행 (BE2, 2026-11-26). 앱은 규칙을 복사하지 않고 서버 값을 표시 |
 
 ### 개선
 
