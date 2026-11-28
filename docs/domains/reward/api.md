@@ -59,8 +59,6 @@
 | `currentStreak` | 연속 독서 일수 (D-day 달력 기준) |
 | `expBuffExpiredAt` | 부스터가 없으면 `null`. 시간대 표기 없음 |
 
-> ❓ [ASK-9](../../known-issues.md#ask-9) — 서버 날짜 기준과 응답 시각의 시간대 표기
-
 ## POST /api/rewards/reading-sessions/{readingSessionId}
 
 독서 완료 화면에 들어올 때 부른다. `readingSessionId`는 `POST /api/reading-sessions` 응답의 `id`다 (`readingRecordId` 아님).
@@ -168,8 +166,6 @@
 |---|---|
 | `purchaseQuantity` | 구매 수량 1~99. 생략하면 1 |
 | `ownedQuantity` | 앱이 알고 있는 **그 상품**의 보유 개수 (`GET /api/shop/items`의 `ownedQuantity`). 서버의 개수와 다르면 구매하지 않고 409 `SHOP_002`. 생략하거나 `null`이면 비교하지 않음. 음수이거나 JSON 정수가 아니면(소수 `2.7`, 문자열 `"2"` 등) 400 |
-
-> ⚠️ [ISSUE-BUG-35](../../known-issues.md#issue-bug-35) — 앱이 아직 `ownedQuantity`를 보내지 않아 응답이 끊긴 뒤 다시 구매하면 두 번 처리될 수 있음
 
 ```json
 // 응답
