@@ -21,3 +21,11 @@ export const PHOTO_VERIFY_USE_MOCK = false;
  * 검증 중에는 저장 버튼이 비활성화되므로, 응답이 오지 않으면 이 시간 뒤 실패로 처리해 다시 찍도록 안내한다.
  */
 export const PHOTO_VERIFY_TIMEOUT_MS = 45_000;
+
+/**
+ * 랭킹 화면에 개발용 예시 데이터를 쓸지 여부 (스펙 008).
+ * 서버 랭킹 API(스펙 005)는 main에 병합됐다(PR 35). 서버 없이 화면만 볼 때만 true로 바꾼다.
+ * 출시용 빌드(__DEV__가 false)에서는 이 값과 상관없이 서버를 부른다 (R4.5).
+ */
+const RANKING_DEV_MOCK_ENABLED: boolean = false;
+export const RANKING_USE_DEV_MOCK = __DEV__ && RANKING_DEV_MOCK_ENABLED;

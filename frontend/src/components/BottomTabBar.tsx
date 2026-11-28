@@ -6,7 +6,7 @@ import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
- * 앱 공용 하단 탭바 (홈 / 서재 / 커뮤니티 / 마이페이지).
+ * 앱 공용 하단 탭바 (홈 / 서재 / 커뮤니티 / 랭킹 / 마이페이지).
  *
  * 최상위 레이아웃(src/app/_layout.tsx)을 탭 구조로 바꾸기 전까지,
  * 각 영역의 레이아웃이나 화면 맨 아래에 붙여서 쓴다.
@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  * 탭을 눌렀을 때 이동할 경로는 아래 TABS의 href 한 곳에서 관리한다 (경로 값은 src/constants/routes.ts).
  * href가 null인 탭은 아직 연결 전이라 눌러도 이동하지 않는다 (버튼 동작·눌림 표시는 유지).
  */
-export type BottomTabKey = 'home' | 'library' | 'community' | 'mypage';
+export type BottomTabKey = 'home' | 'library' | 'community' | 'ranking' | 'mypage';
 
 type IonName = ComponentProps<typeof Ionicons>['name'];
 type TabConfig = { key: BottomTabKey; label: string; icon: IonName; activeIcon: IonName; href: Href | null };
@@ -25,6 +25,7 @@ const TABS: TabConfig[] = [
   { key: 'home', label: '홈', icon: 'home-outline', activeIcon: 'home', href: ROUTES.home },
   { key: 'library', label: '서재', icon: 'book-outline', activeIcon: 'book', href: ROUTES.fe1.library },
   { key: 'community', label: '커뮤니티', icon: 'chatbubble-outline', activeIcon: 'chatbubble', href: ROUTES.fe1.community },
+  { key: 'ranking', label: '랭킹', icon: 'trophy-outline', activeIcon: 'trophy', href: ROUTES.fe1.ranking },
   { key: 'mypage', label: '마이페이지', icon: 'person-outline', activeIcon: 'person', href: ROUTES.fe2.mypage },
 ];
 

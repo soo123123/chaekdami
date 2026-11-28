@@ -30,6 +30,22 @@ export function formatDuration(totalSeconds: number): string {
   return `${m}분`;
 }
 
+/** 1시간 20분 5초 / 35분 0초 / 12초 (랭킹처럼 초 차이로 순서가 갈리는 곳) */
+export function formatDurationWithSeconds(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
+  if (h > 0) return `${h}시간 ${m}분 ${s}초`;
+  if (m > 0) return `${m}분 ${s}초`;
+  return `${s}초`;
+}
+
+/** 지금 한국 날짜 yyyy-MM-dd. 서버의 날짜 기준(한국 시간, ASK-9)과 비교할 때 기기 시간대와 상관없이 쓴다. */
+export function kstToday(now = Date.now()): string {
+  return new Date(now + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Date → yyyy-MM-dd (로컬 기준, ISO 8601 날짜) */

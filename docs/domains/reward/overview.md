@@ -58,7 +58,8 @@ backend/src/main/java/com/chaekdami/reward/
 - ✅ 홈 보유 아이템 표시와 부스터 사용, 부스터 남은 시간 표시 (앱)
 - ⚠️ [ISSUE-DATA-3](../../known-issues.md#issue-data-3) 책 삭제 시 보상 내역이 지워진 세션을 가리킨 채 남음
 - ⚠️ [ISSUE-BUG-6](../../known-issues.md#issue-bug-6) 독서 시간이 부스터보다 길면 부스터 미적용 (원인 확인 필요)
-- ⏳ [TODO-6](../../known-issues.md#todo-6) 레벨 해금 · [TODO-30](../../known-issues.md#todo-30) 랭킹 화면(앱) — 미구현
+- ⏳ [TODO-6](../../known-issues.md#todo-6) 레벨 해금 — 미구현
+- 랭킹 화면(앱)은 FE1 `/fe1/ranking` ([specs/008](../../specs/008-ranking-screen/))
 - ⏳ [TODO-28](../../known-issues.md#todo-28) 랜덤박스 · [TODO-29](../../known-issues.md#todo-29) 칭호
 - ⏳ [TODO-19](../../known-issues.md#todo-19) reward ↔ dday 직접 참조
 - 결정 배경: [decisions/0003](../../decisions/0003-reward-on-complete-screen.md), [decisions/0004](../../decisions/0004-dday-records.md)
