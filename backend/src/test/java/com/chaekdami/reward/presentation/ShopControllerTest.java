@@ -108,9 +108,10 @@ class ShopControllerTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
-    @Test
-    void 보유_개수를_숫자로_읽을_수_없으면_400_VALIDATION_ERROR() throws Exception {
-        mockMvc.perform(purchase("{\"ownedQuantity\": \"many\"}"))
+    @ParameterizedTest
+    @ValueSource(strings = {"\"many\"", "2.7", "2.0", "\"2\"", "1e1", "true", "3000000000"})
+    void 보유_개수가_JSON_정수가_아니면_400_VALIDATION_ERROR(String ownedQuantity) throws Exception {
+        mockMvc.perform(purchase("{\"ownedQuantity\": " + ownedQuantity + "}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 
