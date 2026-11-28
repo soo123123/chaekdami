@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import apiClient from '@/api/apiClient';
 import { logout } from '@/api/authApi';
 import { clearTokens, getRefreshToken } from '@/utils/tokenStorage';
@@ -68,7 +68,7 @@ const EMPTY_STATS: PageStats = {
 };
 
 function errorMessage(error: unknown, fallback: string) {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     const message = error.response?.data?.message;
     if (typeof message === 'string' && message.length > 0) {
       return message;

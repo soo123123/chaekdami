@@ -1,4 +1,7 @@
 import axios, {
+  CanceledError,
+  create,
+  isAxiosError,
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { router } from 'expo-router';
@@ -25,7 +28,7 @@ const API_BASE_URL = RAW_API_BASE_URL
   .replace(/\/api$/i, '');
 
 // 공통 Axios 인스턴스
-const apiClient = axios.create({
+const apiClient = create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
@@ -49,7 +52,7 @@ apiClient.interceptors.request.use(
 
       // 이전 세션의 요청을 새로 로그인한 사용자의 토큰으로 다시 보내지 않는다
       if (config._retry && config._session !== getSessionId()) {
-        throw new axios.CanceledError('로그인 세션이 바뀌었습니다.');
+        throw new CanceledError('로그인 세션이 바뀌었습니다.');
       }
 
       if (token) {
@@ -113,7 +116,7 @@ async function refreshAccessToken(
       }
     ));
   } catch (error) {
-    const status = axios.isAxiosError(error)
+    const status = isAxiosError(error)
       ? error.response?.status
       : undefined;
 
@@ -154,7 +157,7 @@ apiClient.interceptors.response.use(
     const url = original?.url ?? '';
 
     const canRefresh =
-      axios.isAxiosError(error) &&
+      isAxiosError(error) &&
       error.response?.status === 401 &&
       original &&
       !original._retry &&
@@ -207,7 +210,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error('[API] 요청 실패:', {
         url: error.config?.url,
         status: error.response?.status,

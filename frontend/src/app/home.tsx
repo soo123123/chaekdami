@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 
 import HomeScreen from '../features/fe2/screens/HomeScreen';
 
@@ -87,7 +87,7 @@ export default function HomePage() {
         console.error('인증 확인 실패:', error);
 
         if (
-          axios.isAxiosError(error) &&
+          isAxiosError(error) &&
           (error.response?.status === 401 ||
             error.response?.status === 403)
         ) {
