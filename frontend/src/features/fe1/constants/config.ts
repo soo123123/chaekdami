@@ -8,6 +8,12 @@ export const FE1_USE_DEV_MOCK = false;
 export const MIN_READING_SECONDS = 3 * 60;
 
 /**
+ * 한 번에 기록할 수 있는 최대 독서 시간(초). 2시간. 백엔드 ReadingSession.MAX_SECONDS 와 같은 값으로 유지 (ISSUE-LIMIT-5, 상한 유지 여부는 ASK-2)
+ * 타이머는 이 시간에 닿으면 멈추고, 종료 화면에서도 이보다 길게 입력할 수 없다.
+ */
+export const MAX_READING_SECONDS = 2 * 60 * 60;
+
+/**
  * 독서 인증 사진 검증에 개발용 Mock을 쓸지 여부.
  * false면 실제 서버(POST /api/reading-records/{id}/certifications)로 검증한다.
  * FE1_USE_DEV_MOCK과 따로 두어, 나머지 독서 API는 실제 서버를 쓰면서 검증만 Mock으로 돌릴 수 있게 한다.

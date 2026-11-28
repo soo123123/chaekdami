@@ -13,6 +13,7 @@ import type { ReadingRound } from '../types/reading';
 import { ErrorView, InlineError, LoadingView } from '../components/common/StateView';
 import { BookAction } from '../components/reading/BookAction';
 import { BookProgress } from '../components/reading/BookProgress';
+import { ReadingSettingsSheet } from '../components/reading/ReadingSettingsSheet';
 import { ReadingSummary } from '../components/reading/ReadingSummary';
 import { RereadingNotice } from '../components/reading/RereadingNotice';
 import { SentenceList } from '../components/reading/SentenceList';
@@ -25,6 +26,8 @@ import { toReviewDetail, toReviewWrite } from '@/constants/routes';
 import { useBookDetailModeParam, useBookIdParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
 import { goBackOr } from '@/utils/navigation';
+import { showToast } from '@/components/Toast';
+import { readingApi } from '@/features/fe1/api/readingApi';
 
 export function BookDetailScreen() {
   const bookId = useBookIdParam();
@@ -36,6 +39,7 @@ export function BookDetailScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRereadConfirmOpen, setIsRereadConfirmOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { book, currentRound, rounds } = detail;
   const report = useBookReport(currentRound?.readingRecordId ?? null, book?.status === 'COMPLETED');
   // 뒤로 갈 화면이 없으면(스택 맨 아래) 서재로 간다
@@ -73,6 +77,11 @@ export function BookDetailScreen() {
   const openBookInfo = () => {
     setIsMenuOpen(false);
     if (book?.itemId) router.push({ pathname: FE1_ROUTES.info, params: { itemId: book.itemId, registered: '1' } });
+  };
+
+  const openSettings = () => {
+    setIsMenuOpen(false);
+    setIsSettingsOpen(true);
   };
 
   const openRemoveConfirm = () => {
@@ -164,9 +173,24 @@ export function BookDetailScreen() {
           {book?.itemId ? (
             <MenuItem icon="book" label="책 정보 보기" onPress={openBookInfo} />
           ) : null}
+          {currentRound ? <MenuItem icon="pencil" label="독서 설정" onPress={openSettings} /> : null}
           <MenuItem icon="trash" label="서재에서 제거" danger onPress={openRemoveConfirm} />
         </View>
       </BottomSheetModal>
+
+      {book && currentRound ? (
+        <ReadingSettingsSheet
+          visible={isSettingsOpen}
+          book={book}
+          isCompleted={isCompleted}
+          onClose={() => setIsSettingsOpen(false)}
+          onSave={async settings => {
+            await readingApi.updateReadingSettings(currentRound.readingRecordId, settings);
+            showToast('독서 설정을 저장했어요.');
+            void detail.reload();
+          }}
+        />
+      ) : null}
 
       <BookReportListSheet
         visible={isReportsOpen}
@@ -198,7 +222,7 @@ export function BookDetailScreen() {
   );
 }
 
-function MenuItem({ icon, label, danger, onPress }: { icon: 'book' | 'trash'; label: string; danger?: boolean; onPress: () => void }) {
+function MenuItem({ icon, label, danger, onPress }: { icon: 'book' | 'pencil' | 'trash'; label: string; danger?: boolean; onPress: () => void }) {
   const tint = danger ? colors.danger : colors.text;
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuItem}>

@@ -54,7 +54,8 @@ backend/src/main/java/com/chaekdami/reading/
 서재 ─책 추가─▶ 검색 ─책 선택─▶ 책 정보 ─등록─▶ 등록(목표 설정) ─▶ 서재
                  └─직접 등록─▶ 직접 등록 ─▶ 서재
 서재 ─책 선택─▶ 책 상세 ─독서 시작─▶ 독서(타이머) ─종료─▶ 독서 종료(시간·페이지·사진·문장) ─저장─▶ 독서 완료(FE2)
-서재 ─꾸미기─▶ 서재 꾸미기 (테마는 기기에만 저장)
+서재 ─꾸미기─▶ 서재 꾸미기 (테마는 기기에 계정별로 저장)
+서재 ─(저장하지 못한 독서 기록이 있으면)─▶ 이어서 하기: 독서 시작(일시정지) 또는 독서 종료
 ```
 
 | 화면 | 라우트 | 파라미터 |
@@ -68,6 +69,11 @@ backend/src/main/java/com/chaekdami/reading/
 
 - `itemId`(YES24)와 `bookId`(내 서재)는 프론트 타입부터 분리돼 있다 (`features/fe1/types/reading.ts`).
 - 하단 탭바는 서재·커뮤니티 화면 맨 아래에 직접 붙인다. 레이아웃에 두면 화면 전환 때 서재 높이가 흔들리기 때문이다.
+- 직접 등록 화면의 표지 사진은 "준비 중"으로 막아 두었다. 서버에 이미지 업로드가 없어 골라도 저장되지 않는다 (ISSUE-BUG-21).
+- 책 정보 화면에는 찜하기가 없다 (ASK-12).
+- 검색 결과에서 이미 서재에 있는 책(itemId, 없으면 ISBN이 같은 책)은 "내 서재에 있는 책"으로 표시하고, 등록 버튼 대신 책 상세를 연다.
+- 책 등록 뒤 설정 저장(PATCH)은 실패하면 한 번 더 보낸다. 그래도 실패하면 저장하지 못한 값(현재 쪽·목표·공개)을 알려 준다 (ISSUE-BUG-20).
+- 기기 저장값(테마·읽던 독서 기록)은 Access Token의 사용자 번호로 계정을 나눈다 (`utils/currentUser.ts`).
 
 ## 현재 상태
 
@@ -77,6 +83,6 @@ backend/src/main/java/com/chaekdami/reading/
 - ⏳ [TODO-23](../../known-issues.md#todo-23) 독서 인증 429 임시 규칙 (통과, 보상 제외)
 - ⏳ [TODO-24](../../known-issues.md#todo-24) AI 장애를 앱에 따로 알리지 않음
 - ⏳ [TODO-2](../../known-issues.md#todo-2) 세션 요청의 `photos` 저장 안 함
-- ⏳ [TODO-7](../../known-issues.md#todo-7) 서재 테마 저장 API 없음 (기기에만 저장)
+- ⏳ [TODO-7](../../known-issues.md#todo-7) 서재 테마 저장 API 없음 (기기에 계정별로 저장)
 - ⏳ [TODO-11](../../known-issues.md#todo-11) 바코드 스캔 검색 미구현
 - ⏳ [TODO-27](../../known-issues.md#todo-27) LLM 책 추천 (검색 화면) 미구현

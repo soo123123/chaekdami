@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { REPORT_REASONS } from '../../constants/options';
 import { colors, noWebOutline, radius, spacing } from '../../constants/theme';
@@ -14,20 +14,25 @@ type Props = {
   onClose: () => void;
   /** 성공하면 true를 돌려준다 (시트를 닫는다) */
   onSubmit: (request: ReviewReportRequest) => Promise<boolean>;
+  /** 신고 대상 이름 (제목·안내에 쓴다). 기본은 한줄평 */
+  targetLabel?: string;
 };
 
-/** 한줄평 신고: 사유 선택 + 기타 사유 입력(300자) */
-export function ReviewReportSheet({ visible, onClose, onSubmit }: Props) {
+/** 한줄평·독후감·문장 신고: 사유 선택 + 기타 사유 입력(300자). 사유 규칙은 세 가지가 같다 */
+export function ReviewReportSheet({ visible, onClose, onSubmit, targetLabel = '한줄평' }: Props) {
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [detail, setDetail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
+  // 닫히면 입력을 비운다 (렌더 중에 맞춤)
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (!visible) {
       setReason(null);
       setDetail('');
     }
-  }, [visible]);
+  }
 
   const needsDetail = reason === 'OTHER';
   const canSubmit = !!reason && (!needsDetail || detail.trim().length > 0);
@@ -41,8 +46,8 @@ export function ReviewReportSheet({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <BottomSheetModal visible={visible} title="한줄평 신고" onClose={isSubmitting ? () => undefined : onClose}>
-      <Text style={styles.description}>신고가 3건 쌓이면 한줄평이 자동으로 가려져요.</Text>
+    <BottomSheetModal visible={visible} title={`${targetLabel} 신고`} onClose={isSubmitting ? () => undefined : onClose}>
+      <Text style={styles.description}>{`신고가 3건 쌓이면 ${targetLabel}이 자동으로 가려져요.`}</Text>
       <View>
         {REPORT_REASONS.map(option => {
           const isSelected = option.value === reason;

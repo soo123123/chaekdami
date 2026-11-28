@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { showToast } from '@/components/Toast';
 import { COMMUNITY_ERROR_CODES, communityApi } from '@/features/fe1/api/communityApi';
 import type { BookId } from '../../types/reading';
@@ -42,11 +42,13 @@ export function useMyReview(bookId: BookId | null, onSaved?: () => void) {
     setFormError(null);
   }, []);
 
-  // 책을 바꾸면 입력 중이던 내용을 비운다
-  useEffect(() => {
+  // 책을 바꾸면 입력 중이던 내용을 비운다 (렌더 중에 맞춤)
+  const [lastBookId, setLastBookId] = useState(bookId);
+  if (bookId !== lastBookId) {
+    setLastBookId(bookId);
     resetForm();
     setIsEditing(false);
-  }, [bookId, resetForm]);
+  }
 
   const setOneLine = (text: string) => {
     setOneLineRaw(sanitizeOneLine(text));
@@ -122,6 +124,26 @@ export function useMyReview(bookId: BookId | null, onSaved?: () => void) {
     }
   };
 
+  /** 리뷰(별점 + 한줄평)를 지운다. 지우면 다시 작성 폼이 보인다 */
+  const deleteReview = async (): Promise<boolean> => {
+    if (!myReview || isSaving) return false;
+    setIsSaving(true);
+    try {
+      await communityApi.deleteReview(myReview.reviewId);
+      setData(null);
+      resetForm();
+      setIsEditing(false);
+      showToast('별점과 한줄평을 삭제했어요.');
+      onSaved?.();
+      return true;
+    } catch (e) {
+      showToast(toAppError(e).message, 'error');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     myReview,
     isLoading: !isReady,
@@ -142,5 +164,6 @@ export function useMyReview(bookId: BookId | null, onSaved?: () => void) {
     cancelEdit,
     submit,
     clearOneLine,
+    deleteReview,
   };
 }

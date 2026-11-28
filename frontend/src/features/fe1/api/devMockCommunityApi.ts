@@ -7,7 +7,7 @@
  */
 import { devMockReadingApi } from './devMockReadingApi';
 import type { CommunityApi } from './communityApi';
-import type { LikeResult, MyReview, PublicReview, RatingKey, ReviewWriteRequest } from '../types/community';
+import type { CommunityEntry, LikeResult, MyReview, PublicReview, RatingKey, ReviewWriteRequest } from '../types/community';
 
 const LATENCY_MS = 350;
 const wait = (ms = LATENCY_MS) => new Promise(resolve => setTimeout(resolve, ms));
@@ -219,4 +219,65 @@ export const devMockCommunityApi: CommunityApi = {
     if (reportedBy.has(key)) throw new MockHttpError(409, 'ALREADY_REPORTED', '이미 신고한 한줄평이에요.');
     reportedBy.add(key);
   },
+
+  async deleteReview(reviewId) {
+    await wait();
+    const index = reviews.findIndex(r => r.reviewId === reviewId && r.author.userId === ME.userId);
+    if (index < 0) throw new MockHttpError(404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없어요.');
+    reviews.splice(index, 1);
+  },
+
+  // 완독자 커뮤니티: 다른 완독자의 공개 기록 예시 1건
+  async getCommunitySummary(bookId) {
+    await wait();
+    const { book } = await devMockReadingApi.getBookDetail(bookId);
+    const hasIsbn = !!book.isbn;
+    const completed = book.status === 'COMPLETED';
+    return {
+      bookId, isbn: book.isbn ?? null, available: hasIsbn, unlocked: hasIsbn && completed,
+      lockReason: !hasIsbn ? 'NO_ISBN' : completed ? null : 'NOT_COMPLETED',
+      completerCount: 2, publicCollectionCount: 1, publicBookReportCount: 1,
+    };
+  },
+
+  async getCommunityEntries(bookId, page, size = 20) {
+    await wait();
+    const items = page === 0 ? [MOCK_ENTRY] : [];
+    return { items, page, size, totalElements: 1, hasNext: false };
+  },
+
+  async getCommunityEntry(bookId, readingRecordId) {
+    await wait();
+    if (readingRecordId !== MOCK_ENTRY.readingRecordId) {
+      throw new MockHttpError(404, 'COMMUNITY_ENTRY_NOT_FOUND', '공개된 기록을 찾을 수 없어요.');
+    }
+    const time = kstNow(3 * D);
+    return {
+      ...MOCK_ENTRY,
+      sentenceCollection: {
+        readingPeriodDays: 12, recordedDayCount: 1, sentenceCount: 2,
+        days: [{ readDate: time.slice(0, 10), dayNumber: 12, sentences: MOCK_SENTENCES.map(sentence => ({ ...sentence, createdAt: time, updatedAt: time })) }],
+      },
+      bookReport: { bookReportId: 9001, content: '마지막 장을 덮고 한참 동안 생각에 잠겼어요. 다시 읽고 싶은 책이에요.', createdAt: time, updatedAt: time },
+    };
+  },
+
+  async reportContent(target, { reason, detail }) {
+    await wait();
+    if (reason === 'OTHER' && !detail?.trim()) throw new MockHttpError(400, 'VALIDATION_ERROR', '기타 사유를 입력해주세요.');
+    const key = `${ME.userId}:${target.kind}:${target.kind === 'bookReport' ? target.bookReportId : target.sentenceId}`;
+    if (reportedBy.has(key)) throw new MockHttpError(409, 'ALREADY_REPORTED', '이미 신고한 글이에요.');
+    reportedBy.add(key);
+  },
+};
+
+const MOCK_SENTENCES = [
+  { sentenceId: 9001, content: '삶이란 게 결국 관계였다.', pageNumber: 120 },
+  { sentenceId: 9002, content: '사람들은 저마다 사정이 있다.', pageNumber: 233 },
+];
+
+const MOCK_ENTRY: CommunityEntry = {
+  readingRecordId: 9001, round: 1, completedAt: kstNow(3 * D), author: { userId: 101, nickname: 'booklover' }, isMine: false,
+  sentenceCollection: { sentenceCount: 2, previewSentences: MOCK_SENTENCES },
+  bookReport: { bookReportId: 9001, preview: '마지막 장을 덮고 한참 동안 생각에 잠겼어요.', length: 38 },
 };

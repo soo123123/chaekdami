@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
 import { HIT_SLOP } from '@/constants/layout';
@@ -27,12 +27,17 @@ export function DatePickerModal({ visible, title, value, minDate, maxDate, onCon
   const [cursor, setCursor] = useState(() => new Date(initial.getFullYear(), initial.getMonth(), 1));
   const [selected, setSelected] = useState<string | undefined>(value);
 
-  useEffect(() => {
-    if (!visible) return;
-    const base = (value && parseIsoDate(value)) || new Date();
-    setCursor(new Date(base.getFullYear(), base.getMonth(), 1));
-    setSelected(value);
-  }, [visible, value]);
+  // 열 때(또는 열린 채 값이 바뀔 때) 지금 값으로 다시 맞춘다. 렌더 중에 맞춰 effect의 연쇄 렌더를 피한다.
+  const syncKey = visible ? (value ?? '') : null;
+  const [lastSyncKey, setLastSyncKey] = useState<string | null>(syncKey);
+  if (syncKey !== lastSyncKey) {
+    setLastSyncKey(syncKey);
+    if (visible) {
+      const base = (value && parseIsoDate(value)) || new Date();
+      setCursor(new Date(base.getFullYear(), base.getMonth(), 1));
+      setSelected(value);
+    }
+  }
 
   const cells = useMemo(() => {
     const firstWeekday = cursor.getDay();

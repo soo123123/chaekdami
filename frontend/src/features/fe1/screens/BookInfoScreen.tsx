@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookInfo } from '../components/book/BookInfo';
 import { BookSpecTable } from '../components/book/BookSpecTable';
@@ -14,7 +13,6 @@ import { ScreenHeader } from '../components/common/ScreenHeader';
 import { ErrorView, LoadingView } from '../components/common/StateView';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, keepAllWords, radius, serifFont, spacing } from '../constants/theme';
-import { HIT_SLOP } from '@/constants/layout';
 import { useBookInfo } from '../hooks/book/useBookInfo';
 import { useItemIdParam, useRegisteredParam } from '../hooks/common/useRouteParams';
 import { formatDate } from '../utils/format';
@@ -24,26 +22,8 @@ export function BookInfoScreen() {
   // 서재 → 책 상세에서 들어온 경우 (이미 등록된 책)
   const isRegistered = useRegisteredParam();
   const { book, isLoading, error, reload } = useBookInfo(itemId);
-  // 찜하기 API가 아직 없어 화면 안에서만 유지되는 상태다.
-  const [isLiked, setIsLiked] = useState(false);
-
-  const header = (
-    <ScreenHeader
-      title="책 정보"
-      onBack={() => router.back()}
-      right={book ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={isLiked ? '찜 해제' : '찜하기'}
-          accessibilityState={{ selected: isLiked }}
-          hitSlop={HIT_SLOP}
-          onPress={() => setIsLiked(v => !v)}
-        >
-          <Icon name={isLiked ? 'heart' : 'heartOutline'} size={30} color={isLiked ? colors.danger : colors.text} />
-        </Pressable>
-      ) : undefined}
-    />
-  );
+  // 찜하기 버튼은 뺐다. 저장할 API가 없어 화면을 나가면 사라졌다 (ASK-12)
+  const header = <ScreenHeader title="책 정보" onBack={() => router.back()} />;
 
   if (!itemId) {
     return (

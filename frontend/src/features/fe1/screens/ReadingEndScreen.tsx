@@ -22,6 +22,7 @@ import { HIT_SLOP } from '@/constants/layout';
 import { useImagePicker } from '../hooks/common/useImagePicker';
 import { useReadingEndParams } from '../hooks/common/useRouteParams';
 import { useReadingEnd } from '../hooks/reading/useReadingEnd';
+import { MAX_READING_SECONDS } from '../constants/config';
 import { formatDuration, todayIso } from '../utils/format';
 import { goBackOr } from '@/utils/navigation';
 
@@ -55,7 +56,9 @@ export function ReadingEndScreen() {
   const handleLeave = () => {
     allowLeaveRef.current = true;
     setIsLeaveConfirmOpen(false);
-    goBack();
+    // 저장하지 않고 나가기로 했으므로 기기에 보관한 입력값도 지운다
+    // 지우기를 마친 뒤 이동한다 (먼저 이동하면 서재가 남은 기록을 읽는다)
+    void record.discardDraft().finally(goBack);
   };
 
   /** 촬영·선택한 사진(1장)을 첨부하면 바로 검증이 시작된다. 취소하면 아무것도 하지 않는다. */
@@ -240,7 +243,7 @@ export function ReadingEndScreen() {
 
           <Card title="독서 정보 기록" subtitle="오늘의 독서 기록을 남겨보세요.">
             <View style={styles.fields}>
-              <ReadingTime duration={record.readingTime} maxDuration={elapsedTime} onChange={record.setReadingTime} />
+              <ReadingTime duration={record.readingTime} maxDuration={Math.min(elapsedTime, MAX_READING_SECONDS)} onChange={record.setReadingTime} />
               <View style={styles.fieldDivider} />
               <ReadingPageRange
                 startPage={record.startPage}

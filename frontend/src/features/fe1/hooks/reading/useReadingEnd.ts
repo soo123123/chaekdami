@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { photoVerifyApi } from '@/features/fe1/api/photoVerifyApi';
 import { readingApi } from '@/features/fe1/api/readingApi';
-import { PHOTO_VERIFY_TIMEOUT_MS } from '../../constants/config';
+import { MAX_READING_SECONDS, PHOTO_VERIFY_TIMEOUT_MS } from '../../constants/config';
 import type { ReadingPhoto, ReadingRecordResult } from '../../types/reading';
 import { toAppError } from '../../utils/apiError';
 import { validatePageRange } from '../../utils/validation';
+import { clearReadingDraft, loadReadingDraft, saveReadingDraft } from '../../utils/readingDraft';
 import { useAsyncResource } from '../common/useAsyncResource';
 
 export type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
@@ -31,6 +32,9 @@ export type SaveResult = ({ ok: true } & ReadingRecordResult) | { ok: false; mes
  *   통과하지 못하면 사진을 지우고 다시 찍도록 안내한다.
  * - 검증은 PHOTO_VERIFY_TIMEOUT_MS 안에 끝나지 않으면 실패로 처리한다.
  * - 검증 중에는 저장하지 않는다(화면에서 저장 버튼을 비활성화한다).
+ * - 독서 시간은 2시간(MAX_READING_SECONDS)을 넘을 수 없다 (ISSUE-LIMIT-5).
+ * - 입력 중인 값(시간·쪽·문장)은 기기에 보관해, 앱이 꺼지거나 로그인이 끊겨도 다시 열어 저장할 수 있다 (ISSUE-LIMIT-2, ASK-17).
+ *   저장에 성공하거나 저장하지 않고 나가면 지운다.
  */
 export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   const { data, error: loadError, isLoading: isBookLoading, reload } = useAsyncResource(
@@ -42,7 +46,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   /** 사진 인증을 보낼 회차: 책의 가장 최근 회차. 완독한 책을 다시 읽는 첫 세션이면 새 회차가 저장 때 생겨서 이전 회차로 인증된다(서버가 세션에 연결하므로 보상에는 영향 없음). */
   const readingRecordId = data?.currentRound?.readingRecordId ?? null;
 
-  const [readingTime, setReadingTime] = useState(elapsedTime);
+  const [readingTime, setReadingTime] = useState(() => Math.min(elapsedTime, MAX_READING_SECONDS));
   const [startPage, setStartPage] = useState(0);
   const [endPage, setEndPage] = useState(0);
   const [photo, setPhoto] = useState<ReadingPhoto | null>(null);
@@ -55,14 +59,47 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   const [result, setResult] = useState<ReadingRecordResult | null>(null);
 
   // 책 정보를 처음 받았을 때만 페이지 초기값을 설정한다 (사용자 수정값 보존).
+  // 이 책에 보관해 둔 입력값이 있으면 그 값으로 되살린다 (같은 측정 시간일 때만).
   const initializedRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   useEffect(() => {
     if (!book || initializedRef.current) return;
     initializedRef.current = true;
     const startFrom = book.status === 'COMPLETED' ? 0 : book.currentPage;
-    setStartPage(startFrom);
-    setEndPage(startFrom);
-  }, [book]);
+    void loadReadingDraft().then(draft => {
+      if (draft?.kind === 'end' && draft.bookId === book.bookId && draft.elapsedTime === elapsedTime) {
+        setReadingTime(Math.min(draft.readingTime, MAX_READING_SECONDS));
+        setStartPage(draft.startPage);
+        setEndPage(draft.endPage);
+        setSentence(draft.sentence);
+      } else {
+        setStartPage(startFrom);
+        setEndPage(startFrom);
+      }
+      setIsInitialized(true);
+    });
+  }, [book, elapsedTime]);
+
+  /** 저장하지 않고 나가기로 해 보관을 지웠는지 */
+  const discardedRef = useRef(false);
+  // 입력값이 바뀌면 잠시 뒤 기기에 보관한다. 저장을 마친 뒤에는 보관하지 않는다.
+  const bookTitle = book?.title;
+  useEffect(() => {
+    if (!isInitialized || bookId === null || !bookTitle || status === 'success') return;
+    const timer = setTimeout(() => {
+      if (discardedRef.current) return;
+      void saveReadingDraft({
+        kind: 'end', bookId, bookTitle, elapsedTime, readingTime, startPage, endPage, sentence, savedAt: Date.now(),
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isInitialized, bookId, bookTitle, elapsedTime, readingTime, startPage, endPage, sentence, status]);
+
+  /** 저장하지 않고 나갈 때 보관한 입력값을 지운다 */
+  const discardDraft = useCallback(async () => {
+    discardedRef.current = true; // 아직 보내지 않은 보관(0.5초 뒤)이 지운 뒤에 다시 쓰지 않게 한다
+    if (bookId !== null) await clearReadingDraft(bookId);
+  }, [bookId]);
 
   // 진행 중인 사진 검증. 사진을 지우거나 새로 첨부하거나 화면을 벗어나면 취소하고, 늦게 온 결과는 버린다.
   const verifyRef = useRef<AbortController | null>(null);
@@ -134,6 +171,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     const rangeError = validatePageRange(startPage, endPage, book.totalPages);
     if (rangeError) return rangeError;
     if (readingTime <= 0) return '독서 시간을 확인해주세요.';
+    if (readingTime > MAX_READING_SECONDS) return '한 번에 최대 2시간까지 기록할 수 있어요.';
     if (!sentence.trim()) return '인상 깊었던 문장을 입력해주세요.';
     return null;
   };
@@ -174,6 +212,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
       });
       setResult(saved);
       setStatus('success');
+      void clearReadingDraft(bookId);
       return { ok: true, ...saved };
     } catch (e) {
       return fail(toAppError(e).message, 'error');
@@ -205,6 +244,7 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     setSentence,
     validateInputs,
     saveReadingRecord,
+    discardDraft,
     reload,
   };
 }

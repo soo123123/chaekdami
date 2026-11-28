@@ -14,6 +14,9 @@ type SearchBookCardProps = {
   onPress: (itemId: string) => void;
   /** + 버튼 클릭 → BookRegisterScreen */
   onRegister: (itemId: string) => void;
+  /** 이미 내 서재에 있는 책이면 그 bookId. + 버튼 대신 '서재' 버튼으로 책 상세를 연다 */
+  registeredBookId?: number;
+  onOpenRegistered?: (bookId: number) => void;
 };
 
 type ShelfBookCardProps = {
@@ -33,7 +36,7 @@ export function BookCard(props: BookCardProps) {
   return props.variant === 'shelf' ? <ShelfBookCard {...props} /> : <SearchBookCard {...props} />;
 }
 
-function SearchBookCard({ book, onPress, onRegister }: SearchBookCardProps) {
+function SearchBookCard({ book, onPress, onRegister, registeredBookId, onOpenRegistered }: SearchBookCardProps) {
   const meta = [book.publisher, book.publishedDate ? formatDate(book.publishedDate) : undefined].filter(Boolean).join('  |  ');
   return (
     <View style={styles.row}>
@@ -51,8 +54,19 @@ function SearchBookCard({ book, onPress, onRegister }: SearchBookCardProps) {
           <Text style={styles.sub} numberOfLines={1}>{book.author}</Text>
           {meta ? <Text style={styles.sub} numberOfLines={1}>{meta}</Text> : null}
           <RatingText rating={book.rating} reviewCount={book.reviewCount} size={14} />
+          {registeredBookId !== undefined ? <Text style={styles.registered}>내 서재에 있는 책</Text> : null}
         </View>
       </Pressable>
+      {registeredBookId !== undefined ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${book.title} 서재에서 보기`}
+          onPress={() => onOpenRegistered?.(registeredBookId)}
+          style={({ pressed }) => [styles.add, styles.inLibrary, pressed && styles.pressed]}
+        >
+          <Icon name="check" size={26} color={colors.primary} />
+        </Pressable>
+      ) : (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${book.title} 바로 등록하기`}
@@ -61,6 +75,7 @@ function SearchBookCard({ book, onPress, onRegister }: SearchBookCardProps) {
       >
         <Icon name="plus" size={28} color={colors.onPrimary} />
       </Pressable>
+      )}
     </View>
   );
 }
@@ -86,6 +101,8 @@ function ShelfBookCard({ book, onPress, coverWidth = SHELF_COVER_WIDTH, coverHei
 }
 
 const styles = StyleSheet.create({
+  registered: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  inLibrary: { backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.primaryBorder },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderStrong, gap: spacing.sm },
   main: { flex: 1, flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   coverShadow: { borderRadius: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3 },

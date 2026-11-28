@@ -67,7 +67,9 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const dismiss = onDismiss ?? onCancel;
   const onClosedRef = useRef(onClosed);
-  onClosedRef.current = onClosed;
+  useEffect(() => {
+    onClosedRef.current = onClosed;
+  });
 
   // iOS는 Modal의 onDismiss로 정확한 시점을 받고, 그 외 플랫폼은 닫기 애니메이션 시간만큼 기다린다.
   const wasVisibleRef = useRef(visible);

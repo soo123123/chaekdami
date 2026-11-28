@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { HIT_SLOP } from '@/constants/layout';
 import { colors, radius, spacing } from '../../constants/theme';
 import type { MyReview } from '../../types/community';
 import { formatRelativeTime } from '../../utils/format';
@@ -11,16 +12,29 @@ type Props = {
   isSaving: boolean;
   onEdit: () => void;
   onClearOneLine: () => void;
+  /** 별점과 한줄평을 함께 지운다 */
+  onDelete: () => void;
 };
 
 /** 이미 남긴 내 한줄평. 목록에서는 빼고 여기에서만 보여준다. */
-export function MyReviewCard({ review, isSaving, onEdit, onClearOneLine }: Props) {
+export function MyReviewCard({ review, isSaving, onEdit, onClearOneLine, onDelete }: Props) {
   const hasText = !!review.oneLine?.trim();
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>내 한줄평</Text>
-        <Text style={styles.time}>{formatRelativeTime(review.updatedAt)}</Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.time}>{formatRelativeTime(review.updatedAt)}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="별점과 한줄평 삭제"
+            disabled={isSaving}
+            hitSlop={HIT_SLOP}
+            onPress={onDelete}
+          >
+            <Text style={styles.delete}>삭제</Text>
+          </Pressable>
+        </View>
       </View>
       <View style={styles.ratingRow}>
         <StarRating value={review.rating} size={18} />
@@ -57,7 +71,9 @@ const styles = StyleSheet.create({
   card: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.card, backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.primaryBorder },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 17, fontWeight: '800', color: colors.primary },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   time: { fontSize: 12, color: colors.secondaryText },
+  delete: { fontSize: 13, fontWeight: '600', color: colors.danger },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   ratingValue: { fontSize: 15, fontWeight: '600', color: colors.text },
   badge: { fontSize: 11, fontWeight: '700', color: colors.secondaryText, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.surface, overflow: 'hidden' },

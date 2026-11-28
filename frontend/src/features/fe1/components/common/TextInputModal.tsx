@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
 import { AppButton } from './AppButton';
@@ -39,12 +39,16 @@ export function TextInputModal({
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // 열 때(또는 열린 채 초기값이 바뀔 때) 입력을 초기값으로 되돌린다 (렌더 중에 맞춤)
+  const syncKey = visible ? initialValue : null;
+  const [lastSyncKey, setLastSyncKey] = useState<string | null>(syncKey);
+  if (syncKey !== lastSyncKey) {
+    setLastSyncKey(syncKey);
     if (visible) {
       setValue(initialValue);
       setError(null);
     }
-  }, [visible, initialValue]);
+  }
 
   const handleConfirm = () => {
     const message = validate?.(value) ?? null;

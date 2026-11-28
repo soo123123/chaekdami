@@ -3,7 +3,9 @@
  * 화면은 이 파일의 타입을 그대로 쓰고, 여기서 백엔드 필드(id, coverUrl, IN_PROGRESS)로 바꿔 호출한다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUserKey } from '@/features/fe1/utils/currentUser';
 import apiClient from '@/api/apiClient';
+import { MAX_SEARCH_PAGES, SEARCH_PAGE_SIZE } from '@/features/fe1/constants/options';
 import { devMockReadingApi } from '@/features/fe1/api/devMockReadingApi';
 import { FE1_USE_DEV_MOCK } from '@/features/fe1/constants/config';
 import type {
@@ -17,6 +19,7 @@ import type {
   ReadingRecordRequest,
   ReadingRecordResult,
   ReadingRound,
+  ReadingSettingsUpdate,
   ReadingTimeSummary,
   RegisteredBook,
   RegisterCatalogBookRequest,
@@ -26,7 +29,8 @@ import type {
   Sentence,
 } from '@/features/fe1/types/reading';
 
-const THEME_KEY = '@chaekdami_library_theme';
+/** 계정 구분이 없던 예전 키(@chaekdami_library_theme)는 읽지 않는다. 다른 계정의 테마일 수 있다 */
+const themeKey = (userKey: string) => `@chaekdami_library_theme:${userKey}`;
 
 export interface ReadingApi {
   /** 외부 도서 검색 (YES24) */
@@ -43,6 +47,8 @@ export interface ReadingApi {
   getBookDetail(bookId: BookId): Promise<BookDetail>;
   /** 등록 도서 삭제 */
   removeBook(bookId: BookId): Promise<void>;
+  /** 회차의 공개·목표 설정 수정 (TODO-32) */
+  updateReadingSettings(readingRecordId: number, settings: ReadingSettingsUpdate): Promise<void>;
   /**
    * 독서 기록 저장.
    * 응답의 readingRecordId는 회차 ID(백엔드 reading_records.id), round는 회독 수, isCompleted는 이번 저장 후 완독 여부.
@@ -107,6 +113,8 @@ type BeSentence = {
   pageNumber: number | null;
   content: string;
   createdAt: string;
+  /** 신고로 가려져 커뮤니티에서 보이지 않음. 본인 조회에서만 true가 온다 */
+  isBlinded?: boolean;
 };
 
 type BeSearchItem = {
@@ -141,12 +149,6 @@ function toStatus(status: BeStatus | undefined, currentPage: number): BookStatus
 
 function dateKey(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : '';
-}
-
-function localDate(date = new Date()): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 function toReadingRound(record: BeRecord): ReadingRound {
@@ -205,59 +207,64 @@ async function sessionsOfBook(bookId: BookId): Promise<BeSession[]> {
   return groups.flat();
 }
 
-function summarize(sessions: BeSession[]): { detail: BookDetail['readingSummary']; time: ReadingTimeSummary } {
-  const today = localDate();
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - 6);
-  const weekFrom = localDate(weekStart);
+function summarize(sessions: BeSession[]): { detail: BookDetail['readingSummary']; bookSeconds: number } {
   let total = 0;
-  let todaySeconds = 0;
-  let weekSeconds = 0;
   const days = new Set<string>();
   for (const session of sessions) {
     const seconds = session.readingTime ?? 0;
     const day = dateKey(session.startedAt);
     total += seconds;
     if (day) days.add(day);
-    if (day === today) todaySeconds += seconds;
-    if (day && day >= weekFrom && day <= today) weekSeconds += seconds;
   }
   return {
     detail: total > 0
       ? { totalReadingSeconds: total, readingDays: days.size, averageSecondsPerDay: days.size ? Math.round(total / days.size) : 0 }
       : null,
-    time: { todaySeconds, bookSeconds: total, weekSeconds },
+    bookSeconds: total,
   };
 }
+
+/** 실패하면 undefined. 시간 요약은 값 하나가 실패해도 나머지를 보여준다. */
+const orUndefined = <T,>(promise: Promise<T>): Promise<T | undefined> => promise.catch(() => undefined);
 
 async function registerBook(body: Record<string, unknown>, settings: { currentPage: number; goalDate?: string; goalPage?: number; isPublic: boolean }): Promise<RegisteredBook> {
   const { data } = await apiClient.post<BeBook>('/api/books', body);
   const recordId = data.currentReading?.recordId;
-  let record: BeRecord | null = null;
-  if (recordId != null) {
-    const patch: Record<string, unknown> = { isPublic: settings.isPublic };
-    if (settings.currentPage > 0) patch.currentPage = settings.currentPage;
-    if (settings.goalDate) patch.goalDate = settings.goalDate;
-    if (settings.goalPage != null) patch.goalPage = settings.goalPage;
-    const updated = await apiClient.patch<BeRecord>(`/api/reading-records/${recordId}`, patch);
-    record = updated.data;
+  if (recordId == null) return { ...toRegisteredBook(data, null), settingsSaveFailed: true };
+  // 등록과 설정 저장은 요청 2번이다. 책은 이미 서재에 들어갔으므로, 설정 저장이 실패해도 등록 실패로 보이지 않게 한다 (ISSUE-BUG-20).
+  const patch: Record<string, unknown> = { isPublic: settings.isPublic };
+  if (settings.currentPage > 0) patch.currentPage = settings.currentPage;
+  if (settings.goalDate) patch.goalDate = settings.goalDate;
+  if (settings.goalPage != null) patch.goalPage = settings.goalPage;
+  // 잠깐 끊긴 경우가 많아 한 번 더 보낸다. 같은 값을 다시 저장하는 요청이라 두 번 처리돼도 결과가 같다.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const updated = await apiClient.patch<BeRecord>(`/api/reading-records/${recordId}`, patch);
+      return toRegisteredBook(data, updated.data);
+    } catch {
+      // 다음 시도 또는 실패 처리
+    }
   }
-  return toRegisteredBook(data, record);
+  // 실패하면 서버 기본값(비공개, 0쪽, 목표 없음)으로 남는다
+  return { ...toRegisteredBook(data, null), settingsSaveFailed: true };
 }
 
 const httpReadingApi: ReadingApi = {
   async searchBooks(query) {
+    const page = query.page ?? 1;
     const { data } = await apiClient.get<{ items: BeSearchItem[]; totalCount: number }>('/api/books/search', {
       params: {
         query: query.keyword,
         category: SEARCH_CATEGORY[query.category],
         sort: SEARCH_SORT[query.sort],
-        page: 1,
-        pageSize: 20,
+        page,
+        pageSize: SEARCH_PAGE_SIZE,
       },
     });
     return {
       totalCount: data.totalCount,
+      // totalCount가 실제보다 클 수 있어, 빈 페이지가 오면 끝으로 본다 (TODO-33)
+      hasNext: data.items.length > 0 && page * SEARCH_PAGE_SIZE < data.totalCount && page < MAX_SEARCH_PAGES,
       items: data.items.map(item => ({
         itemId: String(item.itemId),
         title: item.title,
@@ -340,6 +347,7 @@ const httpReadingApi: ReadingApi = {
             content: sentence.content,
             page: sentence.pageNumber ?? undefined,
             createdAt: sentence.createdAt,
+            isBlinded: sentence.isBlinded ?? false,
           }))),
       Promise.all(records.map(record => getSessions(record.id))),
     ]);
@@ -356,6 +364,14 @@ const httpReadingApi: ReadingApi = {
     await apiClient.delete(`/api/books/${bookId}`);
   },
 
+  async updateReadingSettings(readingRecordId, settings) {
+    await apiClient.patch(`/api/reading-records/${readingRecordId}`, {
+      isPublic: settings.isPublic,
+      ...(settings.goalDate ? { goalDate: settings.goalDate } : {}),
+      ...(settings.goalPage != null ? { goalPage: settings.goalPage } : {}),
+    });
+  },
+
   async saveReadingRecord(request) {
     const book = await getBook(request.bookId);
     let recordId = book.currentReading?.recordId;
@@ -365,8 +381,9 @@ const httpReadingApi: ReadingApi = {
       recordId = created.data.id;
       round = created.data.round;
     }
-    // 세션·문장·사진 인증 연결을 요청 한 번으로 저장한다. 서버가 한 트랜잭션으로 처리하므로
-    // 실패하면 아무것도 저장되지 않고, '다시 시도하기'로 같은 요청을 보내도 세션이 2건이 되지 않는다.
+    // 세션·문장·사진 인증 연결을 요청 한 번으로 저장한다. 서버가 한 트랜잭션으로 처리하므로 서버에서 실패하면 아무것도 저장되지 않는다.
+    // 단, 서버는 저장했는데 응답만 끊긴 경우(네트워크·시간 초과)에 '다시 시도하기'를 누르면 세션이 2건이 된다.
+    // 같은 요청을 한 번만 처리하는 장치가 서버에 생기면 요청 번호를 함께 보내야 한다 (ISSUE-BUG-3).
     // 문장 쪽 번호는 서버가 endPage로 정한다. (문장 API를 따로 부르지 않는다)
     const sentence = request.sentence?.trim();
     const { data: session } = await apiClient.post<BeSession>('/api/reading-sessions', {
@@ -388,16 +405,24 @@ const httpReadingApi: ReadingApi = {
   },
 
   async getReadingTimeSummary(bookId) {
-    const sessions = await sessionsOfBook(bookId);
-    return summarize(sessions).time;
+    // 오늘·이번 주는 모든 책의 기록을 서버가 한국 날짜 기준으로 모은 값을 쓴다 (ISSUE-BUG-19).
+    // 서버 값은 분 단위라 초로 바꿔 둔다. 이번 책 시간만 이 책의 세션 합(초)이다.
+    const [today, stats, bookSeconds] = await Promise.all([
+      orUndefined(apiClient.get<{ readingMinutes: number }>('/api/me/reading-today').then(({ data }) => data.readingMinutes * 60)),
+      orUndefined(apiClient.get<{ weekly: { minutes: number }[] }>('/api/me/reading-stats')
+        .then(({ data }) => data.weekly.reduce((sum, day) => sum + day.minutes, 0) * 60)),
+      orUndefined(sessionsOfBook(bookId).then(sessions => summarize(sessions).bookSeconds)),
+    ]);
+    return { todaySeconds: today, weekSeconds: stats, bookSeconds };
   },
 
+  // 테마는 아직 서버에 저장하지 않고 기기에 계정별로 저장한다 (TODO-7, ISSUE-DATA-4)
   async getLibraryTheme() {
-    return AsyncStorage.getItem(THEME_KEY);
+    return AsyncStorage.getItem(themeKey(await getCurrentUserKey()));
   },
 
   async saveLibraryTheme(themeId) {
-    await AsyncStorage.setItem(THEME_KEY, themeId);
+    await AsyncStorage.setItem(themeKey(await getCurrentUserKey()), themeId);
   },
 };
 

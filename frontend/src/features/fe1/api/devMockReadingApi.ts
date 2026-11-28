@@ -146,8 +146,10 @@ function statusOf(currentPage: number, totalPages?: number): RegisteredBook['sta
 }
 
 export const devMockReadingApi: ReadingApi = {
-  async searchBooks({ keyword, category, sort }) {
+  async searchBooks({ keyword, category, sort, page = 1 }) {
     await wait();
+    // 예시 도서가 적어 한 페이지로 끝난다
+    if (page > 1) return { totalCount: 0, items: [], hasNext: false };
     const q = keyword.trim().toLowerCase();
     let items = DEV_CATALOG.filter(b =>
       [b.title, b.author, b.isbn ?? ''].some(field => field.toLowerCase().includes(q)),
@@ -161,6 +163,7 @@ export const devMockReadingApi: ReadingApi = {
     if (sort === 'rating') items = [...items].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return {
       totalCount: items.length,
+      hasNext: false,
       items: items.map(({ itemId, title, author, coverImageUrl, publisher, publishedDate, isbn, totalPages, rating, reviewCount }) =>
         ({ itemId, title, author, coverImageUrl, publisher, publishedDate, isbn, totalPages, rating, reviewCount })),
     };
@@ -228,6 +231,16 @@ export const devMockReadingApi: ReadingApi = {
       })(),
     };
     return detail;
+  },
+
+  async updateReadingSettings(readingRecordId, settings) {
+    await wait();
+    const bookId = [...currentRoundByBook.entries()].find(([, round]) => round.readingRecordId === readingRecordId)?.[0];
+    const book = library.find(b => b.bookId === bookId);
+    if (!book) throw new MockHttpError(404, '독서 기록을 찾을 수 없어요.');
+    book.isPublic = settings.isPublic;
+    if (settings.goalDate) book.goalDate = settings.goalDate;
+    if (settings.goalPage != null) book.goalPage = settings.goalPage;
   },
 
   async removeBook(bookId) {

@@ -10,6 +10,7 @@ import { ErrorView, InlineError, LoadingView } from '../components/common/StateV
 import { PublicSetting } from '../components/reading/PublicSetting';
 import { ReadingGoalSetting } from '../components/reading/ReadingGoalSetting';
 import { ReadingStatusInput } from '../components/reading/ReadingStatusInput';
+import { AppButton } from '../components/common/AppButton';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, spacing } from '../constants/theme';
 import { useBookInfo } from '../hooks/book/useBookInfo';
@@ -30,7 +31,10 @@ export function BookRegisterScreen() {
   const handleRegister = async () => {
     const registered = await form.registerBook(catalogTotal);
     // 등록 성공 응답 확인 후에만 서재로 이동한다.
-    if (registered) router.dismissTo(FE1_ROUTES.library);
+    if (!registered) return;
+    router.dismissTo(FE1_ROUTES.library);
+    // 설정 저장만 실패했으면 책 상세에서 다시 저장하도록 바로 연다 (ISSUE-BUG-20)
+    if (registered.settingsSaveFailed) router.push({ pathname: FE1_ROUTES.detail, params: { bookId: String(registered.bookId) } });
   };
 
   if (!itemId) {
@@ -84,6 +88,11 @@ export function BookRegisterScreen() {
 
           <PublicSetting isPublic={form.isPublic} onChange={form.setIsPublic} />
           <InlineError message={form.submitError} />
+          {form.existingBookId !== null ? (
+            <AppButton variant="secondary" size="md" onPress={() => router.replace({ pathname: FE1_ROUTES.detail, params: { bookId: String(form.existingBookId) } })}>
+              서재에 있는 책 보기
+            </AppButton>
+          ) : null}
         </>
       ) : null}
     </ScreenContainer>

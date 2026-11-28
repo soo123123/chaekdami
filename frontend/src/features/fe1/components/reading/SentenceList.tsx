@@ -37,6 +37,9 @@ export function SentenceList({ sentences }: { sentences: Sentence[] }) {
               <Text style={styles.meta}>
                 {[sentence.page ? `${sentence.page}쪽` : null, `${formatDate(sentence.createdAt)} 기록`].filter(Boolean).join('   |   ')}
               </Text>
+              {sentence.isBlinded ? (
+                <Text style={styles.blinded}>신고로 가려져 다른 독자에게 보이지 않아요.</Text>
+              ) : null}
             </View>
             <Icon name="bookmark" size={22} color={colors.text} />
           </View>
@@ -47,6 +50,7 @@ export function SentenceList({ sentences }: { sentences: Sentence[] }) {
 }
 
 const styles = StyleSheet.create({
+  blinded: { fontSize: 12, color: colors.danger },
   moreButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   more: { fontSize: 14, color: colors.secondaryText },
   empty: { fontSize: 14, color: colors.secondaryText },

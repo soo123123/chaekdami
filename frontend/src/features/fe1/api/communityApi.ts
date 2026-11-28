@@ -1,5 +1,5 @@
 /**
- * FE1 커뮤니티(한줄평·평점·좋아요·신고) API 계층.
+ * FE1 커뮤니티(한줄평·평점·좋아요·신고, 완독자 공개 문장·독후감) API 계층.
  *
  * - 백엔드 계약은 be/feat/sentence-review 브랜치 docs/review-api-for-frontend.md 기준으로 확정되어 있어
  *   HTTP 구현(httpCommunityApi)은 실제 Endpoint로 작성한다.
@@ -11,6 +11,10 @@ import apiClient from '@/api/apiClient';
 import { devMockCommunityApi } from '@/features/fe1/api/devMockCommunityApi';
 import { FE1_USE_DEV_MOCK } from '@/features/fe1/constants/config';
 import type {
+  CommunityEntry,
+  CommunityEntryDetail,
+  CommunitySummary,
+  ContentReportTarget,
   LikeResult,
   MyReview,
   PageResponse,
@@ -45,6 +49,15 @@ export interface CommunityApi {
   like(reviewId: ReviewId): Promise<LikeResult>;
   unlike(reviewId: ReviewId): Promise<LikeResult>;
   report(reviewId: ReviewId, request: ReviewReportRequest): Promise<void>;
+  /** 내 리뷰(별점 + 한줄평) 삭제. 좋아요·신고도 함께 지워지고, 다시 쓸 수 있다 */
+  deleteReview(reviewId: ReviewId): Promise<void>;
+  /** 내 서재 책(bookId)의 완독자 커뮤니티 요약. 잠겨 있어도 성공한다 */
+  getCommunitySummary(bookId: BookId): Promise<CommunitySummary>;
+  /** 공개된 완독 회차 목록 (완독일 최신순). 잠겨 있으면 403 COMMUNITY_LOCKED */
+  getCommunityEntries(bookId: BookId, page: number, size?: number): Promise<PageResponse<CommunityEntry>>;
+  getCommunityEntry(bookId: BookId, readingRecordId: number): Promise<CommunityEntryDetail>;
+  /** 공개 독후감·문장 신고 (201, 본문 없음) */
+  reportContent(target: ContentReportTarget, request: ReviewReportRequest): Promise<void>;
 }
 
 /** 서버가 내려주는 오류 코드 중 화면에서 분기하는 것 */
@@ -55,6 +68,10 @@ export const COMMUNITY_ERROR_CODES = {
   alreadyReported: 'ALREADY_REPORTED',
   cannotLikeOwn: 'CANNOT_LIKE_OWN_REVIEW',
   cannotReportOwn: 'CANNOT_REPORT_OWN_REVIEW',
+  cannotReportOwnContent: 'CANNOT_REPORT_OWN_CONTENT',
+  tooManyAttempts: 'TOO_MANY_ATTEMPTS',
+  communityLocked: 'COMMUNITY_LOCKED',
+  communityEntryNotFound: 'COMMUNITY_ENTRY_NOT_FOUND',
 } as const;
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -101,6 +118,27 @@ const httpCommunityApi: CommunityApi = {
   },
   async report(reviewId, request) {
     await apiClient.post(`/api/reviews/${reviewId}/reports`, request);
+  },
+  async deleteReview(reviewId) {
+    await apiClient.delete(`/api/reviews/${reviewId}`);
+  },
+  async getCommunitySummary(bookId) {
+    const { data } = await apiClient.get<CommunitySummary>(`/api/books/${bookId}/community`);
+    return data;
+  },
+  async getCommunityEntries(bookId, page, size = DEFAULT_PAGE_SIZE) {
+    const { data } = await apiClient.get<PageResponse<CommunityEntry>>(`/api/books/${bookId}/community/entries`, { params: { page, size } });
+    return data;
+  },
+  async getCommunityEntry(bookId, readingRecordId) {
+    const { data } = await apiClient.get<CommunityEntryDetail>(`/api/books/${bookId}/community/entries/${readingRecordId}`);
+    return data;
+  },
+  async reportContent(target, request) {
+    const path = target.kind === 'bookReport'
+      ? `/api/book-reports/${target.bookReportId}/reports`
+      : `/api/sentences/${target.sentenceId}/reports`;
+    await apiClient.post(path, request);
   },
 };
 
