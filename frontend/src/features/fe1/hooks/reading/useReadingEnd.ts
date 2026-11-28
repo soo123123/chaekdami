@@ -80,11 +80,14 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
     });
   }, [book, elapsedTime]);
 
+  /** 저장하지 않고 나가기로 해 보관을 지웠는지 */
+  const discardedRef = useRef(false);
   // 입력값이 바뀌면 잠시 뒤 기기에 보관한다. 저장을 마친 뒤에는 보관하지 않는다.
   const bookTitle = book?.title;
   useEffect(() => {
     if (!isInitialized || bookId === null || !bookTitle || status === 'success') return;
     const timer = setTimeout(() => {
+      if (discardedRef.current) return;
       void saveReadingDraft({
         kind: 'end', bookId, bookTitle, elapsedTime, readingTime, startPage, endPage, sentence, savedAt: Date.now(),
       });
@@ -93,8 +96,9 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
   }, [isInitialized, bookId, bookTitle, elapsedTime, readingTime, startPage, endPage, sentence, status]);
 
   /** 저장하지 않고 나갈 때 보관한 입력값을 지운다 */
-  const discardDraft = useCallback(() => {
-    if (bookId !== null) void clearReadingDraft(bookId);
+  const discardDraft = useCallback(async () => {
+    discardedRef.current = true; // 아직 보내지 않은 보관(0.5초 뒤)이 지운 뒤에 다시 쓰지 않게 한다
+    if (bookId !== null) await clearReadingDraft(bookId);
   }, [bookId]);
 
   // 진행 중인 사진 검증. 사진을 지우거나 새로 첨부하거나 화면을 벗어나면 취소하고, 늦게 온 결과는 버린다.

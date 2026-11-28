@@ -51,7 +51,7 @@ export function ReadingStartScreen() {
     void loadReadingDraft().then(draft => {
       if (draft?.kind === 'timer' && draft.bookId === book.bookId) {
         restoreTimer(draftSeconds(draft));
-        showToast(`읽던 시간 ${formatDuration(draftSeconds(draft))}을 불러왔어요. '이어서 읽기'를 눌러주세요.`);
+        showToast(`읽던 시간(${formatDuration(draftSeconds(draft))})을 불러왔어요. '이어서 읽기'를 눌러주세요.`);
       } else if (draft) {
         // 보관은 한 건뿐이라 새로 읽으면 이 기록이 지워진다. 타이머를 켜지 않고 먼저 묻는다
         setPendingDraft(draft);
@@ -144,9 +144,10 @@ export function ReadingStartScreen() {
     allowLeaveRef.current = true;
     setIsLeaveConfirmOpen(false);
     pauseTimer();
-    // 기록하지 않고 나가기로 했으므로 보관한 시간도 지운다
-    if (bookId !== null) void clearReadingDraft(bookId);
-    goBack();
+    // 기록하지 않고 나가기로 했으므로 보관한 시간도 지운다.
+    // 지우기를 마친 뒤 이동한다. 먼저 이동하면 서재가 아직 남은 기록을 읽어 '읽던 기록이 있어요'를 띄운다.
+    if (bookId !== null) void clearReadingDraft(bookId).finally(goBack);
+    else goBack();
   };
 
   // 집중 모드: 헤더·상태바·화면 전체를 검정으로 통일하고, 시간과 버튼만 아래쪽에 둔다
