@@ -20,7 +20,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { Icon, type IconName } from '@/components/common/Icon';
@@ -35,6 +35,7 @@ import {
   getQuests,
   getRewardStatus,
   getShopItems,
+  notifyBoosterUsed,
   type ShopItemResult,
 } from '../api/rewardApi';
 
@@ -83,12 +84,47 @@ function ownedCount(
     );
 }
 
-function boosterErrorMessage(error: unknown) {
-  const message = axios.isAxiosError(error)
-    ? error.response?.data?.message
-    : undefined;
+// 응답이 끊겼거나 서버 오류거나 보유 개수가 달라졌으면 부스터가 이미 쓰였을 수 있다
+function mayHaveUsedBooster(error: unknown) {
+  if (!isAxiosError(error)) return false;
 
-  return typeof message === 'string' && message.length > 0
+  const status = error.response?.status;
+
+  return (
+    status === undefined ||
+    status >= 500 ||
+    error.response?.data?.code === 'REWARD_008'
+  );
+}
+
+// 사용에 실패한 뒤 다시 조회한 개수로 실제 결과를 안내한다 (ISSUE-BUG-33)
+function boosterFailureMessage(
+  error: unknown,
+  before: number,
+  after: number
+) {
+  const remaining = `남은 부스터 ${after.toLocaleString()}개`;
+
+  // 요청이 자동으로 다시 보내져 오류를 받았어도 처음 요청은 처리됐을 수 있다
+  if (after === before - 1) return `이미 사용됐어요. ${remaining}`;
+
+  if (after !== before && mayHaveUsedBooster(error)) {
+    return `보유 개수가 바뀌었어요. ${remaining}`;
+  }
+
+  return boosterErrorMessage(error);
+}
+
+function boosterErrorMessage(error: unknown) {
+  const response = isAxiosError(error)
+    ? error.response
+    : undefined;
+  const message = response?.data?.message;
+
+  return response &&
+    response.status < 500 &&
+    typeof message === 'string' &&
+    message.length > 0
     ? message
     : '부스터를 사용하지 못했어요.';
 }
@@ -378,28 +414,49 @@ export default function HomeScreen() {
 
     boosterBusyRef.current = true;
 
+    // 사용자가 보고 누른 개수
+    const before = inventoryStatus.boosterCount;
+
     try {
       if (!(await confirmUseBooster())) return;
 
       setUsingBooster(true);
 
-      const result = await activateExpBooster();
+      const result = await activateExpBooster(before);
 
       setBoosterCount(result.remainingBoosters);
       showToast('EXP 부스터를 사용했어요.');
     } catch (error) {
-      showToast(boosterErrorMessage(error), 'error');
+      const mayHaveUsed = mayHaveUsedBooster(error);
 
-      // 응답만 끊겼을 수 있어 실제 보유 수량을 다시 확인한다
+      // 실제 보유 개수를 다시 확인해 안내만 한다 (자동으로 다시 사용하지 않는다)
       try {
-        setBoosterCount(
-          ownedCount(
-            await getShopItems(),
-            'EXPERIENCE_BOOSTER'
-          )
+        const after = ownedCount(
+          await getShopItems(),
+          'EXPERIENCE_BOOSTER'
+        );
+
+        setBoosterCount(after);
+
+        if (after === before - 1 || (mayHaveUsed && after !== before)) {
+          notifyBoosterUsed();
+        }
+
+        showToast(
+          boosterFailureMessage(error, before, after),
+          'error'
         );
       } catch {
         setInventoryError(true);
+
+        if (mayHaveUsed) notifyBoosterUsed();
+
+        showToast(
+          mayHaveUsed
+            ? '사용 결과를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.'
+            : boosterErrorMessage(error),
+          'error'
+        );
       }
     } finally {
       boosterBusyRef.current = false;
