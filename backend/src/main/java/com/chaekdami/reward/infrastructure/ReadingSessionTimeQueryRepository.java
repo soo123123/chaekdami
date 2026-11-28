@@ -40,9 +40,9 @@ public interface ReadingSessionTimeQueryRepository extends Repository<ReadingSes
                     @Param("end") LocalDateTime end);
 
     @Query("""
-            select count(distinct s.userId)
-            from ReadingSession s
-            where s.userId in (
+            select count(u)
+            from User u
+            where u.id in (
                 select r.userId
                 from ReadingSession r
                 where r.endedAt >= :start and r.endedAt < :end
