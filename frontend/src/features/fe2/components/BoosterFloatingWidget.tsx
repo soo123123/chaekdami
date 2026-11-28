@@ -2,11 +2,14 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
 import {
+  Animated,
   AppState,
+  Easing,
   Image,
   StyleSheet,
   Text,
@@ -43,6 +46,8 @@ const WIDGET_SIZE = 76;
 const EDGE_MARGIN = 12;
 const INITIAL_TOP = 120;
 const REFRESH_INTERVAL = 30000;
+// 손을 뗀 뒤 가장자리까지 미끄러지는 시간 (TODO-48)
+const SNAP_DURATION = 200;
 
 // 하단 탭바가 있는 화면 (탭을 추가하면 BottomTabBar의 TABS와 함께 추가한다)
 const TAB_BAR_PATHS: string[] = [
@@ -166,10 +171,17 @@ export default function BoosterFloatingWidget() {
     }
   );
 
+  // 가장자리로 붙는 동안 그려진 위치와 붙을 위치의 차이 (0으로 줄어든다)
+  const [slide] = useState(() => new Animated.ValueXY({ x: 0, y: 0 }));
+  // 다음 렌더 직후 시작할 미끄러짐 (렌더 전에 시작하면 한 프레임 튄다)
+  const pendingSlideRef = useRef<Position | null>(null);
+
   const dragStartRef = useRef<{
     touch: Position;
     position: Position;
     moved: boolean;
+    // 미끄러지는 중에 잡았는지 (그러면 떼기만 해도 다시 붙인다)
+    interrupted: boolean;
   } | null>(null);
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
@@ -192,7 +204,29 @@ export default function BoosterFloatingWidget() {
   const hideWidget = useCallback(() => {
     setExpiration(null);
     setDrag(null);
-  }, []);
+    slide.stopAnimation();
+    slide.setValue({ x: 0, y: 0 });
+  }, [slide]);
+
+  // 가장자리 위치로 다시 그린 직후, 손을 뗀 자리에서 미끄러지기 시작한다
+  useLayoutEffect(() => {
+    const offset = pendingSlideRef.current;
+
+    if (!offset) {
+      return;
+    }
+
+    pendingSlideRef.current = null;
+    slide.setValue(offset);
+    Animated.timing(slide, {
+      toValue: { x: 0, y: 0 },
+      duration: SNAP_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [anchor, slide]);
+
+  useEffect(() => () => slide.stopAnimation(), [slide]);
 
   /**
    * 실제 서버에서 부스터 상태 조회
@@ -368,11 +402,30 @@ export default function BoosterFloatingWidget() {
 
   const handleDragStart = (event: GestureResponderEvent) => {
     const { pageX, pageY } = event.nativeEvent;
+    let start = position;
+    let interrupted = false;
+
+    // 미끄러지는 중에 잡으면 지금 보이는 자리에서 멈추고 이어서 끈다
+    slide.stopAnimation(({ x, y }) => {
+      if (x !== 0 || y !== 0) {
+        interrupted = true;
+        start = clampPosition({
+          x: position.x + x,
+          y: position.y + y,
+        });
+      }
+    });
+    slide.setValue({ x: 0, y: 0 });
+
+    if (interrupted) {
+      setDrag(start);
+    }
 
     dragStartRef.current = {
       touch: { x: pageX, y: pageY },
-      position,
+      position: start,
       moved: false,
+      interrupted,
     };
   };
 
@@ -387,16 +440,29 @@ export default function BoosterFloatingWidget() {
     setDrag(next);
   };
 
-  // 손을 떼면 가까운 좌우 가장자리로 붙인다 (세로 위치는 유지)
+  // 손을 떼면 가까운 좌우 가장자리로 미끄러져 붙는다 (세로 위치는 유지)
   const handleDragEnd = () => {
-    if (dragStartRef.current?.moved) {
-      setAnchor({
-        side:
-          position.x + WIDGET_SIZE / 2 < width / 2
-            ? 'left'
-            : 'right',
-        y: position.y,
+    const start = dragStartRef.current;
+    const released =
+      start && (start.moved || start.interrupted)
+        ? position
+        : null;
+
+    if (released) {
+      const side: Anchor['side'] =
+        released.x + WIDGET_SIZE / 2 < width / 2
+          ? 'left'
+          : 'right';
+      const target = clampPosition({
+        x: side === 'left' ? minX : maxX,
+        y: released.y,
       });
+
+      pendingSlideRef.current = {
+        x: released.x - target.x,
+        y: released.y - target.y,
+      };
+      setAnchor({ side, y: released.y });
     }
 
     dragStartRef.current = null;
@@ -416,7 +482,7 @@ export default function BoosterFloatingWidget() {
       pointerEvents="box-none"
       style={StyleSheet.absoluteFill}
     >
-      <View
+      <Animated.View
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
         onResponderGrant={handleDragStart}
@@ -429,6 +495,7 @@ export default function BoosterFloatingWidget() {
           {
             left: position.x,
             top: position.y,
+            transform: slide.getTranslateTransform(),
           },
         ]}
       >
@@ -453,7 +520,7 @@ export default function BoosterFloatingWidget() {
             </Text>
           )}
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }

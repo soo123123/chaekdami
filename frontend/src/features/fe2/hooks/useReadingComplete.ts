@@ -46,7 +46,7 @@ export function useReadingCompleteParams(): ReadingCompleteParams {
     .map(value => first(value) ?? '')
     .join('|');
   // 같은 파라미터면 같은 객체를 돌려줘 아래 useMemo·useEffect가 매 렌더 다시 돌지 않게 한다
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // (의존성은 raw 대신 keys 하나로 비교한다)
   return useMemo(() => ({
     readingRecordId: readNumber(raw.readingRecordId),
     sessionId: readNumber(raw.sessionId),
@@ -56,6 +56,7 @@ export function useReadingCompleteParams(): ReadingCompleteParams {
     round: readNumber(raw.round),
     isCompleted: first(raw.isCompleted) === undefined ? null : first(raw.isCompleted) === '1',
     remainingPages: readNumber(raw.remainingPages),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [keys]);
 }
 

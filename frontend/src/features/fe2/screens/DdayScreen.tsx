@@ -17,10 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ROUTES } from '@/constants/routes';
 import { goBackOr } from '@/utils/navigation';
 import { HIT_SLOP } from '@/constants/layout';
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Icon } from '@/components/common/Icon';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import { getDday, saveDday, type DdayGoalInput } from '../api/ddayApi';
 import { summarizeDday } from '../api/ddayStreak';
 
@@ -34,7 +34,7 @@ function notify(title: string, message: string) {
 }
 
 function failureMessage(error: unknown, fallback: string) {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     const message = error.response?.data?.message;
     if (typeof message === 'string' && message.length > 0) {
       return message;
