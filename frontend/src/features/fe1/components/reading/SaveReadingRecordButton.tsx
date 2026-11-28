@@ -27,7 +27,8 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 export function SaveReadingRecordButton({ onPress, isLoading, isVerifying = false }: SaveReadingRecordButtonProps) {
   const [phase, setPhase] = useState<Phase>(isVerifying ? 'verifying' : 'ready');
   const [width, setWidth] = useState(0);
-  const progress = useRef(new Animated.Value(isVerifying ? 0 : 1)).current;
+  // 렌더 중에도 읽으므로 ref가 아니라 state로 한 번만 만든다
+  const [progress] = useState(() => new Animated.Value(isVerifying ? 0 : 1));
 
   // 화면을 벗어난 뒤 늦게 끝난 애니메이션이 상태를 바꾸지 않게 한다.
   const mountedRef = useRef(true);
@@ -35,15 +36,17 @@ export function SaveReadingRecordButton({ onPress, isLoading, isVerifying = fals
     mountedRef.current = false;
   }, []);
 
-  // 검증이 시작되면(채우는 중이었어도) 바로 회색으로, 검증 중이다가 끝나면 채우기를 시작한다.
+  // 검증이 시작되면(채우는 중이었어도) 바로 회색으로, 검증 중이다가 끝나면 채우기를 시작한다 (렌더 중에 맞춤).
+  const [wasVerifying, setWasVerifying] = useState(isVerifying);
+  if (isVerifying !== wasVerifying) {
+    setWasVerifying(isVerifying);
+    if (isVerifying) setPhase('verifying');
+    else if (phase === 'verifying') setPhase('filling');
+  }
   useEffect(() => {
-    if (isVerifying) {
-      progress.stopAnimation();
-      progress.setValue(0);
-      setPhase('verifying');
-      return;
-    }
-    setPhase(prev => (prev === 'verifying' ? 'filling' : prev));
+    if (!isVerifying) return;
+    progress.stopAnimation();
+    progress.setValue(0);
   }, [isVerifying, progress]);
 
   useEffect(() => {

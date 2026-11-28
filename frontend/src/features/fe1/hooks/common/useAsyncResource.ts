@@ -46,10 +46,10 @@ export function useAsyncResource<T>(loader: () => Promise<T>, deps: unknown[], {
   }, []);
 
   useEffect(() => {
-    if (!enabled) {
-      setIsLoading(false);
-      return;
-    }
+    // 꺼져 있으면 조회하지 않는다. isLoading은 초기값(enabled)이 false이고, 진행 중이던 요청은 끝날 때 false로 만든다.
+    if (!enabled) return;
+    // 서버 조회는 effect가 맡는 외부 동기화라 의도한 동작이다 (조회 시작 때 로딩 표시를 바로 켠다, TODO-45)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, reload, ...deps]);

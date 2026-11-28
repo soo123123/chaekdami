@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { REPORT_REASONS } from '../../constants/options';
 import { colors, noWebOutline, radius, spacing } from '../../constants/theme';
@@ -22,12 +22,15 @@ export function ReviewReportSheet({ visible, onClose, onSubmit }: Props) {
   const [detail, setDetail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
+  // 닫히면 입력을 비운다 (렌더 중에 맞춤)
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (!visible) {
       setReason(null);
       setDetail('');
     }
-  }, [visible]);
+  }
 
   const needsDetail = reason === 'OTHER';
   const canSubmit = !!reason && (!needsDetail || detail.trim().length > 0);

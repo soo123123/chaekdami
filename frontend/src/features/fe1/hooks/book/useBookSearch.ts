@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { showToast } from '@/components/Toast';
 import { readingApi } from '@/features/fe1/api/readingApi';
 import { MAX_RECENT_SEARCHES } from '../../constants/options';
 import type { BookSearchItem, SearchCategory, SearchSort } from '../../types/reading';
@@ -19,10 +20,14 @@ export function useBookSearch() {
   const [recentSearches, setRecentSearches] = useState<string[]>(sessionRecentSearches);
   const [books, setBooks] = useState<BookSearchItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [status, setStatus] = useState<SearchStatus>('initial');
   const [error, setError] = useState<AppError | null>(null);
-  /** 마지막으로 검색한 검색어 (카테고리/정렬 변경 시 재검색 기준) */
+  /** 마지막으로 검색한 조건 (카테고리/정렬 변경 시 재검색, 다음 페이지 기준) */
   const [lastKeyword, setLastKeyword] = useState<string | null>(null);
+  const [lastQuery, setLastQuery] = useState<{ category: SearchCategory; sort: SearchSort } | null>(null);
   const requestIdRef = useRef(0);
 
   const rememberKeyword = (keyword: string) => {
@@ -35,14 +40,20 @@ export function useBookSearch() {
     if (!trimmed) return;
     const requestId = ++requestIdRef.current;
     setStatus('loading');
+    // 다음 페이지를 불러오던 중이면 그 결과는 버리므로 로딩도 여기서 푼다
+    setIsLoadingMore(false);
+    setHasNext(false);
     setError(null);
     setLastKeyword(trimmed);
+    setLastQuery({ category, sort: nextSort });
     rememberKeyword(trimmed);
     try {
       const result = await readingApi.searchBooks({ keyword: trimmed, category, sort: nextSort });
       if (requestId !== requestIdRef.current) return;
       setBooks(result.items);
       setTotalCount(result.totalCount);
+      setPage(1);
+      setHasNext(result.hasNext);
       setStatus(result.items.length > 0 ? 'success' : 'empty');
     } catch (e) {
       if (requestId !== requestIdRef.current) return;
@@ -50,6 +61,28 @@ export function useBookSearch() {
       setStatus('error');
     }
   }, []);
+
+  /** 다음 페이지 (TODO-33). 조건이 바뀐 뒤 도착한 응답은 버린다. */
+  const loadMore = useCallback(async () => {
+    if (!lastKeyword || !lastQuery || !hasNext || status !== 'success' || isLoadingMore) return;
+    const requestId = requestIdRef.current;
+    setIsLoadingMore(true);
+    try {
+      const result = await readingApi.searchBooks({ keyword: lastKeyword, ...lastQuery, page: page + 1 });
+      if (requestId !== requestIdRef.current) return;
+      // 페이지가 밀려 같은 책이 다시 올 수 있어 itemId로 거른다
+      setBooks(prev => [...prev, ...result.items.filter(item => !prev.some(p => p.itemId === item.itemId))]);
+      setPage(page + 1);
+      setHasNext(result.hasNext);
+    } catch (e) {
+      if (requestId !== requestIdRef.current) return;
+      // 실패하면 더 부르지 않는다. 다시 검색하면 처음부터 불러온다.
+      setHasNext(false);
+      showToast(toAppError(e).message, 'error');
+    } finally {
+      if (requestId === requestIdRef.current) setIsLoadingMore(false);
+    }
+  }, [lastKeyword, lastQuery, hasNext, status, isLoadingMore, page]);
 
   const searchBooks = () => runSearch(searchKeyword, selectedCategory, sort);
 
@@ -85,6 +118,9 @@ export function useBookSearch() {
     sort,
     books,
     totalCount,
+    hasNext,
+    isLoadingMore,
+    loadMore,
     status,
     isLoading: status === 'loading',
     error,

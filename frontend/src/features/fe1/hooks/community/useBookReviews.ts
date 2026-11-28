@@ -30,6 +30,8 @@ export function useBookReviews(isbn: string | null) {
     if (!isbn) return;
     const requestId = ++requestIdRef.current;
     setIsLoading(true);
+    // 더 불러오기 도중 정렬·책이 바뀌면 그 요청은 결과를 버리므로 로딩 해제도 여기서 한다 (ISSUE-BUG-22)
+    setIsLoadingMore(false);
     setError(null);
     try {
       const result = await communityApi.getReviews({ isbn, sort, page: 0, size: PAGE_SIZE });
@@ -45,10 +47,19 @@ export function useBookReviews(isbn: string | null) {
     }
   }, [isbn, sort]);
 
-  useEffect(() => {
+  // 책·정렬이 바뀌면 이전 목록을 비운다 (렌더 중에 맞춤). 조회는 아래 effect가 한다.
+  const queryKey = `${isbn ?? ''}|${sort}`;
+  const [lastQueryKey, setLastQueryKey] = useState(queryKey);
+  if (queryKey !== lastQueryKey) {
+    setLastQueryKey(queryKey);
     setItems([]);
     setHasNext(false);
     setTotalElements(0);
+  }
+
+  useEffect(() => {
+    // 서버 조회는 effect가 맡는 외부 동기화라 의도한 동작이다 (조회 시작 때 로딩 표시를 바로 켠다, TODO-45)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadFirstPage();
   }, [loadFirstPage]);
 

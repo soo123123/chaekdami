@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { showToast } from '@/components/Toast';
 import { COMMUNITY_ERROR_CODES, communityApi } from '@/features/fe1/api/communityApi';
 import type { BookId } from '../../types/reading';
@@ -42,11 +42,13 @@ export function useMyReview(bookId: BookId | null, onSaved?: () => void) {
     setFormError(null);
   }, []);
 
-  // 책을 바꾸면 입력 중이던 내용을 비운다
-  useEffect(() => {
+  // 책을 바꾸면 입력 중이던 내용을 비운다 (렌더 중에 맞춤)
+  const [lastBookId, setLastBookId] = useState(bookId);
+  if (bookId !== lastBookId) {
+    setLastBookId(bookId);
     resetForm();
     setIsEditing(false);
-  }, [bookId, resetForm]);
+  }
 
   const setOneLine = (text: string) => {
     setOneLineRaw(sanitizeOneLine(text));

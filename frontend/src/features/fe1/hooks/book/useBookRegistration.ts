@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { showToast } from '@/components/Toast';
 import { readingApi } from '@/features/fe1/api/readingApi';
-import type { ManualBookInput, RegisteredBook } from '../../types/reading';
+import type { BookId, ManualBookInput, RegisteredBook } from '../../types/reading';
 import { toAppError } from '../../utils/apiError';
 import { isValidIsbn, todayIso } from '../../utils/format';
 
@@ -26,6 +27,8 @@ export function useBookRegistration(target: Target) {
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ManualFieldErrors>({});
+  /** 이미 서재에 있는 책이라 등록이 거절됐을 때 그 책 번호 (바로가기용) */
+  const [existingBookId, setExistingBookId] = useState<BookId | null>(null);
 
   const setBook = (patch: Partial<ManualBookInput>) => {
     setBookState(prev => ({ ...prev, ...patch }));
@@ -58,6 +61,7 @@ export function useBookRegistration(target: Target) {
    */
   const registerBook = async (catalogTotalPages?: number): Promise<RegisteredBook | null> => {
     setSubmitError(null);
+    setExistingBookId(null);
     const effectiveTotal = catalogTotalPages ?? totalPages;
 
     if (target.kind === 'manual') {
@@ -101,16 +105,36 @@ export function useBookRegistration(target: Target) {
               isbn: book.isbn?.trim() || undefined,
             },
           });
+      if (registered.settingsSaveFailed) {
+        showToast('책은 서재에 담았어요. 독서 설정은 책 상세에서 다시 저장해주세요.', 'error');
+      }
       return registered;
     } catch (e) {
-      setSubmitError(toAppError(e).message);
+      const appError = toAppError(e);
+      setSubmitError(appError.message);
+      // 응답만 끊겨 이미 등록됐거나, 원래 서재에 있던 책이면 그 책으로 갈 수 있게 찾아 둔다.
+      if (appError.status === 409) void findExistingBook().then(setExistingBookId);
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
+  /** 서재에서 같은 책(검색 도서는 itemId, 수동 등록은 ISBN)을 찾는다. 찾지 못하면 null */
+  const findExistingBook = async (): Promise<BookId | null> => {
+    try {
+      const books = await readingApi.getLibraryBooks();
+      const found = target.kind === 'catalog'
+        ? books.find(item => item.itemId != null && item.itemId === target.itemId)
+        : books.find(item => !!book.isbn && item.isbn === book.isbn.trim());
+      return found?.bookId ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   return {
+    existingBookId,
     book,
     currentPage,
     totalPages,

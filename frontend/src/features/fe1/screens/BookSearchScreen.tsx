@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { BookCard } from '../components/book/BookCard';
 import { BookCategoryTab } from '../components/book/BookCategoryTab';
 import { ManualRegisterButton } from '../components/book/ManualRegisterButton';
@@ -75,7 +75,8 @@ export function BookSearchScreen() {
       {search.status !== 'initial' ? (
         <View style={styles.resultHeader}>
           <Text style={styles.resultTitle}>
-            {search.status === 'success' ? `검색 결과 ${search.totalCount.toLocaleString()}개` : '검색 결과'}
+            {/* totalCount는 세트 상품을 빼기 전 수라 실제보다 클 수 있다 (TODO-33) */}
+            {search.status === 'success' ? `검색 결과 약 ${search.totalCount.toLocaleString()}개` : '검색 결과'}
           </Text>
           <View style={styles.resultActions}>
             {manualButton}
@@ -98,6 +99,9 @@ export function BookSearchScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
+        onEndReached={() => void search.loadMore()}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={search.isLoadingMore ? <ActivityIndicator color={colors.primary} style={styles.more} /> : null}
       />
     </ScreenContainer>
   );
@@ -105,6 +109,7 @@ export function BookSearchScreen() {
 
 const styles = StyleSheet.create({
   list: { paddingBottom: spacing.xl },
+  more: { paddingVertical: spacing.md },
   top: { gap: spacing.md + 4, paddingBottom: spacing.xs },
   notice: { fontSize: 13, color: colors.secondaryText, marginTop: -spacing.sm },
   resultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, flexWrap: 'wrap', marginTop: spacing.sm },

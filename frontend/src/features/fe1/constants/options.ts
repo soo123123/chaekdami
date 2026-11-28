@@ -47,6 +47,10 @@ export const MAX_SENTENCE_LENGTH = 500;
 export const MAX_TITLE_LENGTH = 100;
 export const MAX_AUTHOR_LENGTH = 50;
 export const MAX_PUBLISHER_LENGTH = 50;
+/** 도서 검색 한 페이지 크기와 최대 페이지 (YES24 호출 비용 때문에 100권까지만 보여준다, TODO-33) */
+export const SEARCH_PAGE_SIZE = 20;
+export const MAX_SEARCH_PAGES = 5;
+
 export const MAX_RECENT_SEARCHES = 10;
 
 /**

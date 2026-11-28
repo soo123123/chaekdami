@@ -50,11 +50,16 @@ export type BookSearchQuery = {
   keyword: string;
   category: SearchCategory;
   sort: SearchSort;
+  /** 1부터. 없으면 1 */
+  page?: number;
 };
 
 export type BookSearchResult = {
+  /** YES24 전체 건수. 세트 상품을 빼고 주므로 실제로 받을 수 있는 수보다 클 수 있다 */
   totalCount: number;
   items: BookSearchItem[];
+  /** 다음 페이지를 불러올 수 있는지 */
+  hasNext: boolean;
 };
 
 /* ------------------------------------------------------------------ */
@@ -63,6 +68,8 @@ export type BookSearchResult = {
 
 export type RegisteredBook = {
   bookId: BookId;
+  /** 등록은 됐지만 독서 설정(공개·목표·현재 쪽) 저장이 실패함. 책 상세에서 다시 저장하게 안내한다 (ISSUE-BUG-20) */
+  settingsSaveFailed?: boolean;
   source: BookSource;
   itemId?: ItemId;
   title: string;
@@ -104,13 +111,24 @@ export type ReadingSummary = {
   averageSecondsPerDay: number;
 };
 
+/**
+ * 독서 시작 화면의 시간 요약 (초). 값마다 따로 불러와, 불러오지 못한 값은 undefined('-'로 표시).
+ * 오늘·이번 주는 모든 책 합계이고 서버 기준(한국 날짜, 이번 주 월~일, 분 단위)이다 (ISSUE-BUG-19).
+ */
 export type ReadingTimeSummary = {
-  todaySeconds: number;
-  bookSeconds: number;
-  weekSeconds: number;
+  todaySeconds?: number;
+  bookSeconds?: number;
+  weekSeconds?: number;
 };
 
 /** 책의 회차(1회독, 2회독 …). 독후감은 회차마다 1개다 (FE2 독후감 API의 readingRecordId) */
+/** 회차의 독서 설정 수정 (PATCH /api/reading-records/{id}). 보내지 않은 값은 서버가 그대로 둔다 */
+export type ReadingSettingsUpdate = {
+  isPublic: boolean;
+  goalDate?: string;
+  goalPage?: number;
+};
+
 export type ReadingRound = {
   readingRecordId: number;
   round: number;

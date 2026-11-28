@@ -39,10 +39,17 @@ export function useRoundReports(rounds: ReadingRound[], enabled: boolean) {
     .map(round => round.readingRecordId)
     .join(',');
 
+  // 대상이 바뀌면 이전 결과를 비운다 (렌더 중에 맞춤). 조회는 아래 effect가 한다.
+  const targetKey = `${enabled}|${completedKey}`;
+  const [lastTargetKey, setLastTargetKey] = useState(targetKey);
+  if (targetKey !== lastTargetKey) {
+    setLastTargetKey(targetKey);
+    setStates({});
+  }
+
   useEffect(() => {
     const generation = ++generationRef.current;
     if (!enabled) return;
-    setStates({});
     const ids = completedKey ? completedKey.split(',').map(Number) : [];
     ids.forEach(id => void loadOne(id, generation));
   }, [enabled, completedKey, loadOne]);

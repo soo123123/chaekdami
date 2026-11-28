@@ -14,11 +14,8 @@ export function useBookReport(readingRecordId: number | null, isCompleted: boole
 
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
-    if (readingRecordId === null || !isCompleted) {
-      setHasReport(false);
-      setCanWriteOnServer(true);
-      return;
-    }
+    // 완독 전에는 서버에 묻지 않는다. 반환값이 완독 여부로 계산되므로 상태는 그대로 둔다.
+    if (readingRecordId === null || !isCompleted) return;
     try {
       const response = await getReadingReview(readingRecordId);
       if (requestId !== requestIdRef.current) return;
@@ -33,6 +30,8 @@ export function useBookReport(readingRecordId: number | null, isCompleted: boole
   }, [readingRecordId, isCompleted]);
 
   useEffect(() => {
+    // 서버 조회는 effect가 맡는 외부 동기화라 의도한 동작이다 (조회 시작 때 로딩 표시를 바로 켠다, TODO-45)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -48,5 +47,6 @@ export function useBookReport(readingRecordId: number | null, isCompleted: boole
     }, [load]),
   );
 
-  return { hasReport, canWrite: isCompleted && canWriteOnServer };
+  const isTarget = readingRecordId !== null && isCompleted;
+  return { hasReport: isTarget && hasReport, canWrite: isTarget && canWriteOnServer };
 }
