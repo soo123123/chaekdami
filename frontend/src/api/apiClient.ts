@@ -1,6 +1,9 @@
 import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { router } from 'expo-router';
+
+import { showToast } from '../components/Toast';
 
 import {
   clearTokens,
@@ -63,7 +66,17 @@ type RetryConfig = InternalAxiosRequestConfig & {
 // 중복 토큰 갱신 방지
 let refreshRequest: Promise<string | null> | null = null;
 
-// 액세스 토큰 갱신
+// 비밀번호 변경은 로그인이 필요한 API라 /api/auth/ 중에서도 갱신 대상이다
+const PASSWORD_CHANGE_PATH = '/api/auth/password';
+
+// 세션 종료: 토큰을 지우고 로그인 화면으로 보낸다
+async function endSession(): Promise<void> {
+  await clearTokens();
+  showToast('로그인이 만료되었어요. 다시 로그인해 주세요.', 'error');
+  router.replace('/auth/login');
+}
+
+// 액세스 토큰 갱신. 다시 로그인해야 하면 null (서버 장애·네트워크 오류는 예외)
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = await getRefreshToken();
 
@@ -71,21 +84,36 @@ async function refreshAccessToken(): Promise<string | null> {
     return null;
   }
 
-  const { data } = await axios.post(
-    `${API_BASE_URL}/api/auth/refresh`,
-    {
-      refreshToken,
-    },
-    {
-      timeout: 10000,
+  let data;
+
+  try {
+    ({ data } = await axios.post(
+      `${API_BASE_URL}/api/auth/refresh`,
+      {
+        refreshToken,
+      },
+      {
+        timeout: 10000,
+      }
+    ));
+  } catch (error) {
+    const status = axios.isAxiosError(error)
+      ? error.response?.status
+      : undefined;
+
+    // 서버가 재발급을 거절한 경우에만 세션을 끝낸다
+    if (status === 401 || status === 403) {
+      return null;
     }
-  );
+
+    throw error;
+  }
 
   if (
     typeof data?.accessToken !== 'string' ||
     typeof data?.refreshToken !== 'string'
   ) {
-    return null;
+    throw new Error('토큰 재발급 응답이 올바르지 않습니다.');
   }
 
   await saveTokens(
@@ -113,24 +141,33 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       original &&
       !original._retry &&
-      !url.includes('/api/auth/');
+      // 로그인하지 않은 요청이거나 비밀번호가 틀린 응답이면 갱신하지 않는다
+      original.headers.has('Authorization') &&
+      error.response.data?.code !== 'INVALID_CREDENTIALS' &&
+      (!url.includes('/api/auth/') || url === PASSWORD_CHANGE_PATH);
 
     if (canRefresh && original) {
       original._retry = true;
 
       try {
         if (!refreshRequest) {
-          refreshRequest = refreshAccessToken().finally(
-            () => {
+          refreshRequest = refreshAccessToken()
+            .then(async (token) => {
+              // 이미 로그아웃했으면(토큰 없음) 다시 안내하지 않는다
+              if (!token && (await getAccessToken())) {
+                await endSession();
+              }
+
+              return token;
+            })
+            .finally(() => {
               refreshRequest = null;
-            }
-          );
+            });
         }
 
         const accessToken = await refreshRequest;
 
         if (!accessToken) {
-          await clearTokens();
           return Promise.reject(error);
         }
 
@@ -141,8 +178,7 @@ apiClient.interceptors.response.use(
 
         return apiClient(original);
       } catch (refreshError) {
-        await clearTokens();
-
+        // 네트워크 오류나 서버 장애: 토큰을 유지해 다음 요청에서 다시 시도한다
         return Promise.reject(refreshError);
       }
     }

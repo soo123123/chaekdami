@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
+import axios from 'axios';
 
 import HomeScreen from '../features/fe2/screens/HomeScreen';
 
@@ -15,10 +16,7 @@ import {
   clearTokens,
 } from '../utils/tokenStorage';
 
-import {
-  getMyInfo,
-  AuthApiError,
-} from '../api/authApi';
+import { getMyProfile } from '../features/fe2/api/userApi';
 
 // 개발 중 홈 화면 UI 테스트를 위한 설정
 // true: 개발 모드에서 로그인 없이 홈 화면 접근
@@ -63,12 +61,10 @@ export default function HomePage() {
           return;
         }
 
-        // 3. 서버에 실제 로그인 상태 확인
-        const user = await getMyInfo(token);
+        // 3. 서버에 실제 로그인 상태 확인 (만료된 토큰은 apiClient가 재발급)
+        await getMyProfile();
 
         if (!active) return;
-
-        console.log('로그인 사용자 확인:', user);
 
         // 4. 서버 인증 성공
         setAuthenticated(true);
@@ -78,9 +74,9 @@ export default function HomePage() {
         console.error('인증 확인 실패:', error);
 
         if (
-          error instanceof AuthApiError &&
-          (error.status === 401 ||
-            error.status === 403)
+          axios.isAxiosError(error) &&
+          (error.response?.status === 401 ||
+            error.response?.status === 403)
         ) {
           await clearTokens();
 

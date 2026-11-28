@@ -271,7 +271,10 @@ export default function MyPageScreen() {
       setCurrentPassword('');
       setNewPassword('');
       setShowPasswordForm(false);
-      notify('변경 완료', '비밀번호를 변경했습니다.');
+      // 비밀번호를 바꾸면 서버가 모든 토큰을 무효로 만든다
+      await clearTokens();
+      notify('변경 완료', '비밀번호를 변경했습니다. 다시 로그인해 주세요.');
+      router.replace('/auth/login');
     } catch (error) {
       notify('변경 실패', errorMessage(error, '비밀번호를 변경하지 못했습니다.'));
     } finally {
