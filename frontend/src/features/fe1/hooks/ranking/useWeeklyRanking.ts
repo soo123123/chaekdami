@@ -6,10 +6,20 @@ import type { RankingType, WeeklyRanking } from '../../types/ranking';
 import { kstToday } from '../../utils/format';
 import { useAsyncResource } from '../common/useAsyncResource';
 
-/** 받은 순위의 주(한국 날짜 월~일)가 이미 끝났으면 true (TODO-44) */
-export function isPastWeek(ranking: WeeklyRanking | null, today = kstToday()): boolean {
-  return !!ranking && ranking.weekEndDate < today;
+/** 받은 순위 + 받은 날(기기 기준 한국 날짜) */
+type FetchedRanking = WeeklyRanking & { fetchedOn: string };
+
+/**
+ * 받은 순위의 주(한국 날짜 월~일)가 이미 끝났으면 true (TODO-44).
+ * 받을 때 이미 기기 날짜가 그 주를 지나 있었다면, 서버는 아직 그 주라고 본 것이다(기기 시계가 앞서 있음).
+ * 이때는 지난 주로 보지 않는다. 그러지 않으면 앱으로 돌아올 때마다 다시 조회하고 '지난주' 안내가 계속 뜬다.
+ */
+export function isPastWeek(ranking: FetchedRanking | null, today = kstToday()): boolean {
+  return !!ranking && ranking.weekEndDate < today && ranking.fetchedOn <= ranking.weekEndDate;
 }
+
+const fetchRanking = (type: RankingType): Promise<FetchedRanking> =>
+  rankingApi.getWeeklyRanking(type).then(ranking => ({ ...ranking, fetchedOn: kstToday() }));
 
 /**
  * 주간 랭킹 조회 + 랭킹 종류 선택.
@@ -20,8 +30,8 @@ export function isPastWeek(ranking: WeeklyRanking | null, today = kstToday()): b
  */
 export function useWeeklyRanking(initialType: RankingType) {
   const [type, setType] = useState<RankingType>(initialType);
-  const readingTime = useAsyncResource(() => rankingApi.getWeeklyRanking('readingTime'), [], { enabled: type === 'readingTime' });
-  const experience = useAsyncResource(() => rankingApi.getWeeklyRanking('experience'), [], { enabled: type === 'experience' });
+  const readingTime = useAsyncResource(() => fetchRanking('readingTime'), [], { enabled: type === 'readingTime' });
+  const experience = useAsyncResource(() => fetchRanking('experience'), [], { enabled: type === 'experience' });
   const current = type === 'readingTime' ? readingTime : experience;
 
   // 포커스·앱 복귀 콜백이 종류에 따라 바뀌지 않도록 최신 값을 ref로 읽는다.
