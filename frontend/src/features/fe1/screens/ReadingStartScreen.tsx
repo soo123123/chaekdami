@@ -22,7 +22,7 @@ import { useBookIdParam } from '../hooks/common/useRouteParams';
 import { useReadingSession } from '../hooks/reading/useReadingSession';
 import { useReadingTimer } from '../hooks/reading/useReadingTimer';
 import { goBackOr } from '@/utils/navigation';
-import { clearReadingDraft, draftSeconds, loadReadingDraft, saveReadingDraft } from '../utils/readingDraft';
+import { clearReadingDraft, draftSeconds, loadReadingDraft, saveReadingDraft, type ReadingDraft } from '../utils/readingDraft';
 import { formatDuration } from '../utils/format';
 
 /** 독서 중 시간을 기기에 보관하는 간격. 앱이 갑자기 꺼지면 마지막 보관 시각까지만 인정한다 (ISSUE-LIMIT-2) */
@@ -34,6 +34,8 @@ export function ReadingStartScreen() {
   const timer = useReadingTimer();
   const navigation = useNavigation();
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
+  /** 다른 책이거나 종료 화면에서 저장하지 않은 기록. 새로 읽으면 덮어쓰므로 시작 전에 묻는다 */
+  const [pendingDraft, setPendingDraft] = useState<ReadingDraft | null>(null);
   const allowLeaveRef = useRef(false);
   const { book } = session;
   const { startTimer, pauseTimer, finishReading, restoreTimer, getSnapshot, hasReachedLimit } = timer;
@@ -50,6 +52,9 @@ export function ReadingStartScreen() {
       if (draft?.kind === 'timer' && draft.bookId === book.bookId) {
         restoreTimer(draftSeconds(draft));
         showToast(`읽던 시간 ${formatDuration(draftSeconds(draft))}을 불러왔어요. '이어서 읽기'를 눌러주세요.`);
+      } else if (draft) {
+        // 보관은 한 건뿐이라 새로 읽으면 이 기록이 지워진다. 타이머를 켜지 않고 먼저 묻는다
+        setPendingDraft(draft);
       } else {
         startTimer();
       }
@@ -93,6 +98,24 @@ export function ReadingStartScreen() {
       setIsLeaveConfirmOpen(true);
     });
   }, [navigation]);
+
+  /** 남아 있던 기록으로 간다: 재던 시간이면 그 책의 독서 시작, 입력하던 기록이면 독서 종료 화면 */
+  const resumePendingDraft = () => {
+    if (!pendingDraft) return;
+    const draft = pendingDraft;
+    setPendingDraft(null);
+    allowLeaveRef.current = true;
+    const params = { bookId: String(draft.bookId) };
+    if (draft.kind === 'timer') router.replace({ pathname: FE1_ROUTES.readingStart, params });
+    else router.replace({ pathname: FE1_ROUTES.readingEnd, params: { ...params, elapsedTime: String(draft.elapsedTime) } });
+  };
+
+  /** 남아 있던 기록을 지우고 이 책을 새로 읽는다 */
+  const discardPendingDraft = () => {
+    setPendingDraft(null);
+    void clearReadingDraft();
+    startTimer();
+  };
 
   const handleTogglePause = () => (timer.isRunning ? pauseTimer() : startTimer());
 
@@ -202,6 +225,19 @@ export function ReadingStartScreen() {
         </View>
       ) : null}
 
+      <ConfirmModal
+        visible={!!pendingDraft}
+        title="저장하지 않은 독서 기록이 있어요"
+        message={pendingDraft
+          ? `『${pendingDraft.bookTitle}』 ${formatDuration(draftSeconds(pendingDraft))} 기록이 ${pendingDraft.kind === 'end' ? '저장되지 않았어요' : '남아 있어요'}. 지금 새로 읽으면 그 기록은 지워져요.`
+          : ''}
+        confirmLabel={pendingDraft?.kind === 'end' ? '그 기록 저장하기' : '그 기록 이어서 읽기'}
+        cancelLabel="새로 읽기"
+        onConfirm={resumePendingDraft}
+        onCancel={discardPendingDraft}
+        // 바깥을 눌러도 닫지 않는다. 둘 중 하나를 골라야 타이머를 시작할 수 있다
+        onDismiss={() => undefined}
+      />
       <ConfirmModal
         visible={isLeaveConfirmOpen}
         title="독서를 그만둘까요?"

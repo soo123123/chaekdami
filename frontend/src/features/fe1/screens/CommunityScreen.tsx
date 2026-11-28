@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBar } from '@/components/BottomTabBar';
+import { AppButton } from '../components/common/AppButton';
 import { ConfirmModal } from '../components/common/BottomSheetModal';
 import { ScreenContainer } from '../components/common/ScreenContainer';
 import { SortSelector } from '../components/common/SortSelector';
@@ -165,6 +166,9 @@ export function CommunityScreen() {
           otherReviews.length > 0 ? (
             <View style={[styles.listItem, styles.listFooter]}>
               {reviews.isLoadingMore ? <ActivityIndicator color={colors.primary} /> : null}
+              {reviews.hasLoadMoreError && !reviews.isLoadingMore ? (
+                <AppButton size="md" variant="secondary" onPress={() => void reviews.loadMore({ retry: true })}>다시 불러오기</AppButton>
+              ) : null}
             </View>
           ) : <View style={styles.listFooter} />
         }

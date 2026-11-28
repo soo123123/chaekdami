@@ -50,7 +50,7 @@
 | 한 트랜잭션 | 세션·인증 연결·문장을 함께 저장, 하나라도 실패하면 전부 취소 | `ReadingSessionService.create` | ✅ ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) |
 | 사진 | `photos`는 받기만 하고 저장하지 않음 | `ReadingSessionService` | ⏳ [TODO-2](../../known-issues.md#todo-2) |
 | 시간 입력 | 앱이 보낸 `readingTime`을 범위만 검증 | `ReadingSession.of` | ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1) |
-| 앱 종료 시 | 재던 시간(시작·일시정지 때, 읽는 중 30초마다)과 종료 화면 입력값을 기기에 계정별로 보관한다. 앱이 꺼져 있던 시간은 세지 않는다(마지막 보관 시각까지). 서재에 들어오면 "읽던 기록이 있어요"로 이어서 하기·버리기를 묻는다. 저장하거나 저장하지 않고 나가면 지우고, 일주일이 지나면 버린다. 사진 인증은 다시 해야 한다 | 앱 `utils/readingDraft.ts`, `ReadingDraftPrompt` | ✅ |
+| 앱 종료 시 | 재던 시간(시작·일시정지 때, 읽는 중 30초마다)과 종료 화면 입력값을 기기에 계정별로 보관한다. 앱이 꺼져 있던 시간은 세지 않는다(마지막 보관 시각까지). 서재에 들어오면 "읽던 기록이 있어요"로 이어서 하기·버리기를 묻는다. 저장하거나 저장하지 않고 나가면 지우고, 책을 지웠거나 일주일이 지나면 버린다. 보관은 한 건뿐이라, 다른 책이나 저장하지 않은 기록이 남아 있으면 새로 읽기 전에 그 기록으로 갈지 지울지 묻는다. 사진 인증은 다시 해야 한다 | 앱 `utils/readingDraft.ts`, `ReadingDraftPrompt` | ✅ |
 | "상태 변경 5분" | 옛 기획의 문구, 의미 미정 | — | ❓ [ASK-1](../../known-issues.md#ask-1) |
 
 ## 4. 오늘·통계

@@ -236,12 +236,17 @@ async function registerBook(body: Record<string, unknown>, settings: { currentPa
   if (settings.currentPage > 0) patch.currentPage = settings.currentPage;
   if (settings.goalDate) patch.goalDate = settings.goalDate;
   if (settings.goalPage != null) patch.goalPage = settings.goalPage;
-  try {
-    const updated = await apiClient.patch<BeRecord>(`/api/reading-records/${recordId}`, patch);
-    return toRegisteredBook(data, updated.data);
-  } catch {
-    return { ...toRegisteredBook(data, null), settingsSaveFailed: true };
+  // 잠깐 끊긴 경우가 많아 한 번 더 보낸다. 같은 값을 다시 저장하는 요청이라 두 번 처리돼도 결과가 같다.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const updated = await apiClient.patch<BeRecord>(`/api/reading-records/${recordId}`, patch);
+      return toRegisteredBook(data, updated.data);
+    } catch {
+      // 다음 시도 또는 실패 처리
+    }
   }
+  // 실패하면 서버 기본값(비공개, 0쪽, 목표 없음)으로 남는다
+  return { ...toRegisteredBook(data, null), settingsSaveFailed: true };
 }
 
 const httpReadingApi: ReadingApi = {
@@ -376,8 +381,9 @@ const httpReadingApi: ReadingApi = {
       recordId = created.data.id;
       round = created.data.round;
     }
-    // 세션·문장·사진 인증 연결을 요청 한 번으로 저장한다. 서버가 한 트랜잭션으로 처리하므로
-    // 실패하면 아무것도 저장되지 않고, '다시 시도하기'로 같은 요청을 보내도 세션이 2건이 되지 않는다.
+    // 세션·문장·사진 인증 연결을 요청 한 번으로 저장한다. 서버가 한 트랜잭션으로 처리하므로 서버에서 실패하면 아무것도 저장되지 않는다.
+    // 단, 서버는 저장했는데 응답만 끊긴 경우(네트워크·시간 초과)에 '다시 시도하기'를 누르면 세션이 2건이 된다.
+    // 같은 요청을 한 번만 처리하는 장치가 서버에 생기면 요청 번호를 함께 보내야 한다 (ISSUE-BUG-3).
     // 문장 쪽 번호는 서버가 endPage로 정한다. (문장 API를 따로 부르지 않는다)
     const sentence = request.sentence?.trim();
     const { data: session } = await apiClient.post<BeSession>('/api/reading-sessions', {

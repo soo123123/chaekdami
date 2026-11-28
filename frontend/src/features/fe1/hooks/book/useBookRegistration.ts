@@ -106,7 +106,20 @@ export function useBookRegistration(target: Target) {
             },
           });
       if (registered.settingsSaveFailed) {
-        showToast('책은 서재에 담았어요. 독서 설정은 책 상세에서 다시 저장해주세요.', 'error');
+        // 저장하지 못한 값을 알려 준다. 서버 기본값은 비공개·0쪽·목표 없음이다 (ISSUE-BUG-20)
+        const missing = [currentPage > 0 ? '현재 쪽' : null, goalDate || goalPage != null ? '목표' : null, isPublic ? '공개 설정' : null]
+          .filter(Boolean)
+          .join('·');
+        // 현재 쪽은 독서 설정에서 고칠 수 없고(세션과 어긋나지 않게), 첫 독서 종료 때 시작 쪽으로 맞춘다
+        const fixHint = currentPage > 0 && !(goalDate || goalPage != null || isPublic)
+          ? '첫 독서를 마칠 때 시작 쪽을 맞춰주세요.'
+          : `책 상세의 독서 설정에서 다시 저장해주세요.${currentPage > 0 ? ' 현재 쪽은 첫 독서를 마칠 때 맞춰주세요.' : ''}`;
+        showToast(
+          missing
+            ? `책은 서재에 담았지만 ${missing}을 저장하지 못했어요${isPublic ? ' (지금은 비공개)' : ''}. ${fixHint}`
+            : '책은 서재에 담았어요.',
+          missing ? 'error' : 'success',
+        );
       }
       return registered;
     } catch (e) {

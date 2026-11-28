@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { BookCard } from '../components/book/BookCard';
 import { BookCategoryTab } from '../components/book/BookCategoryTab';
@@ -14,15 +15,30 @@ import { SEARCH_CATEGORIES } from '../constants/options';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, spacing } from '../constants/theme';
 import { useBookSearch } from '../hooks/book/useBookSearch';
+import { useAsyncResource } from '../hooks/common/useAsyncResource';
+import type { BookSearchItem } from '../types/reading';
 
 export function BookSearchScreen() {
   const search = useBookSearch();
+  // 이미 서재에 있는 책은 검색 결과에서 표시한다. 등록을 눌러 409를 받기 전에 알 수 있게 (ISSUE-BUG-20). 못 불러와도 검색은 그대로 쓴다.
+  const { data: libraryBooks } = useAsyncResource(() => readingApi.getLibraryBooks().catch(() => []), []);
+  const findRegistered = useMemo(() => {
+    const byItemId = new Map<string, number>();
+    const byIsbn = new Map<string, number>();
+    for (const book of libraryBooks ?? []) {
+      if (book.itemId) byItemId.set(book.itemId, book.bookId);
+      if (book.isbn) byIsbn.set(book.isbn.replace(/[-\s]/g, ''), book.bookId);
+    }
+    return (item: BookSearchItem) =>
+      byItemId.get(item.itemId) ?? (item.isbn ? byIsbn.get(item.isbn.replace(/[-\s]/g, '')) : undefined);
+  }, [libraryBooks]);
   // 바코드 스캔은 카메라 의존성(expo-camera) 도입 후 연결한다.
   const [scanNotice, setScanNotice] = useState<string | null>(null);
 
   const handleOpenInfo = (itemId: string) => router.push({ pathname: FE1_ROUTES.info, params: { itemId } });
   const handleRegister = (itemId: string) => router.push({ pathname: FE1_ROUTES.register, params: { itemId } });
   const handleManualRegister = () => router.push(FE1_ROUTES.manualRegister);
+  const handleOpenRegistered = (bookId: number) => router.push({ pathname: FE1_ROUTES.detail, params: { bookId: String(bookId) } });
 
   const manualButton = <ManualRegisterButton onPress={handleManualRegister} />;
 
@@ -93,7 +109,15 @@ export function BookSearchScreen() {
       <FlatList
         data={search.status === 'success' ? search.books : []}
         keyExtractor={item => item.itemId}
-        renderItem={({ item }) => <BookCard book={item} onPress={handleOpenInfo} onRegister={handleRegister} />}
+        renderItem={({ item }) => (
+          <BookCard
+            book={item}
+            onPress={handleOpenInfo}
+            onRegister={handleRegister}
+            registeredBookId={findRegistered(item)}
+            onOpenRegistered={handleOpenRegistered}
+          />
+        )}
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

@@ -1,6 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { readingApi } from '@/features/fe1/api/readingApi';
 import { FE1_ROUTES } from '../../constants/routes';
+import { toAppError } from '../../utils/apiError';
 import { formatDuration } from '../../utils/format';
 import { clearReadingDraft, draftSeconds, loadReadingDraft, type ReadingDraft } from '../../utils/readingDraft';
 import { ConfirmModal } from '../common/BottomSheetModal';
@@ -14,7 +16,22 @@ let isDismissedThisRun = false;
  * - 이어서 하기: 재던 시간이면 독서 시작 화면(일시정지 상태), 입력하던 기록이면 독서 종료 화면으로 간다.
  * - 버리기: 보관한 기록을 지운다.
  * - 바깥을 누르면(나중에) 기록은 남겨 두고 이번 실행에서는 다시 묻지 않는다.
+ * - 그사이 책을 지웠으면(404) 묻지 않고 기록을 지운다. 네트워크 오류 등으로 확인하지 못하면 그대로 묻는다.
  */
+async function loadValidDraft(): Promise<ReadingDraft | null> {
+  const draft = await loadReadingDraft();
+  if (!draft) return null;
+  try {
+    await readingApi.getBookDetail(draft.bookId);
+  } catch (e) {
+    if (toAppError(e).status === 404) {
+      await clearReadingDraft(draft.bookId);
+      return null;
+    }
+  }
+  return draft;
+}
+
 export function ReadingDraftPrompt() {
   const [draft, setDraft] = useState<ReadingDraft | null>(null);
 
@@ -22,7 +39,7 @@ export function ReadingDraftPrompt() {
     useCallback(() => {
       if (isDismissedThisRun) return;
       let active = true;
-      void loadReadingDraft().then(found => {
+      void loadValidDraft().then(found => {
         if (active) setDraft(found);
       });
       return () => {

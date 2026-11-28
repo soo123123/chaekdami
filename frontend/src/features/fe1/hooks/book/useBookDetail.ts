@@ -1,5 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
+import { clearReadingDraft } from '../../utils/readingDraft';
 import { readingApi } from '@/features/fe1/api/readingApi';
 import { toAppError } from '../../utils/apiError';
 import { useAsyncResource } from '../common/useAsyncResource';
@@ -33,6 +34,8 @@ export function useBookDetail(bookId: number | null) {
     setRemoveError(null);
     try {
       await readingApi.removeBook(bookId);
+      // 이 책을 읽던 기록이 기기에 남아 있으면 함께 지운다 (서재에서 이어서 하기를 묻지 않게)
+      void clearReadingDraft(bookId);
       return true;
     } catch (e) {
       setRemoveError(toAppError(e).message);

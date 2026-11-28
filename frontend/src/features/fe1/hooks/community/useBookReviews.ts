@@ -21,6 +21,8 @@ export function useBookReviews(isbn: string | null) {
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  /** 더 불러오기가 실패하면 스크롤로 다시 요청하지 않고, '다시 불러오기'를 눌러야 다시 시도한다 (실패 토스트가 연달아 뜨지 않게) */
+  const [hasLoadMoreError, setHasLoadMoreError] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const requestIdRef = useRef(0);
   /** 좋아요 요청 중인 리뷰 (연타 방지) */
@@ -32,6 +34,7 @@ export function useBookReviews(isbn: string | null) {
     setIsLoading(true);
     // 더 불러오기 도중 정렬·책이 바뀌면 그 요청은 결과를 버리므로 로딩 해제도 여기서 한다 (ISSUE-BUG-22)
     setIsLoadingMore(false);
+    setHasLoadMoreError(false);
     setError(null);
     try {
       const result = await communityApi.getReviews({ isbn, sort, page: 0, size: PAGE_SIZE });
@@ -63,10 +66,11 @@ export function useBookReviews(isbn: string | null) {
     void loadFirstPage();
   }, [loadFirstPage]);
 
-  const loadMore = useCallback(async () => {
-    if (!isbn || !hasNext || isLoading || isLoadingMore) return;
+  const loadMore = useCallback(async ({ retry = false }: { retry?: boolean } = {}) => {
+    if (!isbn || !hasNext || isLoading || isLoadingMore || (hasLoadMoreError && !retry)) return;
     const requestId = requestIdRef.current;
     setIsLoadingMore(true);
+    setHasLoadMoreError(false);
     try {
       const result = await communityApi.getReviews({ isbn, sort, page: page + 1, size: PAGE_SIZE });
       if (requestId !== requestIdRef.current) return;
@@ -76,11 +80,13 @@ export function useBookReviews(isbn: string | null) {
       setHasNext(result.hasNext);
       setTotalElements(result.totalElements);
     } catch (e) {
-      if (requestId === requestIdRef.current) showToast(toAppError(e).message, 'error');
+      if (requestId !== requestIdRef.current) return;
+      setHasLoadMoreError(true);
+      showToast(toAppError(e).message, 'error');
     } finally {
       if (requestId === requestIdRef.current) setIsLoadingMore(false);
     }
-  }, [isbn, sort, page, hasNext, isLoading, isLoadingMore]);
+  }, [isbn, sort, page, hasNext, isLoading, isLoadingMore, hasLoadMoreError]);
 
   const patchItem = (reviewId: ReviewId, patch: Partial<PublicReview>) =>
     setItems(prev => prev.map(item => (item.reviewId === reviewId ? { ...item, ...patch } : item)));
@@ -133,6 +139,7 @@ export function useBookReviews(isbn: string | null) {
     hasNext,
     isLoading,
     isLoadingMore,
+    hasLoadMoreError,
     error,
     reloadReviews: loadFirstPage,
     loadMore,
