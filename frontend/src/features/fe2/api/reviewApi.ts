@@ -119,6 +119,17 @@ export const saveBookReport = async (
   return response.data;
 };
 
+/** 독후감 삭제 (204). 별점·한줄평은 지우지 않는다. 이미 없으면 404 BOOK_REPORT_NOT_FOUND */
+export const deleteBookReport = async (
+  bookReportId: number
+): Promise<void> => {
+  if (REVIEW_USE_DEV_MOCK) return devMockReview.remove(bookReportId);
+
+  await apiClient.delete(
+    `/api/book-reports/${bookReportId}`
+  );
+};
+
 // ----------------------------------------
 // ⚠️ 개발 전용 Mock — 앱 실행 중 메모리에만 저장된다.
 // 회차 완독 여부를 알 수 없어 canWrite는 항상 true다
@@ -168,5 +179,12 @@ const devMockReview = {
       });
     }
     return devMockReview.get(readingRecordId);
+  },
+
+  async remove(bookReportId: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    for (const [readingRecordId, report] of mockReports) {
+      if (report.bookReportId === bookReportId) mockReports.delete(readingRecordId);
+    }
   },
 };
