@@ -60,6 +60,14 @@ class RewardLedger {
     }
 
     /**
+     * 특정 대상(referenceId)에 대한 재화를 지급하고 이력에 대상 id 를 남긴다. 같은 대상에는 한 번만 기록된다.
+     */
+    void addCurrencyFor(RewardAccount account, int amount, TransactionReason reason, Long referenceId) {
+        account.addCurrency(amount);
+        record(account.getUserId(), TransactionType.INCOME_CURRENCY, amount, reason, referenceId);
+    }
+
+    /**
      * @return 차감 기록의 id (상점 구매 응답의 purchaseId 로 사용)
      */
     Long deductCurrency(RewardAccount account, int amount, TransactionReason reason) {

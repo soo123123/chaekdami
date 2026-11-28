@@ -86,7 +86,7 @@ class ReadingSessionRewardServiceTest {
                 .thenReturn(new ReadingRewardResult(34, false, 0, 1));
         QuestResult firstSession = new QuestResult(11L, 1L, "오늘의 첫 독서 세션 시작하기", QuestType.DAILY,
                 1, 1, QuestStatus.REWARDED, 50, 10);
-        when(questService.recordReadingSession(USER_ID, 1800, READING_DATE)).thenReturn(new QuestSessionResult(
+        when(questService.recordReadingSession(USER_ID, 1800, ENDED_AT)).thenReturn(new QuestSessionResult(
                 List.of(firstSession), List.of(new QuestRewardResult(11L, 50, 10, 0, 50, 1))));
         when(streakService.settleBefore(USER_ID, READING_DATE)).thenReturn(1);
         when(streakService.refundShieldIfProtected(USER_ID, READING_DATE)).thenReturn(true);
@@ -167,7 +167,7 @@ class ReadingSessionRewardServiceTest {
         baseNotGrantedYet();
         when(rewardService.grantReadingExperience(USER_ID, session))
                 .thenReturn(new ReadingRewardResult(34, false, 0, 1));
-        when(questService.recordReadingSession(USER_ID, 1800, READING_DATE))
+        when(questService.recordReadingSession(USER_ID, 1800, ENDED_AT))
                 .thenReturn(new QuestSessionResult(List.of(), List.of()));
         when(photoCertificationChecker.isPhotoCertified(USER_ID, SESSION_ID))
                 .thenThrow(new IllegalStateException("BE1 조회 실패"));
@@ -216,14 +216,14 @@ class ReadingSessionRewardServiceTest {
         baseNotGrantedYet();
         when(rewardService.grantReadingExperience(USER_ID, minimumSession))
                 .thenReturn(new ReadingRewardResult(3, false, 0, 1));
-        when(questService.recordReadingSession(USER_ID, 180, READING_DATE))
+        when(questService.recordReadingSession(USER_ID, 180, ENDED_AT))
                 .thenReturn(new QuestSessionResult(List.of(), List.of()));
 
         ReadingSessionRewardResult result = service.grant(USER_ID, SESSION_ID);
 
         assertThat(result.baseGranted()).isTrue();
         assertThat(result.reading().experience()).isEqualTo(3);
-        verify(questService).recordReadingSession(USER_ID, 180, READING_DATE);
+        verify(questService).recordReadingSession(USER_ID, 180, ENDED_AT);
         verify(streakService).settleBefore(USER_ID, READING_DATE);
         verify(ddayService).markRead(USER_ID, READING_DATE);
         verify(readingSessionRewardRepository).save(any(ReadingSessionReward.class));
