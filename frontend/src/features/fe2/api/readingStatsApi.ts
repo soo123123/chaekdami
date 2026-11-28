@@ -25,15 +25,8 @@ export interface ReadingStats {
 // TODO: 백엔드 API 명세 확정 후 엔드포인트 확인
 export const getReadingStats = async (): Promise<ReadingStats> => {
   try {
-    console.log('[ReadingStats API] 독서 통계 요청 시작');
-
     const response = await apiClient.get<ReadingStats>(
       '/api/me/reading-stats'
-    );
-
-    console.log(
-      '[ReadingStats API] 독서 통계 요청 성공',
-      response.status
     );
 
     return response.data;
