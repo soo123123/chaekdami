@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MAX_READING_SECONDS } from '../../constants/config';
 import { colors, keepAllWords, radius, spacing } from '../../constants/theme';
 import { formatDuration } from '../../utils/format';
 import { validatePageRange } from '../../utils/validation';
@@ -38,6 +39,8 @@ export function ReadingTime({ duration, maxDuration = 0, onChange }: ReadingTime
     const m = Number(minutes || '0');
     if (m > 59) return setError('분은 0~59 사이로 입력해주세요.');
     if (h === 0 && m === 0) return setError('독서 시간은 1분 이상이어야 해요.');
+    // 서버가 2시간이 넘는 기록을 받지 않는다 (ISSUE-LIMIT-5)
+    if (h * 3600 + m * 60 > MAX_READING_SECONDS) return setError('한 번에 최대 2시간까지 기록할 수 있어요.');
     if (maxDuration > 0 && h * 3600 + m * 60 > maxDuration) {
       return setError(`측정된 독서 시간(${formatDuration(maxDuration)})까지만 입력할 수 있어요.`);
     }
@@ -54,9 +57,11 @@ export function ReadingTime({ duration, maxDuration = 0, onChange }: ReadingTime
           <PageInput value={hours} onChange={setHours} suffix="시간" label="시간" />
           <PageInput value={minutes} onChange={setMinutes} suffix="분" label="분" />
         </View>
-        {maxDuration > 0 ? (
-          <Text style={styles.caption}>{`측정된 독서 시간 ${formatDuration(maxDuration)} 이내로 수정할 수 있어요.`}</Text>
-        ) : null}
+        <Text style={styles.caption}>
+          {maxDuration > 0
+            ? `측정된 독서 시간 ${formatDuration(maxDuration)} 이내로 수정할 수 있어요.`
+            : '한 번에 최대 2시간까지 기록할 수 있어요.'}
+        </Text>
         <InlineError message={error} />
         <AppButton size="md" onPress={confirm}>확인</AppButton>
       </BottomSheetModal>

@@ -8,6 +8,8 @@ import { SortSelector } from '../components/common/SortSelector';
 import { Icon } from '../components/common/Icon';
 import { EmptyView, ErrorView, LoadingView } from '../components/common/StateView';
 import { CommunityBookCard } from '../components/community/CommunityBookCard';
+import { CommunityEntriesSection } from '../components/community/CommunityEntriesSection';
+import { CommunityEntrySheet } from '../components/community/CommunityEntrySheet';
 import { CompletedBookCarousel } from '../components/community/CompletedBookCarousel';
 import { MyReviewCard } from '../components/community/MyReviewCard';
 import { OneLineReviewForm } from '../components/community/OneLineReviewForm';
@@ -17,6 +19,7 @@ import { REVIEW_SORTS } from '../constants/options';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, keepAllWords, radius, softShadow, spacing } from '../constants/theme';
 import { useBookReviews } from '../hooks/community/useBookReviews';
+import { useCommunityEntries } from '../hooks/community/useCommunityEntries';
 import { useCompletedBooks } from '../hooks/community/useCompletedBooks';
 import { useMyReview } from '../hooks/community/useMyReview';
 import { useBookIdParam } from '../hooks/common/useRouteParams';
@@ -26,15 +29,18 @@ import type { PublicReview, ReviewReportRequest } from '../types/community';
  * 커뮤니티 — 내가 완독한 책의 별점 통계와 다른 독자들의 한줄평을 보고, 내 한줄평을 남긴다.
  * - 완독 + ISBN이 있는 책만 다룬다 (한줄평·별점 API가 ISBN 기준).
  * - 내 한줄평은 목록에서 빼고 작성 영역(내 한줄평 카드)에서만 보여준다.
+ * - 완독자 기록: 같은 책을 완독한 독자들이 공개한 문장 모음집·독후감을 보고 신고한다 (TODO-13, TODO-35).
  */
 export function CommunityScreen() {
   const completed = useCompletedBooks(useBookIdParam());
   const book = completed.selectedBook;
   const reviews = useBookReviews(book?.isbn ?? null);
   const mine = useMyReview(book?.bookId ?? null, reviews.refresh);
+  const community = useCommunityEntries(book?.bookId ?? null);
 
   const [reportTarget, setReportTarget] = useState<PublicReview | null>(null);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   /** 내 한줄평은 위 카드에서 보여주므로 목록에서는 뺀다 */
   const otherReviews = useMemo(() => reviews.reviews.filter(r => !r.isMine), [reviews.reviews]);
@@ -114,8 +120,21 @@ export function CommunityScreen() {
             isSaving={mine.isSaving}
             onEdit={mine.startEdit}
             onClearOneLine={() => setIsClearConfirmOpen(true)}
+            onDelete={() => setIsDeleteConfirmOpen(true)}
           />
         ) : null}
+
+        <CommunityEntriesSection
+          summary={community.summary}
+          entries={community.entries}
+          hasNext={community.hasNext}
+          isLoading={community.isLoading}
+          isLoadingMore={community.isLoadingMore}
+          error={community.error}
+          onRetry={() => void community.reload()}
+          onLoadMore={() => void community.loadMore()}
+          onOpen={entry => void community.openEntry(entry)}
+        />
 
         <View style={styles.listHeader}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>한줄평 모아보기</Text>
@@ -167,6 +186,26 @@ export function CommunityScreen() {
       <BottomTabBar active="community" />
 
       <ReviewReportSheet visible={!!reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReport} />
+      <CommunityEntrySheet
+        entry={community.openedEntry}
+        detail={community.detail}
+        error={community.detailError}
+        onClose={community.closeEntry}
+        onReport={community.report}
+      />
+      <ConfirmModal
+        visible={isDeleteConfirmOpen}
+        title="별점과 한줄평을 삭제할까요?"
+        message="삭제하면 받은 좋아요도 함께 사라지고 되돌릴 수 없어요. 나중에 다시 남길 수 있어요."
+        confirmLabel="삭제"
+        destructive
+        isLoading={mine.isSaving}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={async () => {
+          await mine.deleteReview();
+          setIsDeleteConfirmOpen(false);
+        }}
+      />
       <ConfirmModal
         visible={isClearConfirmOpen}
         title="한줄평을 지울까요?"

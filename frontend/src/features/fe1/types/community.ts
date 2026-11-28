@@ -93,3 +93,68 @@ export type ReviewReportRequest = {
   /** OTHER면 필수, 최대 300자 */
   detail?: string;
 };
+
+/* ------------------------------------------------------------------ */
+/* 완독자 커뮤니티 (공개 문장 모음집·독후감)                               */
+/* ------------------------------------------------------------------ */
+
+/** GET /api/books/{bookId}/community — 잠겨 있어도 숫자는 준다 */
+export type CommunitySummary = {
+  bookId: BookId;
+  isbn: string | null;
+  /** false면 직접 등록한 책(ISBN 없음) */
+  available: boolean;
+  /** false면 아직 완독하지 않음 */
+  unlocked: boolean;
+  lockReason: 'NO_ISBN' | 'NOT_COMPLETED' | null;
+  /** 같은 ISBN을 완독한 사람 수 */
+  completerCount: number;
+  publicCollectionCount: number;
+  publicBookReportCount: number;
+};
+
+export type CommunitySentence = {
+  sentenceId: number;
+  content: string;
+  pageNumber: number | null;
+};
+
+/** 커뮤니티 항목 목록의 한 항목 = 모음집이나 독후감을 공개한 완독 회차 */
+export type CommunityEntry = {
+  readingRecordId: number;
+  round: number;
+  completedAt: string;
+  author: ReviewAuthor;
+  isMine: boolean;
+  /** 공개하지 않았거나 문장이 없으면 null. 미리보기는 최대 3개 */
+  sentenceCollection: { sentenceCount: number; previewSentences: CommunitySentence[] } | null;
+  /** 비공개면 null. preview는 앞 150자, length는 전체 글자 수 */
+  bookReport: { bookReportId: number; preview: string; length: number } | null;
+};
+
+export type CommunityCollectionDay = {
+  readDate: string;
+  /** 회차 시작일을 1일차로 센 날 */
+  dayNumber: number;
+  sentences: (CommunitySentence & { createdAt: string; updatedAt: string })[];
+};
+
+export type CommunityEntryDetail = {
+  readingRecordId: number;
+  round: number;
+  completedAt: string;
+  author: ReviewAuthor;
+  isMine: boolean;
+  sentenceCollection: {
+    readingPeriodDays: number;
+    recordedDayCount: number;
+    sentenceCount: number;
+    days: CommunityCollectionDay[];
+  } | null;
+  bookReport: { bookReportId: number; content: string; createdAt: string; updatedAt: string } | null;
+};
+
+/** 신고할 커뮤니티 글 (독후감·문장). 요청과 사유 규칙은 한줄평 신고와 같다 */
+export type ContentReportTarget =
+  | { kind: 'bookReport'; bookReportId: number }
+  | { kind: 'sentence'; sentenceId: number };

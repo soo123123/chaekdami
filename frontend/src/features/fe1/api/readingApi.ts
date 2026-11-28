@@ -3,6 +3,7 @@
  * 화면은 이 파일의 타입을 그대로 쓰고, 여기서 백엔드 필드(id, coverUrl, IN_PROGRESS)로 바꿔 호출한다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUserKey } from '@/features/fe1/utils/currentUser';
 import apiClient from '@/api/apiClient';
 import { MAX_SEARCH_PAGES, SEARCH_PAGE_SIZE } from '@/features/fe1/constants/options';
 import { devMockReadingApi } from '@/features/fe1/api/devMockReadingApi';
@@ -28,7 +29,8 @@ import type {
   Sentence,
 } from '@/features/fe1/types/reading';
 
-const THEME_KEY = '@chaekdami_library_theme';
+/** 계정 구분이 없던 예전 키(@chaekdami_library_theme)는 읽지 않는다. 다른 계정의 테마일 수 있다 */
+const themeKey = (userKey: string) => `@chaekdami_library_theme:${userKey}`;
 
 export interface ReadingApi {
   /** 외부 도서 검색 (YES24) */
@@ -111,6 +113,8 @@ type BeSentence = {
   pageNumber: number | null;
   content: string;
   createdAt: string;
+  /** 신고로 가려져 커뮤니티에서 보이지 않음. 본인 조회에서만 true가 온다 */
+  isBlinded?: boolean;
 };
 
 type BeSearchItem = {
@@ -338,6 +342,7 @@ const httpReadingApi: ReadingApi = {
             content: sentence.content,
             page: sentence.pageNumber ?? undefined,
             createdAt: sentence.createdAt,
+            isBlinded: sentence.isBlinded ?? false,
           }))),
       Promise.all(records.map(record => getSessions(record.id))),
     ]);
@@ -405,12 +410,13 @@ const httpReadingApi: ReadingApi = {
     return { todaySeconds: today, weekSeconds: stats, bookSeconds };
   },
 
+  // 테마는 아직 서버에 저장하지 않고 기기에 계정별로 저장한다 (TODO-7, ISSUE-DATA-4)
   async getLibraryTheme() {
-    return AsyncStorage.getItem(THEME_KEY);
+    return AsyncStorage.getItem(themeKey(await getCurrentUserKey()));
   },
 
   async saveLibraryTheme(themeId) {
-    await AsyncStorage.setItem(THEME_KEY, themeId);
+    await AsyncStorage.setItem(themeKey(await getCurrentUserKey()), themeId);
   },
 };
 

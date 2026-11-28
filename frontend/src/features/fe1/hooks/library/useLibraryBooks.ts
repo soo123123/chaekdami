@@ -31,11 +31,12 @@ export function useLibraryBooks() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: books, error, isLoading, reload } = useAsyncResource(() => readingApi.getLibraryBooks(), []);
-  const { data: loadedThemeId, reload: reloadTheme } = useAsyncResource(() => readingApi.getLibraryTheme().catch(() => null), []);
-  // 서버에서 받은 테마를 공유 저장소에 반영한다. 서재 꾸미기에서 바꾼 테마는 저장소에 바로 들어와 있어서 깜빡이지 않는다.
+  const { data: loadedThemeId, isLoading: isThemeLoading, reload: reloadTheme } = useAsyncResource(() => readingApi.getLibraryTheme().catch(() => null), []);
+  // 저장된 테마를 공유 저장소에 반영한다. 서재 꾸미기에서 바꾼 테마는 저장소에 바로 들어와 있어서 깜빡이지 않는다.
+  // 저장된 테마가 없어도(null) 반영한다. 다른 계정으로 로그인하면 앞 계정의 테마가 남지 않게 한다.
   useEffect(() => {
-    if (loadedThemeId) setAppliedThemeId(loadedThemeId);
-  }, [loadedThemeId]);
+    if (!isThemeLoading) setAppliedThemeId(loadedThemeId ?? null);
+  }, [isThemeLoading, loadedThemeId]);
   const themeId = useAppliedThemeId() ?? loadedThemeId;
 
   // 다른 화면(등록/삭제/기록/테마 변경)에서 돌아오면 서버 데이터를 다시 조회한다.

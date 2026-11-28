@@ -39,7 +39,7 @@
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
 | 최소 시간 | 3분 (프론트 종료 버튼도 3분 전에는 잠김) | `ReadingSession.MIN_SECONDS` ↔ 프론트 `MIN_READING_SECONDS` | ✅ |
-| 최대 시간 | 2시간 | `ReadingSession.MAX_SECONDS` | ✅ ❓ [ASK-2](../../known-issues.md#ask-2) |
+| 최대 시간 | 2시간. 앱 타이머는 2시간에 닿으면 멈추고 안내하며, 종료 화면에서도 2시간보다 길게 입력할 수 없다 | `ReadingSession.MAX_SECONDS` ↔ 프론트 `MAX_READING_SECONDS` | ✅ ❓ [ASK-2](../../known-issues.md#ask-2) |
 | 페이지 | 시작 0 이상, 끝 ≥ 시작, 끝 ≤ 전체 쪽수 | `ReadingSession.of` | ✅ |
 | 시각 | 앱 값을 믿지 않고 서버 시각 기준. `ended_at` = 요청 받은 시각 | `ReadingSessionService.create` | ✅ |
 | 붙을 회차 | 최근 회차가 진행 중이면 그 회차, 기록이 없으면 1회차 생성, 최근 회차가 완독이면 409 | `ReadingSessionService` | ✅ |
@@ -50,7 +50,7 @@
 | 한 트랜잭션 | 세션·인증 연결·문장을 함께 저장, 하나라도 실패하면 전부 취소 | `ReadingSessionService.create` | ✅ ⚠️ [ISSUE-BUG-3](../../known-issues.md#issue-bug-3) |
 | 사진 | `photos`는 받기만 하고 저장하지 않음 | `ReadingSessionService` | ⏳ [TODO-2](../../known-issues.md#todo-2) |
 | 시간 입력 | 앱이 보낸 `readingTime`을 범위만 검증 | `ReadingSession.of` | ⚠️ [ISSUE-LIMIT-1](../../known-issues.md#issue-limit-1) |
-| 앱 종료 시 | 타이머 중 앱이 완전히 종료되면 측정 시간 유실 | 앱 `useReadingTimer` | ⚠️ [ISSUE-LIMIT-2](../../known-issues.md#issue-limit-2) |
+| 앱 종료 시 | 재던 시간(시작·일시정지 때, 읽는 중 30초마다)과 종료 화면 입력값을 기기에 계정별로 보관한다. 앱이 꺼져 있던 시간은 세지 않는다(마지막 보관 시각까지). 서재에 들어오면 "읽던 기록이 있어요"로 이어서 하기·버리기를 묻는다. 저장하거나 저장하지 않고 나가면 지우고, 일주일이 지나면 버린다. 사진 인증은 다시 해야 한다 | 앱 `utils/readingDraft.ts`, `ReadingDraftPrompt` | ✅ |
 | "상태 변경 5분" | 옛 기획의 문구, 의미 미정 | — | ❓ [ASK-1](../../known-issues.md#ask-1) |
 
 ## 4. 오늘·통계

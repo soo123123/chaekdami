@@ -9,7 +9,8 @@ import { Icon, type IconName } from '../common/Icon';
 type ManualBookInputProps = {
   book: ManualBook;
   onChange: (patch: Partial<ManualBook>) => void;
-  onPressCover: () => void;
+  /** 없으면 표지 선택을 막고 '준비 중'으로 보여 준다 (표지 업로드 API가 없음, ISSUE-BUG-21) */
+  onPressCover?: () => void;
   onPressPublishedDate: () => void;
   onPressIsbn: () => void;
   errors?: Partial<Record<'title' | 'author' | 'publisher', string>>;
@@ -18,6 +19,7 @@ type ManualBookInputProps = {
 export function ManualBookInput({ book, onChange, onPressCover, onPressPublishedDate, onPressIsbn, errors }: ManualBookInputProps) {
   return (
     <View style={styles.container}>
+      {onPressCover ? (
       <Pressable accessibilityRole="button" accessibilityLabel="표지 추가하기" onPress={onPressCover} style={styles.cover}>
         {book.coverImageUri ? (
           <BookCover uri={book.coverImageUri} title={book.title || '표지'} width={92} height={138} />
@@ -29,6 +31,12 @@ export function ManualBookInput({ book, onChange, onPressCover, onPressPublished
           </>
         )}
       </Pressable>
+      ) : (
+        <View accessible accessibilityLabel="표지 사진은 준비 중이에요" style={styles.cover}>
+          <Icon name="image" size={44} color="#C9C3BB" />
+          <Text style={styles.coverLabel}>{'표지 사진은\n준비 중이에요'}</Text>
+        </View>
+      )}
       <View style={styles.fields}>
         <Field
           icon="book"
@@ -106,7 +114,7 @@ function OptionalButton({ icon, label, onPress }: { icon: IconName; label: strin
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', gap: spacing.sm + 2 },
   cover: { width: 92, minHeight: 170, borderRadius: radius.input, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  coverLabel: { fontSize: 13, color: colors.secondaryText },
+  coverLabel: { fontSize: 13, color: colors.secondaryText, textAlign: 'center' },
   coverPlus: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#D6CFC6', alignItems: 'center', justifyContent: 'center' },
   fields: { flex: 1, minWidth: 0, gap: spacing.sm },
   field: { flexDirection: 'row', alignItems: 'center', minHeight: 50, borderWidth: 1, borderColor: colors.border, borderRadius: radius.input, backgroundColor: colors.surface, paddingHorizontal: spacing.sm + 2, gap: spacing.sm },

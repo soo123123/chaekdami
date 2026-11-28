@@ -34,7 +34,7 @@ backend/src/main/java/com/chaekdami/review/
 ```
 
 프론트:
-- FE1 커뮤니티: `features/fe1/api/communityApi.ts`, `CommunityScreen`
+- FE1 커뮤니티: `features/fe1/api/communityApi.ts`, `CommunityScreen` (한줄평·별점, 내 리뷰 삭제, 완독자 기록 `useCommunityEntries`·`CommunityEntrySheet`, 독후감·문장 신고)
 - FE2 독후감: `features/fe2/api/reviewApi.ts`, `ReviewWriteScreen` · `ReviewDetailScreen`
 - 문장: `features/fe1/api/readingApi.ts` (독서 종료·책 상세)
 
@@ -55,7 +55,7 @@ backend/src/main/java/com/chaekdami/review/
 ## 현재 상태
 
 - ✅ 문장 CRUD·모음집, 리뷰(삭제 포함, 스펙 006), 독후감, 독후활동 통합 저장, 한줄평 목록·별점 통계, 좋아요·신고·블라인드, 커뮤니티, 관리자
-- ✅ 공개 독후감·문장의 신고와 블라인드, 정지 중인 회원의 글 숨김 (스펙 012). 앱 화면은 아직 없음
+- ✅ 공개 독후감·문장의 신고와 블라인드, 정지 중인 회원의 글 숨김 (스펙 012). 앱은 커뮤니티 화면의 완독자 기록에서 신고하고, 신고한 글은 내 화면에서 바로 숨긴다. 가려진 내 한줄평·문장은 책 상세·커뮤니티에 안내한다
 - ✅ 세션 저장 때 문장 저장, 책 삭제 시 독후활동 정리 (스펙 003)
 - ⏳ [TODO-4](../../known-issues.md#todo-4) AI 독후감 피드백 — `book_reports.revision`만 준비
-- ⏳ [TODO-13](../../known-issues.md#todo-13) 커뮤니티·모음집·독후감 개별·관리자 API를 앱이 아직 부르지 않음
+- ⏳ [TODO-13](../../known-issues.md#todo-13) 모음집(회차·내 목록)·독후감 개별·관리자 API를 앱이 아직 부르지 않음 (커뮤니티 요약·항목·리뷰 삭제는 FE1이 연결)

@@ -12,6 +12,7 @@ import { BookShelfSection } from '../components/library/BookShelfSection';
 import { LibraryRoom } from '../components/library/LibraryRoom';
 import { LibraryCategoryTab } from '../components/library/LibraryCategoryTab';
 import { LibrarySortSelector } from '../components/library/LibrarySortSelector';
+import { ReadingDraftPrompt } from '../components/reading/ReadingDraftPrompt';
 import { LIBRARY_ROOMS } from '../constants/libraryRoom';
 import { FE1_ROUTES } from '../constants/routes';
 import { colors, noWebOutline, radius, softShadow, spacing } from '../constants/theme';
@@ -171,6 +172,7 @@ export function LibraryScreen() {
       </View>
       {/* 탭바는 서재 화면의 일부라 화면 전환 때 같이 밀려나고, 책장 높이는 그대로 유지된다 */}
       <BottomTabBar active="library" />
+      <ReadingDraftPrompt />
       </View>
     );
   }
@@ -184,6 +186,7 @@ export function LibraryScreen() {
         <View style={styles.shelves}>{renderContent()}</View>
       </ScreenContainer>
       <BottomTabBar active="library" />
+      <ReadingDraftPrompt />
     </View>
   );
 }

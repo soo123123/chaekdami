@@ -99,6 +99,8 @@ export type Sentence = {
   content: string;
   page?: number;
   createdAt: string;
+  /** 신고로 가려져 다른 독자에게 보이지 않음 (TODO-35) */
+  isBlinded?: boolean;
 };
 
 /**
