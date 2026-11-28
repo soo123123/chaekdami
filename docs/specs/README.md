@@ -52,9 +52,12 @@
 | 002 | [reading-reward](./002-reading-reward/) — 독서 보상 연결 (초기안) | superseded → 001 | FE1 |
 | 003 | [session-sentence-and-cleanup](./003-session-sentence-and-cleanup/) — 세션 문장 저장과 삭제 데이터 정리 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·BE3·FE1 |
 | 004 | [reading-certification-app](./004-reading-certification-app/) — 독서 인증 앱 연결과 사진 인증 보상 | in-progress (구현·docs 완료, 실기기 확인 남음) | BE1·FE1·BE2 |
+| 005 | [weekly-ranking](./005-weekly-ranking/) — 주간 랭킹 API (경험치·독서 시간) | in-progress (구현·docs 완료, DB 확인·FE1 확인 남음) | BE2 (+FE1) |
 | 006 | [review-delete](./006-review-delete/) — 리뷰(별점) 삭제 API | done | BE3 |
 | 007 | [admin-users](./007-admin-users/) — 관리자 회원 목록·정지·역할 변경 API | done | BE3 |
 | 010 | [nickname-change](./010-nickname-change/) — 닉네임 변경 API | done | BE3 |
 | 011 | [request-limits](./011-request-limits/) — 신고·비밀번호 재설정 요청 제한 | done | BE3 |
 | 012 | [community-report](./012-community-report/) — 공개 독후감·문장의 신고와 블라인드, 정지 회원 글 숨김 | done | BE3 |
-| 014 | [reading-reminder](./014-reading-reminder/) — 기기 로컬 독서 알림과 복귀 알림 | in-progress (tasks 0.1부터) | BE3 |
+| 013 | [weekly-quest](./013-weekly-quest/) — 주간 퀘스트 | in-progress (구현·docs 완료, PR 올림, DB·앱 확인 남음) | BE2 (+FE2) |
+| 014 | [reading-reminder](./014-reading-reminder/) — 기기 로컬 독서 알림과 복귀 알림 | in-progress (tasks 0.2부터) | BE3 |
+| 016 | [shop-purchase-once](./016-shop-purchase-once/) — 상점 구매 중복 방지 (ISSUE-BUG-35) | in-progress | BE2 (+FE2) |

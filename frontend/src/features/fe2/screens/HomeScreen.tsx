@@ -1,13 +1,16 @@
 
 import React, {
   useCallback,
+  useRef,
   useState,
 } from 'react';
 
 import {
   View,
   Text,
+  Alert,
   Image,
+  Platform,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -17,21 +20,28 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import axios from 'axios';
 
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { Icon, type IconName } from '@/components/common/Icon';
+import { showToast } from '@/components/Toast';
 import { ROUTES, toReadingStart } from '@/constants/routes';
 import { readingApi } from '@/features/fe1/api/readingApi';
 import type { RegisteredBook } from '@/features/fe1/types/reading';
 
 import { getDday } from '../api/ddayApi';
 import {
+  activateExpBooster,
   getQuests,
   getRewardStatus,
   getShopItems,
+  type ShopItemResult,
 } from '../api/rewardApi';
 
-import { getTodayReading } from '../api/todayReadingApi';
+import {
+  getTodayReading,
+  type TodayReading,
+} from '../api/todayReadingApi';
 
 const GREEN = '#315E49';
 const BG = '#FAF7F1';
@@ -59,6 +69,57 @@ type InventoryStatus = {
   shieldCount: number;
   boosterCount: number;
 };
+
+// 상품 행별 보유 수량을 종류별로 더한다
+function ownedCount(
+  items: ShopItemResult[],
+  type: ShopItemResult['type']
+) {
+  return items
+    .filter((item) => item.type === type)
+    .reduce(
+      (sum, item) => sum + (item.ownedQuantity ?? 0),
+      0
+    );
+}
+
+function boosterErrorMessage(error: unknown) {
+  const message = axios.isAxiosError(error)
+    ? error.response?.data?.message
+    : undefined;
+
+  return typeof message === 'string' && message.length > 0
+    ? message
+    : '부스터를 사용하지 못했어요.';
+}
+
+function confirmUseBooster(): Promise<boolean> {
+  const title = 'EXP 부스터 사용';
+  const message =
+    '부스터 1개를 사용할까요? 이미 적용 중이면 30분이 더해져요.';
+
+  if (Platform.OS === 'web') {
+    return Promise.resolve(
+      window.confirm(`${title}\n${message}`)
+    );
+  }
+
+  return new Promise((resolve) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        {
+          text: '취소',
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        { text: '사용', onPress: () => resolve(true) },
+      ],
+      { cancelable: false }
+    );
+  });
+}
 
 function progressOf(book: RegisteredBook) {
   if (!book.totalPages || book.totalPages <= 0) {
@@ -90,18 +151,19 @@ export default function HomeScreen() {
     { title: string; completed: boolean }[]
   >([]);
 
-  const [todayReading, setTodayReading] = useState({
-    readingMinutes: 0,
-    pagesRead: 0,
-    memoCount: 0,
-  });
+  // 조회하지 못한 값은 예시나 0 대신 '-'로 보여준다
+  const [todayReading, setTodayReading] =
+    useState<TodayReading | null>(null);
+
+  const [questError, setQuestError] = useState(false);
+  const [bookError, setBookError] = useState(false);
 
   const [summaryCards, setSummaryCards] = useState({
-    ddayValue: '0일',
+    ddayValue: '-',
     ddayLabel: '연속 독서',
-    currency: '0',
-    level: 'Lv. 1',
-    levelLabel: '다음 레벨까지 0 XP',
+    currency: '-',
+    level: '-',
+    levelLabel: '레벨',
   });
 
   const [currentBook, setCurrentBook] =
@@ -118,6 +180,12 @@ export default function HomeScreen() {
 
   const [inventoryError, setInventoryError] =
     useState(false);
+
+  const [usingBooster, setUsingBooster] =
+    useState(false);
+
+  // 확인 창이 떠 있거나 요청 중이면 다시 누를 수 없다
+  const boosterBusyRef = useRef(false);
 
   /**
    * 홈 화면에 진입할 때마다 데이터를 다시 조회한다.
@@ -151,9 +219,14 @@ export default function HomeScreen() {
           return;
         }
 
-        if (todayResult.status === 'fulfilled') {
-          setTodayReading(todayResult.value);
-        }
+        setTodayReading(
+          todayResult.status === 'fulfilled'
+            ? todayResult.value
+            : null
+        );
+
+        setQuestError(questResult.status === 'rejected');
+        setBookError(booksResult.status === 'rejected');
 
         if (questResult.status === 'fulfilled') {
           const quests = questResult.value;
@@ -180,15 +253,18 @@ export default function HomeScreen() {
           : 0;
 
         setSummaryCards({
-          ddayValue: `${
-            (ddayResult.status === 'fulfilled' ? ddayResult.value.currentStreak ?? 0 : 0)
-          }일`,
+          ddayValue:
+            ddayResult.status === 'fulfilled'
+              ? `${ddayResult.value.currentStreak ?? 0}일`
+              : '-',
           ddayLabel: '연속 독서',
-          currency: (
-            reward?.currency ?? 0
-          ).toLocaleString(),
-          level: `Lv. ${reward?.level ?? 1}`,
-          levelLabel: `다음 레벨까지 ${remainingXp.toLocaleString()} XP`,
+          currency: reward
+            ? reward.currency.toLocaleString()
+            : '-',
+          level: reward ? `Lv. ${reward.level}` : '-',
+          levelLabel: reward
+            ? `다음 레벨까지 ${remainingXp.toLocaleString()} XP`
+            : '레벨',
         });
 
         if (booksResult.status === 'fulfilled') {
@@ -206,24 +282,15 @@ export default function HomeScreen() {
             ? shopResult.value
             : [];
 
-        const boosterCount = shopItems
-          .filter(
-            (item) =>
-              item.type === 'EXPERIENCE_BOOSTER'
-          )
-          .reduce(
-            (sum, item) =>
-              sum + (item.ownedQuantity ?? 0),
-            0
-          );
+        const boosterCount = ownedCount(
+          shopItems,
+          'EXPERIENCE_BOOSTER'
+        );
 
-        const shieldCountFromShop = shopItems
-          .filter((item) => item.type === 'SHIELD')
-          .reduce(
-            (sum, item) =>
-              sum + (item.ownedQuantity ?? 0),
-            0
-          );
+        const shieldCountFromShop = ownedCount(
+          shopItems,
+          'SHIELD'
+        );
 
         setInventoryStatus({
           shieldCount:
@@ -255,17 +322,17 @@ export default function HomeScreen() {
   }[] = [
     {
       icon: 'clock',
-      value: `${todayReading.readingMinutes}분`,
+      value: todayReading ? `${todayReading.readingMinutes}분` : '-',
       label: '독서 시간',
     },
     {
       icon: 'book',
-      value: `${todayReading.pagesRead}쪽`,
+      value: todayReading ? `${todayReading.pagesRead}쪽` : '-',
       label: '읽은 페이지',
     },
     {
       icon: 'pencil',
-      value: `${todayReading.memoCount}개`,
+      value: todayReading ? `${todayReading.memoCount}개` : '-',
       label: '작성한 메모',
     },
   ];
@@ -291,6 +358,53 @@ export default function HomeScreen() {
 
   const goToShop = () => {
     router.push('/fe2/reward/shop');
+  };
+
+  const boosterDisabled =
+    inventoryLoading ||
+    inventoryError ||
+    usingBooster ||
+    inventoryStatus.boosterCount <= 0;
+
+  const setBoosterCount = (boosterCount: number) => {
+    setInventoryStatus((current) => ({
+      ...current,
+      boosterCount,
+    }));
+  };
+
+  const handleUseBooster = async () => {
+    if (boosterDisabled || boosterBusyRef.current) return;
+
+    boosterBusyRef.current = true;
+
+    try {
+      if (!(await confirmUseBooster())) return;
+
+      setUsingBooster(true);
+
+      const result = await activateExpBooster();
+
+      setBoosterCount(result.remainingBoosters);
+      showToast('EXP 부스터를 사용했어요.');
+    } catch (error) {
+      showToast(boosterErrorMessage(error), 'error');
+
+      // 응답만 끊겼을 수 있어 실제 보유 수량을 다시 확인한다
+      try {
+        setBoosterCount(
+          ownedCount(
+            await getShopItems(),
+            'EXPERIENCE_BOOSTER'
+          )
+        );
+      } catch {
+        setInventoryError(true);
+      }
+    } finally {
+      boosterBusyRef.current = false;
+      setUsingBooster(false);
+    }
   };
 
   const goToLevel = () => {
@@ -520,7 +634,9 @@ export default function HomeScreen() {
             <View style={styles.currentBookRow}>
               <View style={styles.currentInfo}>
                 <Text style={styles.author}>
-                  아직 읽고 있는 책이 없어요.
+                  {bookError
+                    ? '책을 불러오지 못했어요.'
+                    : '아직 읽고 있는 책이 없어요.'}
                 </Text>
 
                 <TouchableOpacity
@@ -619,6 +735,22 @@ export default function HomeScreen() {
                     ? '확인 필요'
                     : `${inventoryStatus.boosterCount.toLocaleString()}개`}
               </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.boosterButton,
+                  boosterDisabled && styles.boosterButtonDisabled,
+                ]}
+                onPress={handleUseBooster}
+                disabled={boosterDisabled}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="EXP 부스터 사용하기"
+              >
+                <Text style={styles.boosterButtonText}>
+                  {usingBooster ? '사용 중…' : '사용하기'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
           </View>
@@ -656,7 +788,9 @@ export default function HomeScreen() {
               <View style={styles.questList}>
                 {questItems.length === 0 ? (
                   <Text style={styles.questItem}>
-                    오늘 퀘스트가 없어요
+                    {questError
+                      ? '퀘스트를 불러오지 못했어요'
+                      : '오늘 퀘스트가 없어요'}
                   </Text>
                 ) : null}
 
@@ -1073,6 +1207,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 7,
     width: '100%',
+  },
+
+  boosterButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    backgroundColor: GREEN,
+  },
+
+  boosterButtonDisabled: {
+    opacity: 0.4,
+  },
+
+  boosterButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 
   bottomCards: {

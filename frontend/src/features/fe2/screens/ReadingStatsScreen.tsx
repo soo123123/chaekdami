@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -20,6 +20,7 @@ import {
   type ReadingStats,
 } from '../api/readingStatsApi';
 import { getDday } from '../api/ddayApi';
+import { LoadFailedView } from '../components/LoadFailedView';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -49,47 +50,6 @@ const ART = {
   chart: require('../../../../assets/images/stats/stats-chart-icon.png'),
 };
 
-const SAMPLE_DAILY: ChartItem[] = [
-  { label: '06시', minutes: 10 },
-  { label: '09시', minutes: 20 },
-  { label: '12시', minutes: 40 },
-  { label: '15시', minutes: 15 },
-  { label: '18시', minutes: 60 },
-  { label: '21시', minutes: 35 },
-];
-
-const SAMPLE_STATS: ReadingStats = {
-  totalMinutes: 750,
-  averageMinutes: 25,
-  completedBooks: 3,
-  totalPages: 245,
-  readingDays: 12,
-  goalBooks: 3,
-  goalTarget: 5,
-  weekly: [
-    { label: '월', minutes: 20 },
-    { label: '화', minutes: 35 },
-    { label: '수', minutes: 15 },
-    { label: '목', minutes: 50 },
-    { label: '금', minutes: 30 },
-    { label: '토', minutes: 60 },
-    { label: '일', minutes: 40 },
-  ],
-  monthly: [
-    { label: '1주', minutes: 180 },
-    { label: '2주', minutes: 240 },
-    { label: '3주', minutes: 150 },
-    { label: '4주', minutes: 180 },
-  ],
-  daily: SAMPLE_DAILY,
-};
-
-const SAMPLE_MONTH_DAYS = [
-  20, 50, 60, 115, 25, 55, 70, 160, 120, 80,
-  40, 130, 200, 110, 75, 115, 60, 80, 45, 160,
-  120, 160, 110, 205, 135, 60, 25, 130, 75, 110,
-];
-
 function formatMinutes(value: number): string {
   const minutes = Math.max(0, Math.round(value || 0));
   const hours = Math.floor(minutes / 60);
@@ -101,23 +61,9 @@ function formatMinutes(value: number): string {
   return `${hours}시간 ${rest}분`;
 }
 
-function getPeriodDate(period: Period, offset: number): Date {
+// 서버는 오늘·이번 주·이번 달만 준다
+function getPeriodTitle(period: Period): string {
   const date = new Date();
-
-  if (period === 'month') {
-    date.setDate(1);
-    date.setMonth(date.getMonth() + offset);
-  } else if (period === 'week') {
-    date.setDate(date.getDate() + offset * 7);
-  } else {
-    date.setDate(date.getDate() + offset);
-  }
-
-  return date;
-}
-
-function getPeriodTitle(period: Period, offset: number): string {
-  const date = getPeriodDate(period, offset);
 
   if (period === 'month') {
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
@@ -250,78 +196,60 @@ function ReadingBarChart({
 
 export default function ReadingStatsScreen() {
   const [period, setPeriod] = useState<Period>('month');
-  const [offset, setOffset] = useState(0);
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [usingSample, setUsingSample] = useState(false);
-  const [streakDays, setStreakDays] = useState(0);
+  // 조회하지 못했으면 null
+  const [streakDays, setStreakDays] = useState<number | null>(null);
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const mountedRef = useRef(true);
 
-    const load = async () => {
-      try {
-        const [result, dday] = await Promise.all([
-          getReadingStats(),
-          getDday().catch(() => null),
-        ]);
+  const load = useCallback(async () => {
+    setLoading(true);
 
-        if (active) {
-          setStats(result);
-          setStreakDays(dday?.currentStreak ?? 0);
-          setUsingSample(false);
-        }
-      } catch (error) {
-        console.log('독서 통계 조회 실패:', error);
+    try {
+      const [result, dday] = await Promise.all([
+        getReadingStats(),
+        getDday().catch(() => null),
+      ]);
 
-        if (active) {
-          setStats(SAMPLE_STATS);
-          setUsingSample(true);
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
+      if (!mountedRef.current) return;
 
-    load();
-
-    return () => {
-      active = false;
-    };
+      setStats(result);
+      setStreakDays(dday ? dday.currentStreak ?? 0 : null);
+    } catch (error) {
+      console.log('독서 통계 조회 실패:', error);
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    mountedRef.current = true;
+
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      mountedRef.current = false;
+    };
+  }, [load]);
+
   const chartData = useMemo<ChartItem[]>(() => {
-    if (!stats || offset !== 0) return [];
+    if (!stats) return [];
 
     if (period === 'day') {
-      return usingSample ? SAMPLE_DAILY : stats.daily;
+      return stats.daily;
     }
 
     if (period === 'week') {
       return stats.weekly;
     }
 
-    if (usingSample) {
-      const date = getPeriodDate('month', offset);
-
-      const daysInMonth = new Date(
-        date.getFullYear(),
-        date.getMonth() + 1,
-        0
-      ).getDate();
-
-      return Array.from(
-        { length: daysInMonth },
-        (_, index) => ({
-          label: String(index + 1),
-          minutes: SAMPLE_MONTH_DAYS[index] ?? 0,
-        })
-      );
-    }
-
     return stats.monthly;
-  }, [period, offset, stats, usingSample]);
+  }, [period, stats]);
 
   const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
 
@@ -332,18 +260,12 @@ export default function ReadingStatsScreen() {
 
   const changePeriod = (next: Period) => {
     setPeriod(next);
-    setOffset(0);
-    setSelectedBar(null);
-  };
-
-  const changeDate = (direction: number) => {
-    setOffset((previous) => Math.min(0, previous + direction));
     setSelectedBar(null);
   };
 
   const goBack = () => goBackOr(ROUTES.fe2.mypage);
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={C.green} />
@@ -351,6 +273,17 @@ export default function ReadingStatsScreen() {
           독서 통계를 불러오는 중...
         </Text>
       </View>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <LoadFailedView
+        title="독서 통계"
+        message="독서 통계를 불러오지 못했어요."
+        onRetry={() => void load()}
+        onBack={goBack}
+      />
     );
   }
 
@@ -428,34 +361,11 @@ export default function ReadingStatsScreen() {
           ))}
         </View>
 
-        {/* 날짜 이동 */}
+        {/* 기간 (지난 기간 조회는 서버에 없다, ISSUE-BUG-17) */}
         <View style={styles.dateNavigation}>
-          <TouchableOpacity
-            style={styles.dateArrow}
-            onPress={() => changeDate(-1)}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={23}
-              color={C.text}
-            />
-          </TouchableOpacity>
-
           <Text style={styles.dateTitle}>
-            {getPeriodTitle(period, offset)}
+            {getPeriodTitle(period)}
           </Text>
-
-          <TouchableOpacity
-            style={styles.dateArrow}
-            disabled={offset >= 0}
-            onPress={() => changeDate(1)}
-          >
-            <Ionicons
-              name="chevron-forward"
-              size={23}
-              color={offset >= 0 ? '#CCC5BE' : C.text}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* 독서량 차트 */}
@@ -510,13 +420,6 @@ export default function ReadingStatsScreen() {
             </Text>
           )}
 
-          {usingSample &&
-            (period === 'day' ||
-              (period === 'month' && offset === 0)) && (
-            <Text style={styles.exampleNote}>
-              * 날짜별 세부 기록은 화면 확인용 예시입니다.
-            </Text>
-          )}
         </View>
 
         {/* 하단 통계 카드 */}
@@ -560,7 +463,7 @@ export default function ReadingStatsScreen() {
             </View>
 
             <Text style={styles.infoValue}>
-              {usingSample ? stats.readingDays : streakDays}일
+              {streakDays === null ? '-' : `${streakDays}일`}
             </Text>
 
             <Text style={styles.infoDescription}>
@@ -583,12 +486,6 @@ export default function ReadingStatsScreen() {
             resizeMode="contain"
           />
         </View>
-
-        {usingSample && (
-          <Text style={styles.sampleNote}>
-            현재 서버 연결 대신 예시 통계를 표시하고 있습니다.
-          </Text>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -702,9 +599,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 20,
     marginBottom: 12,
-  },
-  dateArrow: {
-    padding: 8,
   },
   dateTitle: {
     minWidth: 155,
@@ -849,11 +743,6 @@ const styles = StyleSheet.create({
     color: C.muted,
     fontSize: 12,
   },
-  exampleNote: {
-    color: '#9B948C',
-    fontSize: 10,
-    marginTop: 13,
-  },
   bottomRow: {
     flexDirection: 'row',
     gap: 10,
@@ -909,11 +798,5 @@ const styles = StyleSheet.create({
   bottomBookshelf: {
     width: 180,
     height: 90,
-  },
-  sampleNote: {
-    marginTop: 8,
-    textAlign: 'center',
-    fontSize: 11,
-    color: C.muted,
   },
 });

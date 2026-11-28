@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { getQuests } from '../api/rewardApi';
 import { Icon } from '@/components/common/Icon';
+import { showToast } from '@/components/Toast';
+import { LoadFailedView } from '../components/LoadFailedView';
 
 type QuestType = 'DDAY' | 'WEEKLY';
 type QuestTab = 'ALL' | QuestType;
@@ -62,50 +64,6 @@ const ART = {
   flower: require('../../../../assets/images/quest/quest-flower-pot.png'),
   window: require('../../../../assets/images/quest/quest-window.png'),
 };
-
-const SAMPLE_QUESTS: Quest[] = [
-  {
-    id: 1,
-    title: '오늘 30분 독서하기',
-    description: '오늘 하루 30분 이상 책을 읽어보세요.',
-    progress: 20,
-    target: 30,
-    rewardXp: 50,
-    rewardCurrency: 20,
-    type: 'DDAY',
-  },
-  {
-    id: 2,
-    title: '오늘 독서 기록 남기기',
-    description: '독서를 완료하고 기록을 남겨보세요.',
-    progress: 1,
-    target: 1,
-    rewardXp: 30,
-    rewardCurrency: 10,
-    type: 'DDAY',
-    completed: true,
-  },
-  {
-    id: 3,
-    title: '이번 주 300분 독서하기',
-    description: '이번 주 독서 시간을 300분까지 채워보세요.',
-    progress: 180,
-    target: 300,
-    rewardXp: 100,
-    rewardCurrency: 50,
-    type: 'WEEKLY',
-  },
-  {
-    id: 4,
-    title: '이번 주 책 5권 완독하기',
-    description: '이번 주 책 5권을 완독해보세요.',
-    progress: 3,
-    target: 5,
-    rewardXp: 150,
-    rewardCurrency: 100,
-    type: 'WEEKLY',
-  },
-];
 
 function isCompleted(quest: Quest) {
   return Boolean(
@@ -255,7 +213,8 @@ export default function QuestScreen() {
   const [tab, setTab] = useState<QuestTab>('ALL');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [usingSample, setUsingSample] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const loadedRef = useRef(false);
 
   const loadQuests = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -278,12 +237,17 @@ export default function QuestScreen() {
         // 현재 rewardApi의 EXP는 서버 WEEKLY 유형을 의미합니다.
         type: quest.type === 'EXP' ? 'WEEKLY' : quest.type,
       })) as Quest[]);
-      setUsingSample(false);
+      loadedRef.current = true;
+      setLoadFailed(false);
     } catch (error) {
       console.warn('퀘스트 조회 오류:', error);
 
-      setQuests(SAMPLE_QUESTS);
-      setUsingSample(true);
+      // 이미 받은 목록이 있으면 그대로 두고 안내만 한다
+      if (loadedRef.current) {
+        showToast('퀘스트를 새로 불러오지 못했어요.', 'error');
+      } else {
+        setLoadFailed(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -291,7 +255,13 @@ export default function QuestScreen() {
   }, []);
 
   useEffect(() => {
-    loadQuests();
+    const timer = setTimeout(() => {
+      void loadQuests();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [loadQuests]);
 
   const dailyQuests = useMemo(
@@ -357,6 +327,17 @@ export default function QuestScreen() {
           퀘스트를 불러오는 중...
         </Text>
       </View>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <LoadFailedView
+        title="오늘의 퀘스트"
+        message="퀘스트를 불러오지 못했어요."
+        onRetry={() => void loadQuests()}
+        onBack={() => goBackOr(ROUTES.fe2.level)}
+      />
     );
   }
 
@@ -721,12 +702,6 @@ export default function QuestScreen() {
             한 페이지씩 쌓이는 나만의 독서 이야기
           </Text>
         </View>
-
-        {usingSample && (
-          <Text style={styles.sampleNotice}>
-            서버 연결에 실패하여 예시 퀘스트를 표시하고 있습니다.
-          </Text>
-        )}
 
         <Text style={styles.footerNotice}>
           퀘스트 완료 판정과 실제 보상 지급은 서버에서 처리됩니다.
@@ -1302,13 +1277,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.green,
     textAlign: 'center',
-  },
-
-  sampleNotice: {
-    fontSize: 10,
-    color: '#A16D43',
-    textAlign: 'center',
-    marginTop: 8,
   },
 
   footerNotice: {

@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -175,7 +175,10 @@ export default function DdayScreen() {
   const [completedBooks, setCompletedBooks] = useState('0');
   const [error, setError] = useState('');
   const modalOpenRef = useRef(false);
-  modalOpenRef.current = modalOpen;
+
+  useEffect(() => {
+    modalOpenRef.current = modalOpen;
+  }, [modalOpen]);
 
   const today = dateString(new Date());
   const year = currentMonth.getFullYear();
@@ -874,8 +877,7 @@ export default function DdayScreen() {
         )}
 
         <Text style={styles.demoNotice}>
-          현재 독서 기록은 화면 테스트용 데이터이며,
-          백엔드 연동 전까지 이 화면에서 직접 변경할 수 있습니다.
+          독서를 완료하면 자동으로 기록돼요.
         </Text>
       </ScrollView>
 

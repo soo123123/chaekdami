@@ -57,9 +57,7 @@ export type CompleteRewardState = 'none' | 'loading' | 'granted' | 'alreadyGrant
 
 export type CompleteRecord = {
   durationMinutes: number;
-  goalMinutes: number;
   pagesRead: number;
-  goalPages: number;
 };
 
 export type CompleteQuest = {

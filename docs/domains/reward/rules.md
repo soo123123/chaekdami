@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 · 최종 확인: 2026-11-22 · 담당: BE2
+> 기준: main@82df578 + 스펙 004 + 스펙 005 + 스펙 013 · 최종 확인: 2026-11-25 · 담당: BE2
 
 # reward 규칙
 
@@ -80,13 +80,13 @@
 
 | 규칙 | 값 | 코드 위치 | 상태 |
 |---|---|---|---|
-| 출제 시점 | 그날 처음 `GET /api/quests`를 부를 때 사용자별로 생성 | `QuestService.getOrCreateTodayQuests` | ✅ |
+| 출제 시점 | 그날 처음 `GET /api/quests`를 부르거나 독서 완료 보상을 받을 때 사용자별로 생성 | `QuestService.getOrCreateDailyQuests` | ✅ |
 | 하루 출제 수 | 3개 (등록된 퀘스트가 적으면 전부) | `DailyQuest.DAILY_QUEST_COUNT` | ✅ |
 | 출제 방식 | `alwaysIncluded` 퀘스트는 항상, 나머지 칸은 랜덤 | `DailyQuestPicker` | ✅ |
 | 진행 반영 | 독서 완료 보상 때 세션 날짜의 퀘스트에 반영. 지난 날짜 퀘스트를 새로 만들지는 않음 | `QuestService.recordReadingSession` | ✅ |
 | 독서 시간 진행 | 분 단위, 30초 이상 반올림 | `QuestService` | ✅ |
 | 달성 시 | 바로 재화·경험치 지급 (`REWARDED`). 수령 API 없음 | `QuestService.grantReward` | ✅ |
-| 주간 퀘스트 | — | `QuestType.WEEKLY` | ⏳ [TODO-5](../../known-issues.md#todo-5) |
+| 보상 이력 | 사유 `DAILY_QUEST`, `reference_id`에 `user_quests.id`. 주간도 같다 (스펙 013 전의 이력은 `reference_id`가 NULL) | `RewardLedger.addCurrencyFor`, `addExperienceFor` | ✅ |
 
 ### 퀘스트 목록 (`DailyQuest` enum)
 
@@ -100,6 +100,26 @@
 - **상수 이름(코드)은 바꾸지 않는다.** 바꾸면 다른 퀘스트로 취급된다.
 - 상수를 지우면 출제에서만 빠지고 DB 행은 남는다.
 
+### 주간 퀘스트
+
+| 규칙 | 값 | 코드 위치 | 상태 |
+|---|---|---|---|
+| 한 주 | 한국 시간 월요일 0시 ~ 다음 월요일 0시 직전 (주간 랭킹과 같음). 일일은 서버 시간대 날짜 기준 | `RankingWeek`, `QuestService.findWeeklyQuests` | ✅ |
+| 출제 | 그 주에 처음 `GET /api/quests`를 부르거나 독서 완료 보상을 받을 때 목록 전부 생성 (랜덤 없음) | `QuestService.getOrCreateWeeklyQuests` | ✅ |
+| 동시 첫 요청 | 보상 계정을 잠근 뒤 다시 확인하고 만들어 한 벌만 생김 | `QuestService.getOrCreate` | ✅ |
+| 진행 반영 | 세션 종료 시각이 속한 주의 퀘스트에 반영. 지난 주 퀘스트를 새로 만들지는 않음. 분 계산은 일일과 같음 | `QuestService.recordReadingSession` | ✅ |
+| 달성 시 | 바로 재화·경험치 지급. 부스터 미적용, 경험치는 주간 랭킹 점수에 포함 | `QuestService.grantReward` | ✅ |
+
+| 코드 (`WeeklyQuest` enum) | 제목 | 진행 기준 | 목표 | 재화 | 경험치 |
+|---|---|---|---|---|---|
+| `WEEKLY_SESSION_5` | 이번 주 독서 5번 하기 | 세션 수 | 5 | 150 | 30 |
+| `WEEKLY_READING_100_MINUTES` | 이번 주 100분 독서하기 | 독서 분 | 100 | 200 | 40 |
+| `WEEKLY_READING_200_MINUTES` | 이번 주 200분 독서하기 | 독서 분 | 200 | 300 | 60 |
+
+- 추가·수정·삭제 방법은 일일과 같다 (`WeeklyQuest`, `WeeklyQuestSeeder`).
+- 제목에 `30분`을 넣지 않는다. 앱 마이페이지가 제목의 `30분`으로 일일 퀘스트를 찾는다.
+- 독서 완료 화면은 일일 퀘스트만 목록에 보여주고, 주간 보상은 합계에만 넣는다.
+
 ## 5. 상점
 
 | 규칙 | 값 | 코드 위치 | 상태 |
@@ -108,7 +128,10 @@
 | 차감 재화 | 가격 × 구매 수량 | `ShopService.purchase` | ✅ |
 | 지급 수량 | 묶음 수량 × 구매 수량 | `ShopService.purchase` | ✅ |
 | 잔액 확인 | 보상 계정을 잠근 뒤 서버 잔액 기준 | `RewardLedger.lockAccount` | ✅ |
+| 중복 구매 방지 | 요청의 `ownedQuantity`가 그 상품의 서버 보유 개수와 다르면 구매하지 않음. 보상 계정을 잠근 뒤, 잔액보다 먼저 비교. 보내지 않으면 비교하지 않음 | `ShopService.purchase` | ✅ 서버 (앱 반영 전) |
 | 가격 0인 상품 | 차감·이력 없이 지급 | `ShopService.purchase` | ✅ |
+
+> ⚠️ [ISSUE-LIMIT-9](../../known-issues.md#issue-limit-9) — 방어권 자동 차감과 겹치면 정상 구매가 한 번 409가 되거나, 다시 보낸 구매를 막지 못할 수 있음
 
 ### 상품 (`ShopItemSeeder`)
 
@@ -138,4 +161,25 @@ Seeder는 같은 이름의 상품이 없을 때만 넣는다. 이미 있는 상�
 |---|---|---|
 | 재화·경험치·아이템을 바꾸는 요청 | 보상 계정 행을 비관적 쓰기 잠금 | `RewardLedger.lockAccount` |
 | 잠금 대기 | 3초, 넘으면 409 `CONCURRENCY_001` | `RewardAccountRepository.LOCK_TIMEOUT_MILLIS` |
-| 계정 동시 생성 | 별도 트랜잭션으로 생성, UNIQUE 위반은 무시하고 기존 계정 사용 | `RewardAccountInitializer` |
+| 계정 동시 생성 | 같은 트랜잭션에서 없을 때만 저장(`ON CONFLICT DO NOTHING`), 이미 있으면 그 계정 사용. DB 연결을 더 쓰지 않음 | `RewardAccountRepository.insertIfAbsent` |
+
+## 8. 주간 랭킹
+
+`GET /api/rewards/rankings/weekly/experience` · `/weekly/reading-time` — `RankingService` · 결정 배경: [specs/005](../../specs/005-weekly-ranking/)
+
+경험치 랭킹과 독서 시간 랭킹은 따로 매긴다. 점수 출처만 다르고 순위 규칙은 같다.
+
+| 규칙 | 경험치 랭킹 | 독서 시간 랭킹 | 코드 위치 |
+|---|---|---|---|
+| 점수 | 그 주 `reward_transactions` 중 `INCOME_EXPERIENCE` 금액 합 (독서·부스터·퀘스트·사진 인증). 재화(승급 보상 등)는 빠짐 | 그 주 `reading_sessions.duration_seconds` 합 (초). 보상·부스터와 무관 | `RewardTransactionRepository.findTopAmounts`, `ReadingSessionTimeQueryRepository.findTopSeconds` |
+| 어느 주인가 | 지급 시각 `created_at`. 일요일 밤 세션도 월요일에 보상받으면 새 주 | 세션 종료 시각 `ended_at` (서버가 저장 요청을 받은 시각) | `RankingWeek.startAt`·`endAt` |
+| 한 주 | 한국 시간 월요일 0시 ≤ 시각 < 다음 월요일 0시. 서버 시간대와 무관 | 같음 | `RankingWeek` |
+| 상위 인원 | 30명 | 같음 | `RankingService.TOP_SIZE` |
+| 동점 | 같은 순위, 다음 순위는 건너뜀 (1, 2, 2, 4). 같은 순위 안에서는 사용자 번호 작은 순 | 같음 | `RankingService.toEntries` |
+| 제외 | 조회하는 순간 정지 중인 회원, 관리자. 다른 사람의 순위에도 세지 않음 | 같음 | `RankingTargets` (정지 기준은 `User.isSuspendedAt`과 같음) |
+| 0점 | 합계가 0보다 큰 사용자만 나옴 | 같음 | 쿼리 `having` |
+| 내 순위 | 나보다 점수가 큰 사용자 수 + 1. 0점이거나 본인이 제외 대상이면 `null` (점수는 그대로) | 같음 | `countUsers…GreaterThan` |
+| 탈퇴한 사용자 | 탈퇴 때 이력이 지워져 나오지 않음 | 탈퇴 때 세션이 지워져 나오지 않음 | `RewardCleanupService`, `ReadingCleanupListener` |
+| 책 삭제 | 경험치 이력이 남아 점수 유지 ([ISSUE-DATA-3](../../known-issues.md#issue-data-3)) | 세션이 지워져 점수에서 빠짐 | — |
+| 닉네임 | user 도메인을 읽기만 함. 못 찾으면 목록에서 뺌 | 같음 | port `UserNicknameReader` → `RewardUserNicknameReader` |
+| 독서 시간 읽기 | — | reading 도메인을 읽기만 함 | port `WeeklyReadingTimeReader` → `ReadingSessionTimeReader` |
