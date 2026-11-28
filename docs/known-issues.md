@@ -79,7 +79,7 @@
 | <a id="issue-limit-5"></a>ISSUE-LIMIT-5 | FE1 (+BE1) | 중간 | 열림 | 타이머와 저장 전 확인에 2시간 상한이 없다 | 2시간을 넘기면 저장할 때 서버가 거부한다. 상한 유지는 ASK-2 | 앱 `useReadingEnd`, `ReadingSession` | — | — |
 | <a id="issue-limit-7"></a>ISSUE-LIMIT-7 | FE2 | 낮음 | 진행 중 | 앱 시작 때 서버 연결 오류 화면에 다시 시도 버튼이 없다 | 연결이 돌아와도 앱을 다시 켜야 한다 | 앱 `home.tsx` | — | — | — |
 | <a id="issue-limit-8"></a>ISSUE-LIMIT-8 | BE2 (+FE2) | 중간 | 열림 | D-day 목표 저장은 목록 전체를 바꾸고, 그사이 바뀌었는지 확인하지 않는다 | 다른 기기에서 추가했거나 응답이 끊겨 앱이 모르는 목표가 다음 저장 때 지워질 수 있다 (코드로 확인, PR 27 범위 밖) | `DdayService.saveGoals`, 앱 `DdayScreen` | — | — | 여러 기기에서 생기는 문제는 TODO-47(단일 기기 로그인)로 대부분 사라질 것으로 보여 서버 수정은 대기 (BE2, 2026-11-25). 저장 응답이 끊긴 경우는 남음 (앱에서 처리할지 FE2 확인 필요) |
-| <a id="issue-limit-9"></a>ISSUE-LIMIT-9 | BE2 | 낮음 | 열림 | 상점 구매 중복 방지는 앱이 보낸 `ownedQuantity`와 서버의 보유 개수를 비교한다 (스펙 016) | 방어권 자동 차감과 겹치면 ① 자동 차감 뒤 예전 화면에서 구매하면 한 번 409가 난다 (다시 조회하면 살 수 있고 재화는 차감되지 않음) ② 구매가 처리된 뒤 자동 차감으로 개수가 원래대로 돌아오면 다시 보낸 요청을 막지 못한다 | `ShopService.purchase` | [reward/rules](./domains/reward/rules.md) | 016 | 스펙 016 requirements "범위 밖"의 한계. 여러 기기에서 개수가 우연히 같아지는 경우는 TODO-47(단일 기기 로그인)로 사라질 예정이라 제외. PR 57로 main에 들어옴 (2026-11-26). 도메인 문서 ⚠️ 표시는 아직 없음 |
+| <a id="issue-limit-9"></a>ISSUE-LIMIT-9 | BE2 | 낮음 | 열림 | 상점 구매 중복 방지는 앱이 보낸 `ownedQuantity`와 서버의 보유 개수를 비교한다 (스펙 016) | 방어권 자동 차감과 겹치면 ① 자동 차감 뒤 예전 화면에서 구매하면 한 번 409가 난다 (다시 조회하면 살 수 있고 재화는 차감되지 않음) ② 구매가 처리된 뒤 자동 차감으로 개수가 원래대로 돌아오면 다시 보낸 요청을 막지 못한다 | `ShopService.purchase` | [reward/rules](./domains/reward/rules.md) | 016 | 스펙 016 requirements "범위 밖"의 한계. 여러 기기에서 개수가 우연히 같아지는 경우는 TODO-47(단일 기기 로그인)로 사라질 예정이라 제외. PR 57로 main에 들어옴 (2026-11-26). 도메인 문서 ⚠️ 표시는 PR 61로 추가 (reward/rules 5장) |
 
 ## 2. ⏳ 할 일
 
