@@ -20,6 +20,7 @@ AI(Claude, Cursor 등)와 팀원이 작업을 시작할 때 가장 먼저 읽는
 | 문장·리뷰·독후감·커뮤니티·신고 | [docs/domains/review/](docs/domains/review/) |
 | 경험치·레벨·퀘스트·상점·부스터 | [docs/domains/reward/](docs/domains/reward/) |
 | D-day 목표·연속 독서·방어권 | [docs/domains/dday/](docs/domains/dday/) |
+| 독서 알림 (로컬 예약) | [docs/domains/reminder/](docs/domains/reminder/) |
 | 로그인·토큰·회원 | [docs/domains/user/](docs/domains/user/) |
 | 여러 도메인에 걸친 작업 | [docs/architecture.md](docs/architecture.md) |
 | 새 기능·API·DB·규칙 변경 | [docs/specs/README.md](docs/specs/README.md) |

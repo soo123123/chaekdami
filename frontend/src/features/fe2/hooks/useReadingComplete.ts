@@ -7,6 +7,10 @@ import {
   getRewardStatus,
   type ReadingSessionRewardResult,
 } from '../api/rewardApi';
+import {
+  requestReminderPermissionIfNeeded,
+  rescheduleReminders,
+} from '@/features/reminder/reminderScheduler';
 import type {
   CompleteQuest,
   CompleteRewardState,
@@ -263,6 +267,8 @@ export function useReadingComplete() {
     setClaimState('loading');
     try {
       const result = await claimReadingSessionReward(id);
+      // 보상으로 연속 독서가 기록됐으니 독서 알림을 다시 맞추고, 처음이면 알림 권한을 묻는다 (스펙 014 R2.2, R8.5)
+      void rescheduleReminders().then(requestReminderPermissionIfNeeded);
       if (!mountedRef.current) return;
       setClaim(result);
       setClaimState(result.baseGranted ? 'granted' : 'alreadyGranted');

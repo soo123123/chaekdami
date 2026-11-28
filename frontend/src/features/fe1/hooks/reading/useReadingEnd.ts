@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { photoVerifyApi } from '@/features/fe1/api/photoVerifyApi';
 import { readingApi } from '@/features/fe1/api/readingApi';
+import { markReadingStopped } from '@/features/reminder/reminderScheduler';
 import { PHOTO_VERIFY_TIMEOUT_MS } from '../../constants/config';
 import type { ReadingPhoto, ReadingRecordResult } from '../../types/reading';
 import { toAppError } from '../../utils/apiError';
@@ -174,6 +175,8 @@ export function useReadingEnd(bookId: number | null, elapsedTime: number) {
       });
       setResult(saved);
       setStatus('success');
+      // 오늘 읽었으니 독서 알림을 다시 예약한다. 조회가 실패해도 독서 시작 때 지운 오늘 알림은 그대로 없다 (스펙 014 R2.1, R2.4)
+      void markReadingStopped();
       return { ok: true, ...saved };
     } catch (e) {
       return fail(toAppError(e).message, 'error');

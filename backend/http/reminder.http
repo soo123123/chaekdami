@@ -1,0 +1,42 @@
+@baseUrl = http://localhost:8080
+@email = tester@chaekdami.local
+@password = password123
+
+### 0. 로그인 (accessToken 저장)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+%}
+
+### 1. 알림용 상태 조회 (스펙 014 R4.1). 저장한 설정이 없으면 settings는 기본값
+GET {{baseUrl}}/api/me/reminder-status
+Authorization: Bearer {{accessToken}}
+
+### 2. 알림 설정 저장 (R4.5). weeklyGoalMinutes는 30~3000
+PUT {{baseUrl}}/api/me/reminder-settings
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "enabled": true,
+  "earlyLateMuted": false,
+  "weeklyGoalMinutes": 300
+}
+
+### 3. 주간 목표가 범위를 벗어나면 400 VALIDATION_ERROR
+PUT {{baseUrl}}/api/me/reminder-settings
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "enabled": true,
+  "earlyLateMuted": false,
+  "weeklyGoalMinutes": 10
+}

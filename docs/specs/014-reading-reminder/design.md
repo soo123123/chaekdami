@@ -100,6 +100,8 @@
 | `backend/src/main/java/com/chaekdami/reminder/infrastructure/ReminderCleanupListener.java` | 새 파일. 탈퇴 때 설정 삭제 |
 | `backend/src/main/java/com/chaekdami/reminder/application/ReminderStatusService.java` | 새 파일 |
 | `backend/src/main/java/com/chaekdami/reminder/application/ReminderSettingService.java` | 새 파일. 조회(없으면 기본값)·저장·탈퇴 삭제 |
+| `backend/src/main/java/com/chaekdami/reminder/application/ReminderClock.java` | 새 파일. 현재 시각·서버 시간대 (테스트에서 고정) — 변경 기록 2026-11-28 |
+| `backend/src/main/java/com/chaekdami/reminder/infrastructure/ReminderSessionQueryRepository.java` | 새 파일. 종료 시각 기준 세션 조회 쿼리 — 변경 기록 2026-11-28 |
 | `backend/src/main/java/com/chaekdami/reminder/application/result/ReminderStatusResult.java` | 새 파일 |
 | `backend/src/main/java/com/chaekdami/reminder/application/result/ReminderSettingResult.java` | 새 파일 |
 | `backend/src/main/java/com/chaekdami/reminder/presentation/ReminderController.java` | 새 파일. 두 API |
@@ -141,7 +143,7 @@ requirements 4장의 가정 4개를 그대로 따른다 (이른 아침·늦은 �
 - 기기 시간대가 한국이 아니면? (가정: 기기 시각으로 예약한다. 서버의 `today`와 다를 수 있지만 한국 사용자만 본다)
 - Android 정확한 알람 권한을 쓰지 않아 몇 분 늦을 수 있는데 괜찮은가? (가정: 괜찮다. 쓰려면 개발 빌드와 Play 정책 확인이 필요)
 - FE2 설정 화면·라우트를 이 브랜치에서 FE2가 만드나, BE3가 기본 화면을 만들고 FE2가 꾸미나? (가정: 이 브랜치에는 BE3가 기본 화면까지 만든다. 마감이 내일이라)
-- `getAllScheduledNotificationsAsync`(우리 알림만 고르기)는 SDK 57 문서 본문에서 확인하지 못했다. 없으면 예약한 identifier를 기기에 저장해 취소한다
+- ~~`getAllScheduledNotificationsAsync`를 문서에서 확인하지 못함~~ → 설치한 `expo-notifications@57.0.26`에 있음을 확인 (2026-11-28)
 
 ---
 
@@ -149,4 +151,7 @@ requirements 4장의 가정 4개를 그대로 따른다 (이른 아침·늦은 �
 
 | 날짜 | 바뀐 내용 | 이유 | 결정 |
 |---|---|---|---|
-| | | | |
+| 2026-11-28 | 새 파일 `ReminderClock`(고정 시각 테스트용), `ReminderSessionQueryRepository`(세션 조회 쿼리)를 ③에 추가 | port 구현에 쿼리가 필요하고, 날짜 경계 테스트에 시각 주입이 필요 | BE3 승인 (2026-11-28) |
+| 2026-11-28 | 독서 화면이 열려 있는 동안 오늘의 1·2·4번을 다시 만들지 않는 "독서 중" 표시 추가 (`markReadingStarted`·`markReadingStopped`) | 독서 중 앱 복귀 때 다시 예약하면 독서 시작 때 지운 알림이 되살아남 (R8.3) | BE3 승인 (2026-11-28) |
+| 2026-11-28 | `clearTokens()`가 알림 모듈을 직접 부르지 않고 `onTokensCleared` 등록 방식으로 취소 | `tokenStorage` ↔ `apiClient` ↔ 알림 모듈 순환 참조 방지. 동작은 같음 (R3) | BE3 승인 (2026-11-28) |
+| 2026-11-28 | 오늘 19시가 지난 뒤 처음 앱을 열면, 보내지 않은 오늘 5번 때문에 내일 5번을 막지 않음 | 계획 함수 점검에서 발견 (R6.3) | BE3 승인 (2026-11-28) |

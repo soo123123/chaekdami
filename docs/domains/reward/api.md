@@ -59,7 +59,7 @@
 | `currentStreak` | 연속 독서 일수 (D-day 달력 기준) |
 | `expBuffExpiredAt` | 부스터가 없으면 `null`. 시간대 표기 없음 |
 
-> ❓ [ASK-9](../../known-issues.md#ask-9) — 서버 날짜 기준과 응답 시각의 시간대 표기
+응답 시각에 시간대를 표기하지 않는 것은 그대로 두기로 했다 (2026-11-28 결정). 서버와 기기 시간대가 다르면 위젯 남은 시간이 틀릴 수 있다.
 
 ## POST /api/rewards/reading-sessions/{readingSessionId}
 

@@ -29,6 +29,7 @@ export const ROUTES = {
   fe2: {
     mypage: '/fe2/user/mypage',
     readingStats: '/fe2/user/reading-stats',
+    notificationSettings: '/fe2/user/notification-settings',
     dday: '/fe2/reward/dday',
     level: '/fe2/reward/reward',
     shop: '/fe2/reward/shop',

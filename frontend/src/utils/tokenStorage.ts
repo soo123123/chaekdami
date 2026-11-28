@@ -46,8 +46,22 @@ export async function getRefreshToken(): Promise<string | null> {
   return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 }
 
+// 토큰이 지워질 때(로그아웃·탈퇴·세션 만료) 알릴 곳. 독서 알림 취소가 쓴다 (스펙 014 R3).
+// 이 파일이 알림 모듈을 직접 불러오면 apiClient와 서로 참조하게 되어 등록 방식으로 둔다.
+type TokensClearedListener = () => void;
+const tokensClearedListeners = new Set<TokensClearedListener>();
+
+export function onTokensCleared(listener: TokensClearedListener): () => void {
+  tokensClearedListeners.add(listener);
+  return () => {
+    tokensClearedListeners.delete(listener);
+  };
+}
+
 // 로그아웃 시 토큰 삭제하기
 export async function clearTokens(): Promise<void> {
+  tokensClearedListeners.forEach(listener => listener());
+
   if (Platform.OS === 'web') {
     sessionStorage.removeItem(ACCESS_TOKEN_KEY);
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);

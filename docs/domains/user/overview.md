@@ -37,8 +37,8 @@ backend/src/main/java/com/chaekdami/
 
 | 방향 | 무엇 | 방식 |
 |---|---|---|
-| 모든 도메인 → user | 현재 사용자 | review는 `CurrentUser`, reading·reward·dday는 `X-User-Id` 헤더(필터가 토큰 사용자로 채움) |
-| user → review·reward·dday·reading | 회원 탈퇴 시 데이터 삭제 | 이벤트 `UserWithdrawnEvent` (같은 트랜잭션). reading은 `ReadingCleanupListener` |
+| 모든 도메인 → user | 현재 사용자 | review·reminder는 `CurrentUser`, reading·reward·dday는 `X-User-Id` 헤더(필터가 토큰 사용자로 채움) |
+| user → review·reward·dday·reading·reminder | 회원 탈퇴 시 데이터 삭제 | 이벤트 `UserWithdrawnEvent` (같은 트랜잭션). reading은 `ReadingCleanupListener` |
 | review → user | 작성자 닉네임 | `UserNicknameReader` |
 
 ## 현재 상태

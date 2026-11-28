@@ -18,6 +18,7 @@ import {
   signup,
 } from '../../../api/authApi';
 import { saveTokens } from '../../../utils/tokenStorage';
+import { rescheduleReminders } from '@/features/reminder/reminderScheduler';
 
 const GREEN = '#405F4B';
 const BG = '#FAF7F1';
@@ -59,6 +60,7 @@ export default function SignupScreen() {
         password,
       });
       await saveTokens(tokens.accessToken, tokens.refreshToken);
+      void rescheduleReminders(); // 독서 알림 예약 (스펙 014 R2.3)
       router.replace('/home');
     } catch (error) {
       const message =

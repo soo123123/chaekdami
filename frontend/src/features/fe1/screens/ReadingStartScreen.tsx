@@ -21,6 +21,7 @@ import { useBookIdParam } from '../hooks/common/useRouteParams';
 import { useReadingSession } from '../hooks/reading/useReadingSession';
 import { useReadingTimer } from '../hooks/reading/useReadingTimer';
 import { goBackOr } from '@/utils/navigation';
+import { markReadingStarted, markReadingStopped } from '@/features/reminder/reminderScheduler';
 
 export function ReadingStartScreen() {
   const bookId = useBookIdParam();
@@ -38,8 +39,16 @@ export function ReadingStartScreen() {
     if (book && !hasStartedRef.current) {
       hasStartedRef.current = true;
       startTimer();
+      void markReadingStarted(); // 오늘의 독서 독려 알림을 지운다 (스펙 014 R8.3)
     }
   }, [book, startTimer]);
+
+  // 독서 화면을 벗어나면 독서 알림을 다시 맞춘다 (저장하지 않고 나간 경우 포함)
+  useEffect(() => {
+    return () => {
+      if (hasStartedRef.current) void markReadingStopped();
+    };
+  }, []);
 
   // 앱을 나가면(홈 화면·다른 앱으로 전환, 화면 잠금) 타이머를 일시정지한다.
   // 타이머는 시각 기준으로 계산하므로, 멈추지 않으면 앱 밖에 있던 시간까지 독서 시간에 더해진다.

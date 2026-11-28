@@ -40,7 +40,8 @@
           "cameraPermission": "책 표지와 인상 깊은 페이지를 촬영하기 위해 카메라를 사용합니다.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

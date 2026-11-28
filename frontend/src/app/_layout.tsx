@@ -5,6 +5,7 @@ import { ToastHost } from '@/components/Toast';
 import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation';
 
 import BoosterFloatingWidget from '@/features/fe2/components/BoosterFloatingWidget';
+import { ReminderSync } from '@/features/reminder/ReminderSync';
 
 /**
  * 하단 탭바로 오가는 화면 (홈 / 서재 / 마이페이지).
@@ -79,6 +80,9 @@ export default function RootLayout() {
 
       {/* 앱 공용 상단 토스트 */}
       <ToastHost />
+
+      {/* 독서 알림 예약 (스펙 014) */}
+      <ReminderSync />
     </View>
   );
 }

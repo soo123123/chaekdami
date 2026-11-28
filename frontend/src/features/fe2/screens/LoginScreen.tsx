@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { login, AuthApiError } from '../../../api/authApi';
 import { saveTokens } from '../../../utils/tokenStorage';
 import { Icon } from '@/components/common/Icon';
+import { rescheduleReminders } from '@/features/reminder/reminderScheduler';
 
 const GREEN = '#405F4B';
 const DARK_GREEN = '#2E503D';
@@ -94,6 +95,7 @@ export default function LoginScreen() {
       );
 
       console.log('[LOGIN] 4. 토큰 저장 완료');
+      void rescheduleReminders(); // 독서 알림 다시 예약 (스펙 014 R2.3)
       console.log('[LOGIN] 5. 홈 화면 이동 시작');
 
       router.replace('/home');

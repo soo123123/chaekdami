@@ -10,7 +10,7 @@
 
 ```
 com.chaekdami.<도메인>.<계층>
-도메인: reading · review · reward · dday · user   (공통: global, config)
+도메인: reading · review · reward · dday · user · reminder   (공통: global, config)
 계층:   presentation · application · domain · infrastructure
 ```
 

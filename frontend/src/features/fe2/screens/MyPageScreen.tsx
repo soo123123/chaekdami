@@ -685,7 +685,7 @@ export default function MyPageScreen() {
           <SettingsRow
             icon="notifications-outline"
             title="알림 설정"
-            onPress={() => pending('알림 설정')}
+            onPress={() => goTo(ROUTES.fe2.notificationSettings)}
           />
 
           <SettingsRow

@@ -39,7 +39,7 @@
 | 서재 꾸미기 | 테마 3종 | ⏳ [TODO-7](./known-issues.md#todo-7) 기기에만 저장 | |
 | 관리자 | 신고 리뷰 블라인드, 회원 조회·정지·역할 변경 (API만, 앱 화면 없음) | ✅ | [review](./domains/review/), [user](./domains/user/) |
 | AI | 책 추천, 독후감 피드백, 문장 인증 | ⏳ [TODO-4](./known-issues.md#todo-4) | |
-| 기타 | 주간 랭킹(경험치·독서 시간) API ✅, 푸시 알림, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) | [reward](./domains/reward/) |
+| 기타 | 주간 랭킹(경험치·독서 시간) API ✅, 독서 알림(기기 로컬) ✅ 스펙 014 병합 전, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) | [reward](./domains/reward/), [reminder](./domains/reminder/) |
 
 향후 가능성(기획): 소셜·경쟁, 외부 공유, e-book·오디오북, 도서관·서점 연계.
 

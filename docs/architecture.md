@@ -39,6 +39,7 @@ flowchart TB
 | reward | `com.chaekdami.reward` | BE2 | [domains/reward](./domains/reward/) |
 | dday | `com.chaekdami.dday` | BE2 | [domains/dday](./domains/dday/) |
 | user | `com.chaekdami.user`, `com.chaekdami.config` | BE3 | [domains/user](./domains/user/) |
+| reminder | `com.chaekdami.reminder` | BE3 | [domains/reminder](./domains/reminder/) |
 | 공통 | `com.chaekdami.global` | — | `ErrorCode`, `BusinessException`, `PageResponse`, `BaseTimeEntity` |
 
 ## 3. 도메인끼리 연결
@@ -47,7 +48,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  user -- "UserWithdrawnEvent" --> review & reward & dday & reading
+  user -- "UserWithdrawnEvent" --> review & reward & dday & reading & reminder
   review -- "port: BookReader, ReadingRecordReader (JDBC)" --> reading
   review -- "UserNicknameReader" --> user
   reward -- "port: ReadingSessionReader, WeeklyReadingTimeReader" --> reading
@@ -56,11 +57,12 @@ flowchart LR
   dday -- "직접: StreakService, StreakCalculator" --> reward
   reading -. "직접: SentenceRepository (오늘 메모 수)" .-> review
   reading -- "port: SessionSentenceRecorder, BookActivityCleaner" --> review
+  reminder -- "port: ReminderReadingReader, ReminderStreakReader, ReminderUserReader" --> reading & reward & user
 ```
 
 | 연결 | 방식 | 위치 |
 |---|---|---|
-| 회원 탈퇴 → 독후활동·보상·D-day·서재 삭제 | 이벤트 `UserWithdrawnEvent` | `*CleanupListener` (reading은 `ReadingCleanupListener`) |
+| 회원 탈퇴 → 독후활동·보상·D-day·서재·알림 설정 삭제 | 이벤트 `UserWithdrawnEvent` | `*CleanupListener` (reading은 `ReadingCleanupListener`) |
 | 독서 세션 저장 → 문장 저장 | port (`SessionSentenceRecorder`), 같은 트랜잭션 | `review/infrastructure/SentenceServiceSessionSentenceRecorder` |
 | 책 삭제 → 독후활동 삭제 | port (`BookActivityCleaner`), 같은 트랜잭션 | `review/infrastructure/ReviewBookActivityCleaner` |
 | 독후활동 → 책·독서 기록 조회 | port (`BookReader`, `ReadingRecordReader`) + JDBC 구현 | `review/application/port`, `review/infrastructure/Jdbc*` |
@@ -70,6 +72,7 @@ flowchart LR
 | 보상 랭킹 → 독서 시간 집계 | port (`WeeklyReadingTimeReader`) | `reward/infrastructure/ReadingSessionTimeReader` |
 | 보상 → 사진 인증 여부 | port (`PhotoCertificationChecker`) — 세션에 연결된 독서 인증 조회 | `CertificationPhotoChecker` → `CertificationService.isPhotoCertified` |
 | 보상 ↔ D-day | 서로 직접 참조 (연속일 계산을 함께 씀) | `ReadingSessionRewardService`, `StreakService`, `DdayService` |
+| 알림 → 독서 세션·연속 독서·닉네임 | port (`ReminderReadingReader`, `ReminderStreakReader`, `ReminderUserReader`), 읽기만 (연속은 방어권 정산 포함) | `reminder/infrastructure/*ReminderReader` |
 | 독서 → 문장 수 | 직접 참조 | `TodayReadingService` |
 | 독후활동 이벤트 (`ReviewCreatedEvent` 등) | 발행만 하고 받는 곳 없음 | `review/application/event` |
 
@@ -146,7 +149,7 @@ frontend/src/
 | `/fe1/community` | 완독자 커뮤니티 |
 | `/fe2/reading/reading-complete` | 독서 완료(보상) |
 | `/fe2/review/review-write` · `/fe2/review/review-detail` | 독후감 작성 · 보기 |
-| `/fe2/user/mypage` · `/fe2/user/reading-stats` | 마이페이지 · 독서 통계 |
+| `/fe2/user/mypage` · `/fe2/user/reading-stats` · `/fe2/user/notification-settings` | 마이페이지 · 독서 통계 · 알림 설정 |
 | `/fe2/reward/reward` · `/fe2/reward/quest` · `/fe2/reward/shop` · `/fe2/reward/dday` | 레벨·보상 · 퀘스트 · 상점 · D-day |
 
 ### API 모듈
@@ -162,5 +165,6 @@ frontend/src/
 | `features/fe2/api/reviewApi.ts` | 독후감 |
 | `features/fe2/api/todayReadingApi.ts`, `readingStatsApi.ts` | 오늘 독서, 독서 통계 |
 | `features/fe2/api/userApi.ts` | 내 정보, 비밀번호 변경, 탈퇴 |
+| `features/reminder/reminderApi.ts` | 알림용 상태, 알림 설정 (BE3) |
 
 경로 일치 여부는 `python3 scripts/harness/contract-check.py`로 확인한다.
