@@ -2,14 +2,14 @@ import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
 import type { RankingEntry, RankingType } from '../../types/ranking';
-import { formatDuration } from '../../utils/format';
+import { formatDurationWithSeconds } from '../../utils/format';
 import { medalFor, RANKING_IMAGES } from './rankingImages';
 
 type Props = { entry: RankingEntry; type: RankingType };
 
-/** 랭킹 점수: 독서 시간(초) → 6시간 15분, 경험치 → 1,240 EXP */
+/** 랭킹 점수: 독서 시간(초) → 6시간 15분 3초 (순위가 초 합계로 갈려 초까지 보인다, ASK-19), 경험치 → 1,240 EXP */
 export function formatRankingScore(type: RankingType, score: number): string {
-  if (type === 'readingTime') return formatDuration(score);
+  if (type === 'readingTime') return formatDurationWithSeconds(score);
   return `${String(score).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} EXP`;
 }
 
@@ -51,5 +51,5 @@ const styles = StyleSheet.create({
   name: { flexShrink: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   badge: { fontSize: 11, fontWeight: '600', color: colors.primary, backgroundColor: colors.onPrimary, borderWidth: 1, borderColor: colors.primaryBorder, borderRadius: radius.pill, overflow: 'hidden', paddingHorizontal: 6 },
   level: { fontSize: 12, color: colors.secondaryText },
-  score: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  score: { flexShrink: 0, fontSize: 15, fontWeight: '700', color: colors.primary },
 });

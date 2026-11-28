@@ -24,8 +24,8 @@ export const PHOTO_VERIFY_TIMEOUT_MS = 45_000;
 
 /**
  * 랭킹 화면에 개발용 예시 데이터를 쓸지 여부 (스펙 008).
- * 서버 랭킹 API(스펙 005)가 main에 병합되기 전까지만 true로 두고, 병합되면 false로 바꾼다.
+ * 서버 랭킹 API(스펙 005)는 main에 병합됐다(PR 35). 서버 없이 화면만 볼 때만 true로 바꾼다.
  * 출시용 빌드(__DEV__가 false)에서는 이 값과 상관없이 서버를 부른다 (R4.5).
  */
-const RANKING_DEV_MOCK_ENABLED: boolean = true;
+const RANKING_DEV_MOCK_ENABLED: boolean = false;
 export const RANKING_USE_DEV_MOCK = __DEV__ && RANKING_DEV_MOCK_ENABLED;

@@ -144,7 +144,7 @@ frontend/src/
 | `/fe1/book-detail` | 서재 책 상세 |
 | `/fe1/reading-start` · `/fe1/reading-end` | 독서 시작(타이머) · 독서 종료 |
 | `/fe1/community` | 완독자 커뮤니티 |
-| `/fe1/ranking` | 주간 랭킹 (서버 API 병합 전이라 개발 빌드는 예시 데이터, [스펙 008](./specs/008-ranking-screen/)) |
+| `/fe1/ranking` | 주간 랭킹 (경험치·독서 시간, [스펙 008](./specs/008-ranking-screen/)) |
 | `/fe2/reading/reading-complete` | 독서 완료(보상) |
 | `/fe2/review/review-write` · `/fe2/review/review-detail` | 독후감 작성 · 보기 |
 | `/fe2/user/mypage` · `/fe2/user/reading-stats` | 마이페이지 · 독서 통계 |
