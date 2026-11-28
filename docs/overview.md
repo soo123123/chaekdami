@@ -1,4 +1,4 @@
-> 기준: main@82df578 + 스펙 004 + 스펙 005 · 최종 확인: 2026-11-23 · 담당: BE1
+> 기준: main@82df578 + 스펙 004 + 스펙 005 + 스펙 013 · 최종 확인: 2026-11-25 · 담당: BE1
 
 # 서비스 개요
 
@@ -33,13 +33,13 @@
 | 독서 인증 | 책 페이지 사진 인증, 통과 시 사진 인증 보상 +20 EXP | ✅ (Gemini 임시 API, ⏳ [TODO-23](./known-issues.md#todo-23)) | |
 | 독후 활동 | 문장 모음, 별점·한줄평, 독후감, 좋아요·신고 | ✅ | [review](./domains/review/) |
 | 커뮤니티 | 같은 책 완독자끼리 공개 모음집·독후감 보기 | ✅ | [review](./domains/review/) |
-| 보상 | 경험치·레벨, 재화, 일일 퀘스트, 상점, 부스터 | ✅ | [reward](./domains/reward/) |
+| 보상 | 경험치·레벨, 재화, 일일·주간 퀘스트, 상점, 부스터 | ✅ | [reward](./domains/reward/) |
 | 연속 독서 | D-day 달력, 방어권 자동 사용, D-day 목표 | ✅ | [dday](./domains/dday/) |
 | 통계 | 오늘 독서, 주·월·하루 독서 시간 | ✅ | [reading](./domains/reading/) |
 | 서재 꾸미기 | 테마 3종 | ⏳ [TODO-7](./known-issues.md#todo-7) 기기에만 저장 | |
 | 관리자 | 신고 리뷰 블라인드, 회원 조회·정지·역할 변경 (API만, 앱 화면 없음) | ✅ | [review](./domains/review/), [user](./domains/user/) |
 | AI | 책 추천, 독후감 피드백, 문장 인증 | ⏳ [TODO-4](./known-issues.md#todo-4) | |
-| 기타 | 주간 랭킹(경험치·독서 시간) API ✅, 푸시 알림, 주간 퀘스트, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) ⏳ [TODO-5](./known-issues.md#todo-5) | [reward](./domains/reward/) |
+| 기타 | 주간 랭킹(경험치·독서 시간) API ✅, 푸시 알림, 레벨 해금 | ⏳ [TODO-8](./known-issues.md#todo-8) ⏳ [TODO-6](./known-issues.md#todo-6) | [reward](./domains/reward/) |
 
 향후 가능성(기획): 소셜·경쟁, 외부 공유, e-book·오디오북, 도서관·서점 연계.
 

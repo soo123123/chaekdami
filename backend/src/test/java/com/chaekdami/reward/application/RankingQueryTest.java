@@ -157,6 +157,25 @@ class RankingQueryTest {
         }
     }
 
+    @Test
+    void 내_순위는_나보다_높은_사람을_기록_수와_관계없이_한_번씩_센다() {
+        Long many = user("many", Role.USER);
+        score(many, 100);
+        score(many, 100);
+        score(many, 900, MONDAY.minusDays(7));   // 지난주 기록
+        jdbc.update("insert into reward_transactions (user_id, type, amount, reason, created_at)"
+                + " values (?, 'INCOME_CURRENCY', 5000, 'DAILY_QUEST', ?)", many, Timestamp.valueOf(MONDAY.plusDays(1)));
+        Long one = user("one", Role.USER);
+        score(one, 150);
+        Long me = user("me", Role.USER);
+        score(me, 120);
+
+        for (WeeklyRankingResult result : bothRankings(me)) {
+            assertThat(result.myRanking().rank()).isEqualTo(3);
+            assertThat(result.myRanking().score()).isEqualTo(120);
+        }
+    }
+
     private WeeklyRankingResult[] bothRankings(Long userId) {
         return new WeeklyRankingResult[]{
                 rankingService.getWeeklyExperienceRanking(userId, NOW, SEOUL),

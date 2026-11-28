@@ -32,6 +32,7 @@ public class ShopController {
                                    @PathVariable Long itemId,
                                    @RequestBody(required = false) PurchaseRequest request) {
         int quantity = request == null || request.purchaseQuantity() == null ? 1 : request.purchaseQuantity();
-        return shopService.purchase(userId, itemId, quantity);
+        Integer ownedQuantity = request == null ? null : request.ownedQuantity();
+        return shopService.purchase(userId, itemId, quantity, ownedQuantity);
     }
 }

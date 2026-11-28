@@ -14,7 +14,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
 
 import java.util.Optional;
@@ -22,7 +21,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,8 +35,6 @@ class RewardLedgerTest {
     private RewardAccountRepository rewardAccountRepository;
     @Mock
     private RewardTransactionRepository rewardTransactionRepository;
-    @Mock
-    private RewardAccountInitializer rewardAccountInitializer;
     @InjectMocks
     private RewardLedger rewardLedger;
 
@@ -48,7 +45,7 @@ class RewardLedgerTest {
         when(rewardAccountRepository.findByUserIdWithLock(USER_ID)).thenReturn(Optional.of(account));
 
         assertThat(rewardLedger.lockAccount(USER_ID)).isSameAs(account);
-        verify(rewardAccountInitializer, never()).insert(any());
+        verify(rewardAccountRepository, never()).insertIfAbsent(any(), any());
     }
 
     @Test
@@ -59,7 +56,7 @@ class RewardLedgerTest {
         when(rewardAccountRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
 
         assertThat(rewardLedger.lockAccount(USER_ID)).isSameAs(account);
-        verify(rewardAccountInitializer).insert(USER_ID);
+        verify(rewardAccountRepository).insertIfAbsent(argThat(created -> USER_ID.equals(created.getUserId())), any());
     }
 
     @Test
@@ -68,8 +65,7 @@ class RewardLedgerTest {
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(account));
         when(rewardAccountRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
-        doThrow(new DataIntegrityViolationException("uk_reward_accounts_user_id"))
-                .when(rewardAccountInitializer).insert(USER_ID);
+        when(rewardAccountRepository.insertIfAbsent(any(), any())).thenReturn(0);
 
         assertThat(rewardLedger.lockAccount(USER_ID)).isSameAs(account);
     }
@@ -86,6 +82,19 @@ class RewardLedgerTest {
         assertThat(saved.getValue().getAmount()).isZero();
         assertThat(saved.getValue().getType()).isEqualTo(TransactionType.INCOME_EXPERIENCE);
         assertThat(saved.getValue().getReason()).isEqualTo(TransactionReason.READING_COMPLETE);
+    }
+
+    @Test
+    void 대상이_있는_재화_지급은_대상_id_와_함께_이력을_남긴다() {
+        rewardLedger.addCurrencyFor(account, 150, TransactionReason.DAILY_QUEST, 7L);
+
+        ArgumentCaptor<RewardTransaction> saved = ArgumentCaptor.forClass(RewardTransaction.class);
+        verify(rewardTransactionRepository).save(saved.capture());
+        assertThat(account.getCurrency()).isEqualTo(150);
+        assertThat(saved.getValue().getReferenceId()).isEqualTo(7L);
+        assertThat(saved.getValue().getAmount()).isEqualTo(150);
+        assertThat(saved.getValue().getType()).isEqualTo(TransactionType.INCOME_CURRENCY);
+        assertThat(saved.getValue().getReason()).isEqualTo(TransactionReason.DAILY_QUEST);
     }
 
     @Test
